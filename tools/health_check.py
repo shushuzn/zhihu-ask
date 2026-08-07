@@ -35,7 +35,6 @@ REQUIRED_FILES = [
     "docs/CHECKLIST.md",
     "docs/CONVENTIONS.md",
     "docs/KEYWORDS.md",
-    "docs/METHODS.md",
     "docs/SOP.md",
     "docs/STYLE_GUIDE.md",
     "docs/TEMPLATE_INDEX.md",

@@ -14,7 +14,6 @@ zhihu-ask/
 │   ├── SOP.md                     # 五阶段可执行流程（核心标准）
 │   ├── AGENT_PROMPTS.md           # 子代理可复制 Prompt 模板（A–E）
 │   ├── KEYWORDS.md                # 领域预置检索关键词库
-│   ├── METHODS.md                 # 可复用分析方法
 │   ├── CHECKLIST.md               # 发布前质量检查清单
 │   ├── STYLE_GUIDE.md             # 知乎文风与排版指南
 │   ├── TEMPLATE_INDEX.md          # 模板说明与使用规则
