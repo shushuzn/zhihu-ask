@@ -45,6 +45,7 @@ REQUIRED_FILES = [
     "templates/process_notes_TEMPLATE.md",
     "tools/research_start.py",
     "tools/check_progress.py",
+    "tools/iter_research.py",
     "tools/quality_check.py",
     "tools/wechat_search.py",
     "tools/init_research.py",

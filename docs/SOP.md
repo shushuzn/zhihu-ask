@@ -285,3 +285,22 @@
 执行顺序规则：阶段串行，P0 优先；任一阶段输出未达校验规则即阻塞后续阶段（不进不退）。
 
 **进度校验工具化**：阶段 0/1 完成后，`tools/research_start.py` 写入 `research/<slug>/.progress.json`。进入阶段 2 前用 `python tools/check_progress.py --slug <slug> --require phase1_done` 校验前置就绪（通过退出码 0，阻塞退出码 1），把"输出未达校验即阻塞"从文档约束落地为工具强制。
+
+## A.8 多轮迭代研究（提高质量）
+
+单轮研究产出后，通过多轮迭代深化提升质量（一般 3 轮收敛）。
+
+**机制**：`python tools/iter_research.py --slug <slug>` 读取上一轮报告，从【局限/未尽问题/可深化点】自动提取下一轮问题清单（写 round_notes.md），并更新 `.progress.json` 的 round 记录。
+
+**多轮流程**：
+- 第 1 轮：research_start.py 启动 → 阶段 2/3/4 → 产出 report.md。
+- 第 2 轮：跑 iter_research.py 生成问题清单 → 带着问题补检索/深化 → 产出 report_v2.md。
+- 第 3 轮：同上 → report_v3.md。达到质量收敛后停止。
+
+**执行规则**：
+- 每轮必须处理上一轮 round_notes.md 中的问题；无法补足的标注"仍无法核实"。
+- 每轮产出保留版本（report_vN.md），可追溯深化过程。
+- 回答（zhihu_answer.md）随每轮同步更新，关键数字与最新报告一致。
+- 3 轮后若仍有实质未尽问题可继续，但避免无边界扩张（边际收益下降即停）。
+
+**质量增益**：多轮让数据从"二手转述"回溯到"一手来源"、让推断从"无标注"变成"有口径"，回答随轮次深化而更扎实。

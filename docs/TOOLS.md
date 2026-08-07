@@ -53,6 +53,24 @@ python tools/research_start.py --config tools/start.json
 
 **注意**：keywords 为公众号检索关键词组，days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A」，产出素材库后按 SOP 附录 A 进入阶段 2。
 
+## iter_research.py — 多轮迭代研究
+
+**作用**：把"单轮研究"升级为"多轮迭代"。每完成一轮，读取上一轮报告，从【局限/未尽问题/可深化点】自动提取下一轮问题清单（写 round_notes.md），并更新 `.progress.json` 的 round 记录。逐轮深化，一般 3 轮达到质量收敛。
+
+**用法**：
+
+```bash
+python tools/iter_research.py --slug <slug>            # 生成下一轮问题清单（当前轮+1）
+python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
+```
+
+**多轮流程**：
+- 第 1 轮：`research_start.py` 启动 → 阶段 2/3/4 产出 report.md
+- 第 2 轮：本工具生成问题清单 → 补检索/深化 → 产出 report_v2.md（保留版本）
+- 第 3 轮：同上，产出 report_v3.md
+
+**注意**：工具只生成问题清单与更新轮次，不替代主代理的分析写作。报告路径 research/<slug>/report.md 或 report_vN.md。
+
 ## quality_check.py — 回答质量自动检查
 
 **作用**：把回答模板/CHECKLIST 中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）。
