@@ -68,7 +68,7 @@ python tools/wechat_search.py --keywords tools/keywords.json --time-range 2025-0
 python tools/git_protect.py    # 检查暂存区；发现内部文件则退出码 1 并列出
 ```
 
-**注意**：内部文件清单见脚本内 `INTERNAL_PATTERNS`，按需增改。可与 `git commit` 串联使用，作为提交前的例行校验。
+**注意**：内部文件清单见脚本内 `INTERNAL_PATTERNS`，按需增改。已通过 `install_git_hooks.py` 接入 pre-commit hook，提交时自动执行；如需手动校验也可单独运行本脚本。
 
 ## install_git_hooks.py — pre-commit hook 安装
 
