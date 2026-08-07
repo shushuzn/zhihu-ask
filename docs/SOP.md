@@ -56,7 +56,7 @@
 ## 阶段 4 · 报告与回答生成
 
 - 按 `templates/research_report_TEMPLATE.md` 产出 `research/<topic_slug>/report.md`。
-- 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`）。
+- 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`，必须通过模板内置的「去 AI 味自查」）。
 - 写 `process_notes.md` 沉淀：本次有效关键词、踩坑点、可复用结论。
 - 回填本地 `plan.md` 问题索引状态（进行中/已完成）。
 
@@ -65,3 +65,4 @@
 - 所有可量化数据必须有来源；无法核实的标注「未证实」。
 - 不编造引用、不虚构数字、不替用户做决定（给权衡，不给单一路径）。
 - 引用公众号文章须保留标题与作者信息。
+- 回答须像真实从业者所写，无 AI 模板腔（框架词/排比句/对称观点），按 `docs/STYLE_GUIDE.md`「去 AI 味」自查后发布。
