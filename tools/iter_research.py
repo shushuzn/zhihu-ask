@@ -99,46 +99,49 @@ def extract_questions(report_text):
             # 排除非问题性质的段落引导（如"数据局限：xxx"，应拆成其中的①②）
             if any(body.startswith(lead) for lead in NON_QUESTION_LEAD):
                 continue
+            # 跳过"已在正文处理"的说明性内容（非待解决问题）
+            if "已在正文处理" in body or body.startswith("口径说明"):
+                continue
             clean = body.replace("**", "").strip()
             _add_split_questions(clean, questions, seen)
-    # 可深化标记句（排除框架描述行与标题；去重）
-    for line in lines:
-        if line.strip().startswith("#"):
-            continue
-        stripped = line.strip()
-        body = stripped.lstrip("-*•0123456789.、 ")
-        is_frame = False
-        for lead in FRAME_LEAD:
-            if body.startswith("**" + lead) or body.startswith(lead + "**") or body.startswith(lead + "："):
-                is_frame = True
-                break
-        if is_frame:
-            continue
-        if any(body.startswith(lead) for lead in NON_QUESTION_LEAD):
-            continue
-        for marker in DEEPEN_MARKERS:
-            if marker in line:
-                clean = body.replace("**", "").strip()
-                _add_split_questions(clean, questions, seen)
-                break
     return questions
 
 
 def _add_split_questions(text, questions, seen):
     """把长段文本按 ①/②/；/。/？ 拆成单条问题，避免整段大块。
-    仅保留以"问题/需核实/待确认/是否/如何/为什么"等结尾的可执行问题或含核实语义的短句。"""
-    # 按分号、圈号、句号拆分（但保留含"核实/取得/确认/回溯"语义的片段）
+    仅保留有"未尽"语义的片段；用子串包含去重避免同一问题的不同表述重复出现。"""
     parts = re.split(r"[；;。]+|①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩", text)
     for p in parts:
-        p = p.strip()
+        p = p.strip().replace("**", "")
         if not p or len(p) < 6:
             continue
-        # 仅保留有"未尽"语义的片段（问题/核实/数据/口径/推断 相关）
-        if any(kw in p for kw in ["核实", "待确认", "未取得", "无法", "口径", "推断", "推算",
-                                  "数据", "确认", "待核实", "需进一步", "可补充", "回溯", "验证"]):
-            if p not in seen:
-                questions.append(p)
-                seen.add(p)
+        if not any(kw in p for kw in ["核实", "待确认", "未取得", "无法", "口径", "推断", "推算",
+                                      "数据", "确认", "待核实", "需进一步", "可补充", "回溯", "验证"]):
+            continue
+        # 子串去重：若新片段被已收录问题的关键短语包含（或反之），视为同一问题，跳过
+        if _is_duplicate(p, seen):
+            continue
+        questions.append(p)
+        seen.add(p)
+
+
+def _is_duplicate(candidate, seen):
+    """判断候选片段是否与已收录问题高度重复。
+    规则：候选与某已收录问题共享超过一个"主题关键词"时视为重复。
+    主题关键词：常住/户籍/口径/富有/收入/宅基地/租金/财产/开店/外来/东西部/差距 等。
+    避免"常住人口口径"在不同段落被反复提取为多个问题。"""
+    if candidate in seen:
+        return True
+    TOPIC_KW = ["常住", "户籍", "口径", "富有", "收入", "宅基地", "租金", "财产",
+                "开店", "外来", "东西部", "差距", "城乡", "人均", "财产净"]
+    c_kw = {kw for kw in TOPIC_KW if kw in candidate}
+    for s in seen:
+        s_kw = {kw for kw in TOPIC_KW if kw in s}
+        # 共享 ≥2 个主题关键词即视为同一话题的重复
+        overlap = c_kw & s_kw
+        if len(overlap) >= 2:
+            return True
+    return False
 
 
 def get_current_round(slug):
