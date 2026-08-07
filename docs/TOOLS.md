@@ -121,4 +121,4 @@ python tools/health_check.py
 
 ## 降级方案
 
-若 `research_subagent` 因配置问题不可用（如 "Model not found"），由主代理直接执行检索：web_search / web_fetch 均可由主代理调用，公众号检索走上述包装工具。信息密度会降低，但流程可跑通（首个研究已验证可行）。
+`research_subagent` 配置的模型不可用（"Model not found"），**主代理直执是当前默认方式**（非降级）：web_search / web_fetch 均由主代理调用，公众号检索走上述包装工具。已实测可行（两份研究均以此完成）。若子代理配置修复，可升级回并行分派。

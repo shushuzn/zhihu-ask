@@ -31,7 +31,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 
 | 工具 | 状态 | 说明 |
 |---|---|---|
-| `research_subagent` | 可能不可用 | 曾出现 "Model not found"；不可用时由主代理直接检索（已实测可行） |
+| `research_subagent` | 不可用（默认） | 模型 "claude-haiku-4.5" not found；当前研究一律由主代理直执（已实测可行） |
 | 知乎网页/API | 不可用 | 未登录访问返回 403，需用户粘贴问题内容 |
 | `wechat-article-search` skill 脚本 | 中文参数乱码 | 使用 `tools/wechat_search.py` 包装（文件传参） |
 
