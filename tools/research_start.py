@@ -173,7 +173,7 @@ def main():
     print(f"  e. 进度已记录于 research/{slug}/{PROGRESS_FILE}，供闭环追溯")
 
     # 清理临时文件
-    for p in (tmp_init,):
+    for p in (tmp_init, os.path.join(ROOT, "tools", "_start_keywords.json")):
         if os.path.exists(p):
             os.remove(p)
 

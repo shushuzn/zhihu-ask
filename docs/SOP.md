@@ -282,3 +282,5 @@
 ```
 
 执行顺序规则：阶段串行，P0 优先；任一阶段输出未达校验规则即阻塞后续阶段（不进不退）。
+
+**进度校验工具化**：阶段 0/1 完成后，`tools/research_start.py` 写入 `research/<slug>/.progress.json`。进入阶段 2 前用 `python tools/check_progress.py --slug <slug> --require phase1_done` 校验前置就绪（通过退出码 0，阻塞退出码 1），把"输出未达校验即阻塞"从文档约束落地为工具强制。

@@ -44,6 +44,7 @@ REQUIRED_FILES = [
     "templates/zhihu_answer_TEMPLATE.md",
     "templates/process_notes_TEMPLATE.md",
     "tools/research_start.py",
+    "tools/check_progress.py",
     "tools/wechat_search.py",
     "tools/init_research.py",
     "tools/git_protect.py",

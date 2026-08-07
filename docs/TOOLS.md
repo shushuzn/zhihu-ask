@@ -53,6 +53,19 @@ python tools/research_start.py --config tools/start.json
 
 **注意**：keywords 为公众号检索关键词组，days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A」，产出素材库后按 SOP 附录 A 进入阶段 2。
 
+## check_progress.py — 阶段进度校验
+
+**作用**：读取 `research/<slug>/.progress.json`，校验前置阶段是否完成，供阶段 2-4 进入前确认（对应 SOP 附录 A「输出未达校验即阻塞」）。
+
+**用法**：
+
+```bash
+python tools/check_progress.py --slug <slug>                      # 展示当前进度
+python tools/check_progress.py --slug <slug> --require phase1_done # 校验前置阶段（通过退出码0，阻塞退出码1）
+```
+
+**说明**：当前已知阶段键为 `phase1_done`（阶段 0 初始化 + 阶段 1 通道 A 完成）。进入阶段 2 前先跑本工具确认前置就绪。
+
 ## wechat_search.py — 微信公众号检索包装
 
 **问题背景**：`wechat-article-search` skill 的 `sogou_search.py` 通过命令行接收中文关键词，但在本机 PowerShell 环境下中文参数会乱码（`chcp 65001` 也无法解决），导致通道 A 无法使用。
