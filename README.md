@@ -23,6 +23,7 @@ zhihu-ask/
 ├── tools/
 │   ├── wechat_search.py           # 公众号检索包装
 │   ├── init_research.py           # 研究目录初始化
+│   ├── git_protect.py             # 提交前检查
 │   └── keywords.example.json      # 关键词文件模板
 ├── templates/
 │   ├── research_plan_TEMPLATE.md      # 单次问题研究计划
