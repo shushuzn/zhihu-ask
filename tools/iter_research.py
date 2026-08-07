@@ -17,7 +17,7 @@
   第 3 轮：同上，产出 report v3。一般 3 轮达到质量收敛。
 
 说明：
-- 报告路径：research/<slug>/report.md（每轮可存 report_v1.md / report_v2.md 保留版本）。
+- 报告路径：research/<slug>/report.md（每轮迭代直接在原 report.md 上更新，不创建 vN 版本文件）。
 - 本工具只生成"问题清单"与更新轮次，不替代主代理的分析与写作。
 """
 
@@ -61,22 +61,11 @@ def parse_args(argv):
 
 
 def read_report(slug):
-    """读取最新报告：优先 report.md，否则 report_vN.md 中编号最大的。"""
+    """读取当前报告：research/<slug>/report.md。"""
     rdir = os.path.join(ROOT, "research", slug)
-    if not os.path.isdir(rdir):
+    path = os.path.join(rdir, "report.md")
+    if not os.path.isfile(path):
         return None
-    # 找 report.md 或 report_vN.md
-    candidates = []
-    for f in os.listdir(rdir):
-        if f == "report.md":
-            candidates.append((0, os.path.join(rdir, f)))
-        m = re.match(r"report_v(\d+)\.md", f)
-        if m:
-            candidates.append((int(m.group(1)), os.path.join(rdir, f)))
-    if not candidates:
-        return None
-    candidates.sort(reverse=True)
-    path = candidates[0][1]
     with open(path, "r", encoding="utf-8") as f:
         return path, f.read()
 
@@ -186,7 +175,7 @@ def main():
 
     result = read_report(slug)
     if not result:
-        print(f"[错误] {slug}: 未找到报告（research/{slug}/report.md 或 report_vN.md）。请先完成第1轮产出报告。")
+        print(f"[错误] {slug}: 未找到报告（research/{slug}/report.md）。请先完成第1轮产出报告。")
         sys.exit(1)
 
     path, text = result
@@ -215,7 +204,7 @@ def main():
         f.write("\n## 下一轮执行指引\n\n")
         f.write("1. 针对上述问题逐条补充检索（web_search / 公众号）。\n")
         f.write("2. 优先补一手来源；无法补足的标注\"仍无法核实\"。\n")
-        f.write("3. 产出 report_v{N}.md 保留版本，回答同步更新。\n".format(N=target_round))
+        f.write("3. 直接在 report.md 上更新（不创建 vN 版本文件），保留深化过程记录于 process_notes.md。\n")
 
     print(f"\n已生成下一轮问题清单: {os.path.relpath(notes_path, ROOT)}")
     print(f"共 {len(questions)} 个待深化问题：")
@@ -227,7 +216,7 @@ def main():
 
     print("\n下一轮执行建议：")
     print("  1. 打开 round_notes.md，逐条处理问题")
-    print("  2. 补检索 -> 深化分析 -> 产出 report_v{0}.md（保留版本）".format(target_round))
+    print("  2. 补检索 -> 深化分析 -> 直接在 report.md 上更新（不创建 vN 版本文件）")
     print("  3. 全部完成后可再跑本工具进入第 {0} 轮，一般 3 轮收敛".format(target_round + 1))
 
 

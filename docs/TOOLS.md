@@ -66,10 +66,10 @@ python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
 
 **多轮流程**：
 - 第 1 轮：`research_start.py` 启动 → 阶段 2/3/4 产出 report.md
-- 第 2 轮：本工具生成问题清单 → 补检索/深化 → 产出 report_v2.md（保留版本）
-- 第 3 轮：同上，产出 report_v3.md
+- 第 2 轮：本工具生成问题清单 → 补检索/深化 → 直接在 report.md 上更新
+- 第 3 轮：同上，达到质量收敛后停止
 
-**注意**：工具只生成问题清单与更新轮次，不替代主代理的分析写作。报告路径 research/<slug>/report.md 或 report_vN.md。
+**注意**：工具只生成问题清单与更新轮次，不替代主代理的分析写作。报告路径 research/<slug>/report.md；迭代直接在原文件更新，不创建 vN 版本文件。
 
 ## quality_check.py — 回答质量自动检查
 
