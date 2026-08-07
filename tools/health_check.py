@@ -41,7 +41,6 @@ REQUIRED_FILES = [
     "docs/TOOLS.md",
     "templates/research_plan_TEMPLATE.md",
     "templates/research_report_TEMPLATE.md",
-    "templates/zhihu_answer_TEMPLATE.md",
     "templates/process_notes_TEMPLATE.md",
     "tools/research_start.py",
     "tools/check_progress.py",

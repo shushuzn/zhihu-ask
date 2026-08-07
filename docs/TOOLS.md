@@ -4,7 +4,7 @@
 
 ## init_research.py — 研究目录初始化
 
-**作用**：一键创建新研究，避免手动复制模板。自动完成：创建 `research/<slug>/` 目录 → 从模板生成 plan/report/zhihu_answer/process_notes 四个文件 → 填入问题标题/日期/领域 → 在 `plan.md` 问题索引表登记一行。
+**作用**：一键创建新研究，避免手动复制模板。自动完成：创建 `research/<slug>/` 目录 → 从模板生成 plan/report/process_notes 三个文件 → 填入问题标题/日期/领域 → 在 `plan.md` 问题索引表登记一行。
 
 **用法**（本机 PowerShell 下中文必须走 `--config` 文件）：
 
@@ -78,8 +78,8 @@ python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
 **用法**：
 
 ```bash
-python tools/quality_check.py --file research/<slug>/zhihu_answer.md
-python tools/quality_check.py --file research/<slug>/zhihu_answer.md --verbose
+python tools/quality_check.py --file research/<slug>/report.md
+python tools/quality_check.py --file research/<slug>/report.md --verbose
 ```
 
 **输出**：全部通过退出码 0；检出待确认项退出码 1 并列出位置与命中词。检出项为启发式规则，需人工确认是否真正违规（如"不构成投资建议"中的"建议"为合法用法）。

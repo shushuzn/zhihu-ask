@@ -30,7 +30,6 @@ zhihu-ask/
 ├── templates/
 │   ├── research_plan_TEMPLATE.md      # 单次问题研究计划
 │   ├── research_report_TEMPLATE.md    # 深度研究报告
-│   ├── zhihu_answer_TEMPLATE.md       # 知乎回答正文草稿
 │   └── process_notes_TEMPLATE.md      # 检索与踩坑记录
 ```
 
@@ -41,9 +40,9 @@ zhihu-ask/
    `python tools/research_start.py --config tools/start.json`，自动初始化目录、跑公众号检索并生成素材库。
 2. 在 `research/<topic_slug>/plan.md` 补齐「问题界定」与「检索关键词」（可参考 `docs/KEYWORDS.md` 选词）。
 3. 按 `docs/SOP.md` 阶段 1–3 执行检索与研究（主代理直执）。
-4. 按模板产出 `report.md` 与 `zhihu_answer.md`（质量检查见 `docs/CHECKLIST.md`）。
+4. 按模板产出 `report.md`（质量检查见 `docs/CHECKLIST.md`）。
 5. 完成后写 `process_notes.md` 记录检索与踩坑，回填 `plan.md` 状态，并删除临时 config 文件。
 
 ## 交付物约定
 
-每次研究固定产出 4 类文件：计划、报告、知乎回答草稿、经验笔记。领域不设限，优先支持金融/产品/AI 三类（对应挂载插件）。
+每次研究固定产出 3 类文件：计划、报告、经验笔记。领域不设限，优先支持金融/产品/AI 三类（对应挂载插件）。

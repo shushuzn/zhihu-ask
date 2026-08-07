@@ -3,7 +3,7 @@
 研究初始化脚本（zhihu-ask 项目专用）
 
 一键创建新的研究目录：
-1. 在 research/<slug>/ 下生成 4 个文件（plan/report/zhihu_answer/process_notes），从模板复制并填入基础占位符。
+1. 在 research/<slug>/ 下生成 3 个文件（plan/report/process_notes），从模板复制并填入基础占位符。
 2. 更新 plan.md 的问题索引表（追加一行，状态=进行中）。
 
 用法（Windows PowerShell 下中文必须走 --config 文件，见 docs/CONVENTIONS.md）：
@@ -44,7 +44,6 @@ PLAN = os.path.join(ROOT, "plan.md")
 FILES = [
     ("research_plan_TEMPLATE.md", "plan.md"),
     ("research_report_TEMPLATE.md", "report.md"),
-    ("zhihu_answer_TEMPLATE.md", "zhihu_answer.md"),
     ("process_notes_TEMPLATE.md", "process_notes.md"),
 ]
 

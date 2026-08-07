@@ -9,8 +9,8 @@
   4. 形式检测：感叹号、反问句（？+语气）、无来源数字（粗略启发式）
 
 用法：
-    python tools/quality_check.py --file research/<slug>/zhihu_answer.md
-    python tools/quality_check.py --file research/<slug>/zhihu_answer.md --verbose
+    python tools/quality_check.py --file research/<slug>/report.md
+    python tools/quality_check.py --file research/<slug>/report.md --verbose
 
 说明：
 - 扫描范围为正文（跳过"数据与来源备查"及之后的来源区）。

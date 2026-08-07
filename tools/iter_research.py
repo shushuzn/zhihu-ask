@@ -90,6 +90,8 @@ def extract_questions(report_text):
     EXCLUDE_SECTIONS = ["研究问题", "分析框架", "数据来源分级", "关键事实", "主要发现"]
     # 框架描述行：以这些词开头（含"推断/推算"但非未尽问题）
     FRAME_LEAD = ["研究问题", "分析框架", "数据来源分级", "执行摘要", "结论", "参考文献", "局限与后续", "对策建议"]
+    # 非问题性质的段落引导词（如"数据局限：""该拆解仅说明"）
+    NON_QUESTION_LEAD = ["数据局限", "推断部分", "该拆解仅", "本报告仅", "结论是", "需要注意的是"]
 
     lines = report_text.splitlines()
     in_limit = False
@@ -101,20 +103,20 @@ def extract_questions(report_text):
             continue
         if in_limit and s and not s.startswith("|"):
             body = s.lstrip("-*•0123456789.、 ")
-            # 排除框架描述行（研究问题/分析框架/数据来源分级等）
+            # 排除框架描述行
             if any(body.startswith("**" + lead) or body.startswith(lead + "**")
                    or body.startswith(lead + "：") for lead in FRAME_LEAD):
                 continue
+            # 排除非问题性质的段落引导（如"数据局限：xxx"，应拆成其中的①②）
+            if any(body.startswith(lead) for lead in NON_QUESTION_LEAD):
+                continue
             clean = body.replace("**", "").strip()
-            if len(clean) > 4 and clean not in seen:
-                questions.append(clean)
-                seen.add(clean)
+            _add_split_questions(clean, questions, seen)
     # 可深化标记句（排除框架描述行与标题；去重）
     for line in lines:
         if line.strip().startswith("#"):
             continue
         stripped = line.strip()
-        # 去掉列表符号后判断是否以框架词开头（冒号前）
         body = stripped.lstrip("-*•0123456789.、 ")
         is_frame = False
         for lead in FRAME_LEAD:
@@ -123,14 +125,31 @@ def extract_questions(report_text):
                 break
         if is_frame:
             continue
+        if any(body.startswith(lead) for lead in NON_QUESTION_LEAD):
+            continue
         for marker in DEEPEN_MARKERS:
             if marker in line:
                 clean = body.replace("**", "").strip()
-                if clean and clean not in seen and len(clean) > 4:
-                    questions.append(clean)
-                    seen.add(clean)
+                _add_split_questions(clean, questions, seen)
                 break
     return questions
+
+
+def _add_split_questions(text, questions, seen):
+    """把长段文本按 ①/②/；/。/？ 拆成单条问题，避免整段大块。
+    仅保留以"问题/需核实/待确认/是否/如何/为什么"等结尾的可执行问题或含核实语义的短句。"""
+    # 按分号、圈号、句号拆分（但保留含"核实/取得/确认/回溯"语义的片段）
+    parts = re.split(r"[；;。]+|①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩", text)
+    for p in parts:
+        p = p.strip()
+        if not p or len(p) < 6:
+            continue
+        # 仅保留有"未尽"语义的片段（问题/核实/数据/口径/推断 相关）
+        if any(kw in p for kw in ["核实", "待确认", "未取得", "无法", "口径", "推断", "推算",
+                                  "数据", "确认", "待核实", "需进一步", "可补充", "回溯", "验证"]):
+            if p not in seen:
+                questions.append(p)
+                seen.add(p)
 
 
 def get_current_round(slug):

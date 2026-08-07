@@ -168,7 +168,7 @@ def main():
     print("\n==> [阶段2-4] 后续步骤")
     print("  a. 阶段2 多视角收集：主代理按五视角（A公众号/B Web事实/C领域分析/D差异化/E反方）覆盖 plan.md 界定子问题")
     print("  b. 阶段3 交叉验证与量化：数据分级标注 + 至少一项量化测算")
-    print("  c. 阶段4 产出 report.md 与 zhihu_answer.md（过 CHECKLIST 与去 AI 味自查）")
+    print("  c. 阶段4 产出 report.md（过 CHECKLIST 数据可靠性自查）")
     print("  d. 沉淀（必做）：有效关键词回填 docs/KEYWORDS.md；写 process_notes.md；回填 plan.md 索引为已完成")
     print(f"  e. 进度已记录于 research/{slug}/{PROGRESS_FILE}，供闭环追溯")
 
