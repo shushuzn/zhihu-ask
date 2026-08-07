@@ -53,6 +53,21 @@ python tools/research_start.py --config tools/start.json
 
 **注意**：keywords 为公众号检索关键词组，days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A」，产出素材库后按 SOP 附录 A 进入阶段 2。
 
+## quality_check.py — 回答质量自动检查
+
+**作用**：把回答模板/CHECKLIST 中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）。
+
+**用法**：
+
+```bash
+python tools/quality_check.py --file research/<slug>/zhihu_answer.md
+python tools/quality_check.py --file research/<slug>/zhihu_answer.md --verbose
+```
+
+**输出**：全部通过退出码 0；检出待确认项退出码 1 并列出位置与命中词。检出项为启发式规则，需人工确认是否真正违规（如"不构成投资建议"中的"建议"为合法用法）。
+
+**注意**：扫描范围为正文（自动跳过"数据与来源备查"及之后的来源区）；表格行数字不判为无来源。数字溯源与逻辑终审仍需人工复核。
+
 ## check_progress.py — 阶段进度校验
 
 **作用**：读取 `research/<slug>/.progress.json`，校验前置阶段是否完成，供阶段 2-4 进入前确认（对应 SOP 附录 A「输出未达校验即阻塞」）。
