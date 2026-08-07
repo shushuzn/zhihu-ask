@@ -97,15 +97,15 @@ def main():
 
     gathered_path = os.path.join(ROOT, "research", slug, "gathered_wechat.md")
 
-    # 3. 跑公众号检索
+    # 3. 跑公众号检索并落盘素材库
     print(f"\n==> [2/4] 公众号检索（{len(keywords)} 组关键词，近 {days} 天）")
     if keywords:
         run([sys.executable, os.path.join(ROOT, "tools", "wechat_search.py"),
-             "--keywords", kw_path, "--days", str(days)])
+             "--keywords", kw_path, "--days", str(days), "--output", gathered_path])
     else:
         print("（未提供 keywords，跳过公众号检索）")
 
-    # 4. 落盘素材库
+    # 4. 素材库
     print(f"\n==> [3/4] 生成素材库 {os.path.relpath(gathered_path, ROOT)}")
     print("\n==> [4/4] 后续步骤")
     print("  a. 在 research/<slug>/plan.md 补齐问题界定与 Web 检索关键词")

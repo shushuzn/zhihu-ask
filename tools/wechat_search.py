@@ -53,7 +53,7 @@ if sogou is None:
 
 
 def parse_args(argv):
-    args = {"keywords_file": None, "days": None, "time_range": None}
+    args = {"keywords_file": None, "days": None, "time_range": None, "output": None}
     i = 0
     while i < len(argv):
         if argv[i] == "--keywords" and i + 1 < len(argv):
@@ -65,6 +65,9 @@ def parse_args(argv):
         elif argv[i] == "--time-range" and i + 2 < len(argv):
             args["time_range"] = (argv[i + 1], argv[i + 2])
             i += 3
+        elif argv[i] == "--output" and i + 1 < len(argv):
+            args["output"] = argv[i + 1]
+            i += 2
         else:
             i += 1
     return args
@@ -99,16 +102,29 @@ def main():
     print(f"关键词数: {len(queries)} | 每词返回: {count}")
     print("=" * 60)
 
+    out_lines = []
+    out_lines.append("# 公众号检索素材库")
+    out_lines.append("")
+    out_lines.append(f"> 时间范围：{datetime.fromtimestamp(time_from).strftime('%Y-%m-%d')} ~ {datetime.fromtimestamp(time_to).strftime('%Y-%m-%d')}")
+    out_lines.append(f"> 检索时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    out_lines.append("")
+
     for q in queries:
         print("\n" + "#" * 60)
         print(f"## 关键词: {q}")
         print("#" * 60)
+        out_lines.append(f"## 关键词：{q}")
+        out_lines.append("")
         results = sogou.search_sogou(q, "article", 1, time_from, time_to)
         if not results:
             print("（无结果）")
+            out_lines.append("（无结果）")
+            out_lines.append("")
             continue
         if isinstance(results[0], dict) and "error" in results[0]:
             print("ERROR:", results[0]["error"])
+            out_lines.append(f"（检索出错：{results[0]['error']}）")
+            out_lines.append("")
             continue
         for r in results[:count]:
             title = r.get("title", "")
@@ -122,6 +138,22 @@ def main():
                 print(f"  摘要: {digest}")
             if link:
                 print(f"  链接: {link}")
+            # 落盘素材
+            out_lines.append(f"- **{title}**")
+            out_lines.append(f"  - 公众号：{account} | 时间：{ts}")
+            if digest:
+                out_lines.append(f"  - 摘要：{digest}")
+            if link:
+                out_lines.append(f"  - 链接：{link}")
+        out_lines.append("")
+
+    if args["output"]:
+        outdir = os.path.dirname(args["output"])
+        if outdir and not os.path.isdir(outdir):
+            os.makedirs(outdir, exist_ok=True)
+        with open(args["output"], "w", encoding="utf-8") as f:
+            f.write("\n".join(out_lines))
+        print(f"\n已写入素材库: {args['output']}")
 
 
 if __name__ == "__main__":
