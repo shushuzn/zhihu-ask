@@ -47,16 +47,18 @@
 
 - 除主代理有明确检索任务的直接查询外，全部信息收集委托给子代理。
 
-## 阶段 3 · 交叉验证与综合
+## 阶段 3 · 交叉验证与量化
 
-- 核对关键数字、日期、引用的来源；多源冲突以「最新 + 与事实矩阵一致性」优先。
-- 检查覆盖缺口，必要时增派子代理补位。
+- 每个关键数字标注数据级别（一手/二手/推断，见 `docs/METHODS.md` 六）；多源冲突以「最新 + 一手优先 + 口径一致」取舍。
+- 对媒体转述的数字，尽量回溯到一手来源（官方公告、论文、财报、交易所数据）；无法取得的一律标注"仅媒体口径"。
+- 做至少一项量化测算（市场规模/成本结构/情景推演，见 `docs/METHODS.md` 七），把模糊判断变成数字。
+- 检查覆盖缺口：利益相关方是否都覆盖（`METHODS.md` 八）、有无对标（九）、风险矩阵是否完整（十）。
 - 边际收益下降即停止，避免资源浪费。
 
 ## 阶段 4 · 报告与回答生成
 
-- 按 `templates/research_report_TEMPLATE.md` 产出 `research/<topic_slug>/report.md`。
-- 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`，必须通过模板内置的「去 AI 味自查」）。
+- 按智库级 `templates/research_report_TEMPLATE.md` 产出 `research/<topic_slug>/report.md`（含量化测算、多维分析、对标、风险矩阵）。
+- 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`，必须通过模板内置的「去 AI 味自查」；关键数字需与报告一致并嵌进叙述）。
 - 写 `process_notes.md` 沉淀：本次有效关键词、踩坑点、可复用结论。
 - 回填本地 `plan.md` 问题索引状态（进行中/已完成）。
 
