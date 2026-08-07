@@ -21,6 +21,7 @@ zhihu-ask/
 │   ├── TOOLS.md                   # 项目内工具说明
 │   └── CONVENTIONS.md             # 环境约定（乱码处理/git 用法）
 ├── tools/
+│   ├── research_start.py          # 一键研究启动器
 │   ├── wechat_search.py           # 公众号检索包装
 │   ├── init_research.py           # 研究目录初始化
 │   ├── git_protect.py             # 提交前检查
@@ -37,8 +38,8 @@ zhihu-ask/
 ## 快速上手
 
 0. 新会话先自检：`python tools/health_check.py`，确认环境就绪。
-1. 一键初始化：写 `tools/init.json`（参考 `tools/init.example.json`）后运行
-   `python tools/init_research.py --config tools/init.json`，自动生成研究目录并登记索引。
+1. 一键启动研究：写 `tools/start.json`（含问题/领域/slug/关键词，参考 `tools/TOOLS.md`）后运行
+   `python tools/research_start.py --config tools/start.json`，自动初始化目录、跑公众号检索并生成素材库。
 2. 在 `research/<topic_slug>/plan.md` 补齐「问题界定」与「检索关键词」（可参考 `docs/KEYWORDS.md` 选词）。
 3. 按 `docs/SOP.md` 阶段 1–3 执行检索与子代理研究。
 4. 按模板产出 `report.md` 与 `zhihu_answer.md`（质量检查见 `docs/CHECKLIST.md`）。

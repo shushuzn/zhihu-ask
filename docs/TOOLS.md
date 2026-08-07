@@ -28,6 +28,30 @@ python tools/init_research.py --config tools/init.json
 - config 文件用完即删；已通过 `.gitignore` 忽略 `tools/init.*.json` 模式。
 - 生成文件保留未填占位符（主概念/关键词等），按 SOP 阶段 0–1 在 `plan.md` 中补齐。
 
+## research_start.py — 一键研究启动器
+
+**作用**：把「启动一次知乎问题研究」压缩为一条命令。自动完成：初始化研究目录（模板生成+索引登记）→ 公众号检索 → 结果落盘为素材库 `research/<slug>/gathered_wechat.md` → 打印后续步骤。
+
+**用法**：
+
+```bash
+python tools/research_start.py --config tools/start.json
+```
+
+**config 格式**（UTF-8）：
+```json
+{
+  "question": "问题完整标题",
+  "domain": "示例领域",
+  "slug": "example-slug",
+  "priority": "高",
+  "keywords": ["主题词 突破", "主题词 产业化"],
+  "days": 30
+}
+```
+
+**注意**：keywords 为公众号检索关键词组，days 为时间范围（天）。脚本只做「初始化+素材收集」，观点产出按 SOP 阶段 2-3 进行。
+
 ## wechat_search.py — 微信公众号检索包装
 
 **问题背景**：`wechat-article-search` skill 的 `sogou_search.py` 通过命令行接收中文关键词，但在本机 PowerShell 环境下中文参数会乱码（`chcp 65001` 也无法解决），导致通道 A 无法使用。
