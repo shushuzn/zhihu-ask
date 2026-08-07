@@ -44,6 +44,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 ## 3.5 提交管理规范
 
 - `git add -A` 前先 `git status` 确认无多余文件被暂存。
+- 提交时 pre-commit hook 自动运行 `tools/git_protect.py` 检查暂存区（见 `docs/TOOLS.md`）；hook 未被安装时手动运行 `python tools/git_protect.py` 校验。
 - 若发现内容被误推，立即处理：`git rm --cached <文件>` + 更新 `.gitignore` + 提交修正；若已在历史提交中，用 `git filter-repo` 重写历史。
 - 禁止未经用户确认直接 `git push` 或 `gh repo create`；创建仓库、改可见性、强推等操作必须先获得用户明确同意。
 
@@ -55,6 +56,8 @@ gh repo edit shushuzn/zhihu-ask --description $desc
   git -c user.name="shushuzn" -c user.email="132275809+shushuzn@users.noreply.github.com" commit ...
   ```
 - 提交信息用 UTF-8 文件 + `-F` 传入（见第 1 条）。
+- **禁止任何 force 参数**：不用 `git push --force`/`-f`，也不用 PowerShell 的 `-Force`（如 `Remove-Item -Force`）；删除文件用 `del`，覆盖暂存用普通命令。
+- 推送一律用干净命令 `git push origin main`。
 
 ## 5. 提交规范
 
