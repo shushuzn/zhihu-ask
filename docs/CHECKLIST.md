@@ -34,6 +34,6 @@
 ## 发布后
 
 - [ ] `process_notes.md` 已写入：有效关键词、踩坑点。
+- [ ] `process_notes.md` 的有效关键词已回填至 `docs/KEYWORDS.md`（沉淀必做）。
 - [ ] 本地 `plan.md` 问题索引状态已更新为「已完成」。
-- [ ] 新关键词组合已回填至 `docs/KEYWORDS.md`。
 - [ ] 如模板或 SOP 需要调整，已同步更新 `templates/`、`docs/SOP.md`、`docs/TEMPLATE_INDEX.md`。

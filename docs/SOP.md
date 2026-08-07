@@ -64,6 +64,7 @@
 - 按智库级 `templates/research_report_TEMPLATE.md` 产出 `research/<topic_slug>/report.md`（含量化测算、多维分析、对标、风险矩阵）。
 - 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`，必须通过模板内置的「去 AI 味自查」；关键数字需与报告一致并嵌进叙述）。
 - 写 `process_notes.md`：记录本次有效关键词与踩坑点（不做经验方法总结）。
+- **沉淀（必做）**：把 `process_notes.md` 中验证有效的关键词组合回填到 `docs/KEYWORDS.md` 对应领域区块（新增领域则新建区块），保证词库随研究增长。
 - 回填本地 `plan.md` 问题索引状态（进行中/已完成）。
 
 ## 质量红线
