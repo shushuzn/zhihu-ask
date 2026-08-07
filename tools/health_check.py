@@ -53,10 +53,12 @@ REQUIRED_FILES = [
     "tools/keywords.example.json",
 ]
 
-# 不应出现在 git 跟踪中的内部文件
+# 不应出现在 git 跟踪中的内部文件/目录（隐私红线，覆盖须完整）
 INTERNAL_FILES = [
     "plan.md",
     "docs/PLAN_v1_ARCHIVE.md",
+    "research/",
+    ".codebuddy/",
 ]
 
 
@@ -107,10 +109,17 @@ def main():
     all_ok &= check("pre-commit hook 已安装", hook_ok,
                     "未安装，运行 python tools/install_git_hooks.py" if not hook_ok else "")
 
-    # 6. 隐私边界：内部文件不被跟踪
+    # 6. 隐私边界：内部文件/目录不被跟踪
     rc, out, _ = run_git("ls-files")
-    tracked = set(out.splitlines())
-    leaks = [f for f in INTERNAL_FILES if f in tracked]
+    tracked = out.splitlines()
+    leaks = []
+    for pat in INTERNAL_FILES:
+        p = pat.rstrip("/")
+        for f in tracked:
+            f2 = f.replace("\\", "/")
+            if f2 == p or f2.startswith(p + "/"):
+                leaks.append(f)
+                break
     all_ok &= check("内部文件未被 git 跟踪", not leaks,
                     "发现跟踪: " + ", ".join(leaks) if leaks else "")
 
