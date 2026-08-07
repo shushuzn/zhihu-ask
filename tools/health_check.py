@@ -30,6 +30,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REQUIRED_FILES = [
     "README.md",
     "LICENSE",
+    ".gitignore",
+    "docs/AGENT_PROMPTS.md",
+    "docs/CHECKLIST.md",
+    "docs/CONVENTIONS.md",
+    "docs/KEYWORDS.md",
+    "docs/METHODS.md",
+    "docs/SOP.md",
+    "docs/STYLE_GUIDE.md",
+    "docs/TEMPLATE_INDEX.md",
+    "docs/TOOLS.md",
     "templates/research_plan_TEMPLATE.md",
     "templates/research_report_TEMPLATE.md",
     "templates/zhihu_answer_TEMPLATE.md",
@@ -38,6 +48,9 @@ REQUIRED_FILES = [
     "tools/init_research.py",
     "tools/git_protect.py",
     "tools/install_git_hooks.py",
+    "tools/health_check.py",
+    "tools/init.example.json",
+    "tools/keywords.example.json",
 ]
 
 # 不应出现在 git 跟踪中的内部文件
