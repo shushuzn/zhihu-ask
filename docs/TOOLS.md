@@ -58,6 +58,18 @@ python tools/wechat_search.py --keywords tools/keywords.json --time-range 2025-0
 - 触发验证码时返回 "触发验证码，请稍后重试"，稍后再试即可。
 - 每轮研究结束，将 `tools/keywords.json` 中的有效组合回填至 `docs/KEYWORDS.md`，并删除该临时文件。
 
+## git_protect.py — 提交前检查
+
+**作用**：提交前检查暂存区，阻止 `plan.md`、`research/`、`.codebuddy/`、`docs/PLAN_v1_ARCHIVE.md`、临时 config 等内部文件被误提交。
+
+**用法**：
+
+```bash
+python tools/git_protect.py    # 检查暂存区；发现内部文件则退出码 1 并列出
+```
+
+**注意**：内部文件清单见脚本内 `INTERNAL_PATTERNS`，按需增改。可与 `git commit` 串联使用，作为提交前的例行校验。
+
 ## 降级方案
 
 若 `research_subagent` 因配置问题不可用（如 "Model not found"），由主代理直接执行检索：web_search / web_fetch 均可由主代理调用，公众号检索走上述包装工具。信息密度会降低，但流程可跑通（首个研究已验证可行）。
