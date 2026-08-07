@@ -25,6 +25,7 @@ zhihu-ask/
 │   ├── init_research.py           # 研究目录初始化
 │   ├── git_protect.py             # 提交前检查
 │   ├── install_git_hooks.py       # pre-commit hook 安装
+│   ├── health_check.py            # 项目健康自检
 │   └── keywords.example.json      # 关键词文件模板
 ├── templates/
 │   ├── research_plan_TEMPLATE.md      # 单次问题研究计划
@@ -35,6 +36,7 @@ zhihu-ask/
 
 ## 快速上手
 
+0. 新会话先自检：`python tools/health_check.py`，确认环境就绪。
 1. 一键初始化：写 `tools/init.json`（参考 `tools/init.example.json`）后运行
    `python tools/init_research.py --config tools/init.json`，自动生成研究目录并登记索引。
 2. 在 `research/<topic_slug>/plan.md` 补齐「问题界定」与「检索关键词」（可参考 `docs/KEYWORDS.md` 选词）。

@@ -8,8 +8,8 @@
 
 用法（Windows PowerShell 下中文必须走 --config 文件，见 docs/CONVENTIONS.md）：
 
-    # 方式一：config 文件（推荐，规避中文乱码）
-    python tools/init_research.py --config tools/init.example.json
+    # 方式一：config 文件（推荐，规避中文乱码；示例格式见 tools/init.example.json）
+    python tools/init_research.py --config tools/init.json
 
     # 方式二：直接传参（非 Windows 或参数无中文时）
     python tools/init_research.py --question "问题标题" --domain "示例领域" --slug example-slug

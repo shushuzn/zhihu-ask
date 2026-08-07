@@ -83,6 +83,18 @@ python tools/install_git_hooks.py --remove # 移除 hook
 
 **注意**：hook 写入 `.git/hooks/`（本地，不入库），重新 clone 后需重跑本脚本。安装后可验证：`git add -f <内部文件>` 后 `git commit` 会被阻止，再 `git reset HEAD <file>` 恢复。
 
+## health_check.py — 项目健康自检
+
+**作用**：一键验证项目就绪状态，适合新会话启动或排障时运行。检查 Python 环境、git 分支/远程/同步状态、pre-commit hook、内部文件是否被跟踪、关键文件完整性。
+
+**用法**：
+
+```bash
+python tools/health_check.py
+```
+
+**输出**：逐项 `[OK]/[FAIL]`，全部通过退出码 0，有失败项退出码 1。新会话开始时先跑一遍，可快速确认环境是否就绪。
+
 ## 降级方案
 
 若 `research_subagent` 因配置问题不可用（如 "Model not found"），由主代理直接执行检索：web_search / web_fetch 均可由主代理调用，公众号检索走上述包装工具。信息密度会降低，但流程可跑通（首个研究已验证可行）。
