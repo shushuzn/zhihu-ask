@@ -1,0 +1,25 @@
+# 本地工具数据
+.codebuddy/
+
+# 知乎回答内容与项目内部计划（隐私，仅存本地，不推送公开仓库）
+research/
+plan.md
+docs/PLAN_v1_ARCHIVE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 临时文件
+tools/keywords.*.json
+!tools/keywords.example.json
+tools/init.*.json
+!tools/init.example.json
+.commit_msg.tmp
+.desc.tmp.txt
+*.tmp
+
+# 系统文件
+Thumbs.db
+.DS_Store
