@@ -6,11 +6,11 @@
 
 1. 拆解问题：主概念、关键实体、隐含前提、真实诉求（科普/建议/案例）。
 2. 判定查询类型：
-   - 深度优先 — 单一议题需多角度剖析 → 3–5 个子代理按视角分工。
-   - 广度优先 — 含多个独立子议题 → 每个子议题一个子代理。
-   - 直接查询 — 事实速查 → 1 个子代理 + 主代理。
+   - 深度优先 — 单一议题需多角度剖析 → 五视角逐项覆盖（阶段 2）。
+   - 广度优先 — 含多个独立子议题 → 每个子议题按五视角覆盖。
+   - 直接查询 — 事实速查 → 一轮检索即可。
 3. 定目标读者与篇幅：知乎主流用户，正文推荐 800–3000 字 + 必要数据。
-4. 落盘：在 `research/<topic_slug>/plan.md` 完成问题界定、关键词表、子代理分工。
+4. 落盘：在 `research/<topic_slug>/plan.md` 完成问题界定、关键词表、检索视角分工。
 
 ## 阶段 1 · 信息检索（三通道）
 
@@ -18,7 +18,8 @@
 - 加载 `wechat-article-search` skill。
 - 必须带时间参数，默认近 1 年（如 2025-08 至 2026-08）。
 - 关键词组合「主题词 + 视角词」，单题准备 6–12 组，可迭代增补。
-- 本机 PowerShell 下命令行中文参数会乱码，改用项目工具 `tools/wechat_search.py`（见 `docs/TOOLS.md`）：将关键词写入 UTF-8 的 `tools/keywords.json`，再执行 `python tools/wechat_search.py --keywords tools/keywords.json --time-range <起> <止>`。
+- 本机 PowerShell 下命令行中文参数会乱码，改用项目工具 `tools/wechat_search.py`（见 `docs/TOOLS.md`）：将关键词写入 UTF-8 的 `tools/keywords.json`，再执行 `python tools/wechat_search.py --keywords tools/keywords.json --days 30 --output research/<slug>/gathered_wechat.md`。`--output` 会把检索结果落盘为素材库。
+- 一键启动：`python tools/research_start.py --config tools/start.json` 自动完成「初始化目录 + 公众号检索 + 素材库落盘」（见 `docs/TOOLS.md`）。
 
 通道 B：Web 检索与抓取
 - `web_search` / `web_fetch` 获取官方数据、研报、新闻、论文，用于事实核查。
@@ -62,7 +63,7 @@
 
 - 按智库级 `templates/research_report_TEMPLATE.md` 产出 `research/<topic_slug>/report.md`（含量化测算、多维分析、对标、风险矩阵）。
 - 按 `templates/zhihu_answer_TEMPLATE.md` 产出 `zhihu_answer.md`（文风见 `docs/STYLE_GUIDE.md`，必须通过模板内置的「去 AI 味自查」；关键数字需与报告一致并嵌进叙述）。
-- 写 `process_notes.md` 沉淀：本次有效关键词、踩坑点、可复用结论。
+- 写 `process_notes.md`：记录本次有效关键词与踩坑点（不做经验方法总结）。
 - 回填本地 `plan.md` 问题索引状态（进行中/已完成）。
 
 ## 质量红线
