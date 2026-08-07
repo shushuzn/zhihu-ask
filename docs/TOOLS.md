@@ -70,6 +70,19 @@ python tools/git_protect.py    # 检查暂存区；发现内部文件则退出�
 
 **注意**：内部文件清单见脚本内 `INTERNAL_PATTERNS`，按需增改。可与 `git commit` 串联使用，作为提交前的例行校验。
 
+## install_git_hooks.py — pre-commit hook 安装
+
+**作用**：把 `git_protect.py` 接入 git，使每次 `git commit` 自动执行检查，暂存区含内部文件时阻止提交。
+
+**用法**：
+
+```bash
+python tools/install_git_hooks.py          # 安装/更新 hook
+python tools/install_git_hooks.py --remove # 移除 hook
+```
+
+**注意**：hook 写入 `.git/hooks/`（本地，不入库），重新 clone 后需重跑本脚本。安装后可验证：`git add -f <内部文件>` 后 `git commit` 会被阻止，再 `git reset HEAD <file>` 恢复。
+
 ## 降级方案
 
 若 `research_subagent` 因配置问题不可用（如 "Model not found"），由主代理直接执行检索：web_search / web_fetch 均可由主代理调用，公众号检索走上述包装工具。信息密度会降低，但流程可跑通（首个研究已验证可行）。
