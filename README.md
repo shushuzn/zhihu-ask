@@ -31,7 +31,7 @@ zhihu-ask/
 │   ├── research_plan_TEMPLATE.md      # 单次问题研究计划
 │   ├── research_report_TEMPLATE.md    # 深度研究报告
 │   ├── zhihu_answer_TEMPLATE.md       # 知乎回答正文草稿
-│   └── process_notes_TEMPLATE.md      # 经验沉淀笔记
+│   └── process_notes_TEMPLATE.md      # 检索与踩坑记录
 ```
 
 ## 快速上手
@@ -40,9 +40,9 @@ zhihu-ask/
 1. 一键启动研究：写 `tools/start.json`（含问题/领域/slug/关键词，参考 `tools/TOOLS.md`）后运行
    `python tools/research_start.py --config tools/start.json`，自动初始化目录、跑公众号检索并生成素材库。
 2. 在 `research/<topic_slug>/plan.md` 补齐「问题界定」与「检索关键词」（可参考 `docs/KEYWORDS.md` 选词）。
-3. 按 `docs/SOP.md` 阶段 1–3 执行检索与子代理研究。
+3. 按 `docs/SOP.md` 阶段 1–3 执行检索与研究（主代理直执）。
 4. 按模板产出 `report.md` 与 `zhihu_answer.md`（质量检查见 `docs/CHECKLIST.md`）。
-5. 完成后写 `process_notes.md` 沉淀经验，回填 `plan.md` 状态，并删除临时 config 文件。
+5. 完成后写 `process_notes.md` 记录检索与踩坑，回填 `plan.md` 状态，并删除临时 config 文件。
 
 ## 交付物约定
 

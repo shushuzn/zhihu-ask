@@ -20,7 +20,7 @@ git commit -m "feat: 新增功能"
 # 正例（先写 UTF-8 文件，再 -F 传入）
 # 用 write_to_file 创建 .commit_msg.tmp（UTF-8）
 git commit -F .commit_msg.tmp
-Remove-Item .commit_msg.tmp
+del .commit_msg.tmp
 
 # gh 描述同理：先写 UTF-8 文件，PowerShell 内读入变量
 $desc = (Get-Content .desc.tmp.txt -Raw -Encoding UTF8).Trim()
@@ -34,6 +34,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 | `research_subagent` | 不可用（默认） | 模型 "claude-haiku-4.5" not found；当前研究一律由主代理直执（已实测可行） |
 | 知乎网页/API | 不可用 | 未登录访问返回 403，需用户粘贴问题内容 |
 | `wechat-article-search` skill 脚本 | 中文参数乱码 | 使用 `tools/wechat_search.py` 包装（文件传参） |
+| `research_start.py` | 可用 | 一键启动研究（初始化+公众号检索+素材库落盘）；新会话先跑 `python tools/health_check.py` 自检 |
 
 ## 3. 数据与文件规范
 

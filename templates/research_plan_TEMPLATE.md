@@ -39,4 +39,4 @@
 
 - [ ] `report.md` 研究报告
 - [ ] `zhihu_answer.md` 回答草稿
-- [ ] `process_notes.md` 经验沉淀
+- [ ] `process_notes.md` 检索与踩坑记录

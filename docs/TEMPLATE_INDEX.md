@@ -5,7 +5,7 @@
 | `research_plan_TEMPLATE.md` | 单次问题研究计划 | `research/<topic_slug>/plan.md` |
 | `research_report_TEMPLATE.md` | 深度研究报告 | `research/<topic_slug>/report.md` |
 | `zhihu_answer_TEMPLATE.md` | 知乎回答正文草稿 | `research/<topic_slug>/zhihu_answer.md` |
-| `process_notes_TEMPLATE.md` | 经验沉淀 | `research/<topic_slug>/process_notes.md` |
+| `process_notes_TEMPLATE.md` | 检索与踩坑记录 | `research/<topic_slug>/process_notes.md` |
 
 ## 使用规则
 
