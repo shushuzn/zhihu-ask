@@ -70,8 +70,8 @@ python tools/research_start.py --config tools/start.json
 # 2. 检索最近 N 天
 python tools/wechat_search.py --keywords tools/keywords.json --days 30
 
-# 或指定时间范围（推荐，与 SOP 一致）
-python tools/wechat_search.py --keywords tools/keywords.json --time-range 2025-08-01 2026-08-01
+# 3. 落盘为素材库（推荐）
+python tools/wechat_search.py --keywords tools/keywords.json --days 30 --output research/<slug>/gathered_wechat.md
 ```
 
 **输出**：每个关键词的结果清单（标题/公众号/时间/摘要/链接），UTF-8 编码。
@@ -80,7 +80,7 @@ python tools/wechat_search.py --keywords tools/keywords.json --time-range 2025-0
 - 关键词文件必须 UTF-8 编码（用 write_to_file 创建即可保证）。
 - 冷门关键词搜狗可能补充旧文章，需按返回的 time 字段自行过滤。
 - 触发验证码时返回 "触发验证码，请稍后重试"，稍后再试即可。
-- 每轮研究结束，将 `tools/keywords.json` 中的有效组合回填至 `docs/KEYWORDS.md`，并删除该临时文件。
+- 检索词的有效组合可补充至 `docs/KEYWORDS.md`（通用词库），临时关键词文件用完即删。
 
 ## git_protect.py — 提交前检查
 
