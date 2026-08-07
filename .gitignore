@@ -16,6 +16,7 @@ tools/keywords.*.json
 !tools/keywords.example.json
 tools/init.*.json
 !tools/init.example.json
+tools/_start_*.json
 .commit_msg.tmp
 .desc.tmp.txt
 *.tmp
