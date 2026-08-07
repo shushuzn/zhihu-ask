@@ -51,6 +51,12 @@ EVALUATIVE_WORDS = [
 # 来源区起点（跳过其后的内容）
 SOURCE_MARKERS = ["## 数据与来源备查", "## 参考文献", "### 数据与来源备查", "### 参考文献", "数据与来源备查"]
 
+# 参考文献区起点
+REF_MARKERS = ["## 参考文献", "### 参考文献"]
+
+# 参考文献行不允许出现的标注（数据分级只在正文，参考文献为纯链接列表）
+REF_BAD_LABELS = ["一手", "二手", "推断"]
+
 
 def scan_body(filepath):
     """读取回答，返回正文部分（来源区之前）。"""
@@ -82,6 +88,32 @@ def check_words(body, word_list, label):
         for w in word_list:
             if w in line:
                 issues.append((i, label, w, line.strip()[:60]))
+    return issues
+
+
+def check_references(full):
+    """检查参考文献区：链接条目行尾不得带"一手/二手/推断"等分级标注（数据分级只在正文）。
+    仅针对参考文献区（从 ## 参考文献 起到文末）内的 [标题](url) 行。"""
+    issues = []
+    start = None
+    for marker in REF_MARKERS:
+        idx = full.find(marker)
+        if idx != -1:
+            start = idx
+            break
+    if start is None:
+        return issues
+    section = full[start:]
+    for i, line in enumerate(section.splitlines(), 1):
+        stripped = line.strip()
+        if not re.search(r"\[[^\]]+\]\([^)]+\)", stripped):
+            continue
+        # 链接闭合后是否还跟有分级标注，例如 "(url) — 一手"
+        tail = re.sub(r"^.*\]\([^)]*\)", "", stripped)
+        for label in REF_BAD_LABELS:
+            if f"— {label}" in tail or f"：{label}" in tail:
+                issues.append((i, "参考文献标注", f"链接后带 [{label}]", stripped[:60]))
+                break
     return issues
 
 
@@ -125,13 +157,14 @@ def main():
     all_issues += check_words(body, EVALUATIVE_WORDS, "评价词")
     all_issues += check_exclamation(body)
     all_issues += check_unsourced_numbers(body)
+    all_issues += check_references(full)
 
     print("=" * 60)
     print(f"回答质量自动检查: {filepath}")
     print("=" * 60)
 
     if not all_issues:
-        print("全部通过：未检测到立场词/框架词/评价词/感叹号。")
+        print("全部通过：未检测到立场词/框架词/评价词/感叹号/参考文献标注。")
         print("说明：数字溯源与逻辑终审仍需人工复核。")
         sys.exit(0)
 
