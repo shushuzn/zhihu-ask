@@ -64,12 +64,12 @@ python tools/iter_research.py --slug <slug>            # 生成下一轮问题�
 python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
 ```
 
-**多轮流程**：
+**强制多轮流程（至少 3 轮，不询问用户）**：
 - 第 1 轮：`research_start.py` 启动 → 阶段 2/3/4 产出 report.md
 - 第 2 轮：本工具生成问题清单 → 补检索/深化 → 直接在 report.md 上更新
-- 第 3 轮：同上，达到质量收敛后停止
+- 第 3 轮：同上，继续深化。至少完成 3 轮该研究才算完成，禁止询问用户是否继续。
 
-**注意**：工具只生成问题清单与更新轮次，不替代主代理的分析写作。报告路径 research/<slug>/report.md；迭代直接在原文件更新，不创建 vN 版本文件。
+**注意**：工具只生成问题清单与更新轮次，不替代主代理的分析写作。报告路径 research/<slug>/report.md；迭代直接在原文件更新，不创建 vN 版本文件。3 轮为下限，3 轮内不得以"已收敛"为由提前停止。
 
 ## quality_check.py — 回答质量自动检查
 
