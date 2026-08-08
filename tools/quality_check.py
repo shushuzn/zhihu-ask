@@ -146,6 +146,23 @@ def check_placeholders(body):
     return issues
 
 
+def check_process_words(body):
+    """检测成品报告中的过程性字样（SOP 硬性要求：正文禁止"第 N 轮/迭代/更新"等过程字样）。
+
+    匹配：R 轮次（如 R1-R9，含括注形式）、第 N 轮、本轮/上一轮/下一轮等迭代过程标记。
+    不匹配：URL 中的字母段（英文 R 数字用单词边界保证，如 4RUO50eR9Gh 不误报）、
+    技术名词"迭代/更新"（如算力迭代/数据更新）。
+    """
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        stripped = line.strip()
+        if re.search(r"[\[（(]\s*R\d+\s*[-–—]?\s*R\d+\s*[\]）)]", stripped) or \
+           re.search(r"\bR\d+\b\s*收|收敛\s*[：:（(]?\s*R\d|第\s*\d+\s*轮", stripped) or \
+           "本轮" in stripped or "上一轮" in stripped or "下一轮" in stripped:
+            issues.append((i, "过程性字样", "R轮次/第N轮/本轮", stripped[:60]))
+    return issues
+
+
 def check_structure(body, full):
     """结构完整性检查：
     1. 必须存在参考文献章节且含至少 1 条 [标题](url) 链接（SOP 硬性要求：纯事实报告可溯源）。
@@ -199,6 +216,7 @@ def main():
     all_issues += check_exclamation(body)
     all_issues += check_unsourced_numbers(body)
     all_issues += check_placeholders(body)
+    all_issues += check_process_words(body)
     all_issues += check_references(full)
     all_issues += check_structure(body, full)
 
