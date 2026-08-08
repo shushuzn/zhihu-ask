@@ -3,7 +3,7 @@
 多轮迭代研究工具（zhihu-ask 项目专用）
 
 把"单轮研究"升级为"多轮迭代"：每完成一轮，带着上一轮未尽问题进入下一轮，逐轮提升报告质量。
-问题清单由主代理手动编写（人工看报告局限部分，整理成清晰条目），本工具只负责：
+问题清单由主代理手动编写（人工看报告中标注"仍无法核实/推算"的内容与口径缺口，整理成清晰条目），本工具只负责：
   1. 生成下一轮问题清单模板（写 round_notes.md，问题部分留空待人工填写）。
   2. 更新 .progress.json 的 round 记录（round + 1）。
 
@@ -92,9 +92,9 @@ def write_template(slug, cur_round, target_round):
     notes_path = os.path.join(rdir, ROUND_NOTES)
     with open(notes_path, "w", encoding="utf-8") as f:
         f.write(f"# 第 {target_round} 轮研究问题清单\n\n")
-        f.write(f"> 由主代理人工编写，基于第 {cur_round} 轮报告的局限部分整理，日期 {date.today().isoformat()}。\n\n")
+        f.write(f"> 由主代理人工编写，基于第 {cur_round} 轮报告中标注'仍无法核实/推算'的内容整理，日期 {date.today().isoformat()}。\n\n")
         f.write("## 未解决/可深化的问题\n\n")
-        f.write("（逐条填写，每条一个明确、可执行的问题。参考报告【局限】章节中：")
+        f.write("（逐条填写，每条一个明确、可执行的问题。参考报告中：")
         f.write("哪些数据未取得一手来源、哪些结论依赖推断、哪些口径需澄清、哪些客观无法核实。)\n\n")
         f.write("1. \n")
         f.write("2. \n")
@@ -129,7 +129,7 @@ def main():
 
     notes_path = write_template(slug, cur_round, target_round)
     print(f"\n已生成问题清单模板: {os.path.relpath(notes_path, ROOT)}")
-    print("  请人工打开并逐条填写未尽问题（参考报告'局限'章节），不要自动提取。")
+    print("  请人工打开并逐条填写未尽问题（参考报告中标注'仍无法核实/推算'的内容），不要自动提取。")
 
     update_round(slug, target_round)
     print(f"\n已更新轮次: .progress.json round = {target_round}")

@@ -294,7 +294,7 @@
 
 **多轮迭代是硬性流程，必须做满至少 3 轮，且不得询问用户是否继续。**
 
-**机制**：`python tools/iter_research.py --slug <slug>` 生成下一轮问题清单模板（写 round_notes.md）并更新 `.progress.json` 的 round 记录。问题清单由主代理人工编写：阅读报告"局限"章节，逐条整理成明确、可执行的问题。不用自动提取——机械拆句语义不清，人工整理才可靠。
+**机制**：`python tools/iter_research.py --slug <slug>` 生成下一轮问题清单模板（写 round_notes.md）并更新 `.progress.json` 的 round 记录。问题清单由主代理人工编写：阅读报告中标注"仍无法核实/推算"的内容与数据口径缺口，逐条整理成明确、可执行的问题。不用自动提取——机械拆句语义不清，人工整理才可靠。
 
 **强制流程（不询问用户）**：
 - 第 1 轮：research_start.py 启动 → 阶段 2/3/4 → 产出 report.md。
