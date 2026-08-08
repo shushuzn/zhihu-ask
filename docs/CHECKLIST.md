@@ -20,6 +20,7 @@
 - [ ] 报告已上传 flomo（SOP 阶段 4 必做，不询问）：report_to_flomo.py 生成完整版 → 查重 → memo_create/update；flomo id 记录到 flomo_full.md；未配置则 process_notes 记录。
 - [ ] 通道 E（ima）已检索（如连接器可用）：`gathered_ima.md` 已落盘或记录"通道 E 无有效素材"；订阅库命中内容（研报/公告/论文等）已纳入交叉验证。
 - [ ] 报告结构完整：含 `## 参考文献` 章节且条目均为 `[标题](url)` 链接（quality_check 结构检查自动检出缺失/空参考文献与"待补充/TODO"残留）。
+- [ ] 章节结构校验通过：`python tools/check_report_structure.py --file research/<slug>/report.md`（检出小节编号重复/跳号/顶层章节缺失——防插入章节时覆盖标题）。
 
 ## 正文质量（纯事实陈述）
 

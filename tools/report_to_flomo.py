@@ -77,13 +77,16 @@ def get_meta(slug):
 
 
 def pick_tags(domain):
-    """领域 → (一级, 二级) 标签。"""
+    """领域 → (一级, 二级) 标签。返回 (tags, matched)；未命中时兜底并警告提示补映射。"""
     d = (domain or "").strip()
     for key, tags in DOMAIN_TAGS.items():
         if key.lower() in d.lower():
-            return tags
+            return tags, True
     first = re.split(r"[/、,，\s]+", d)[0] if d else "研究"
-    return (first[:8] or "研究", "综合")
+    tags = (first[:8] or "研究", "综合")
+    print(f"[警告] 领域「{d or '未记录'}」未在 DOMAIN_TAGS 中，兜底为 #{tags[0]} #{tags[1]}，"
+          f"请到 tools/report_to_flomo.py 补充映射")
+    return tags, False
 
 
 def convert_full_report(slug):
@@ -143,7 +146,7 @@ def main():
         sys.exit(1)
 
     title, domain = get_meta(slug)
-    tag1, tag2 = pick_tags(domain)
+    (tag1, tag2), _matched = pick_tags(domain)
     body = convert_full_report(slug)
     content = f"#知识基座 #{tag1} #{tag2}\n\n{body}"
 
