@@ -136,7 +136,7 @@ python tools/report_to_flomo.py --slug <slug> --out flomo_full.md # 写文件（
 
 **注意**：
 - **不修改报告内容**：脚本只做格式转换，不摘要、不截断、不改写；如需更精炼的知识点表述由主代理判断，不在脚本内做。
-- **memo_update 权限**：当前 flomo MCP token 实测 memo_update 被拒（"memo not found or permission denied"），更新/合并需先确认 token 权限；新建用 memo_create 正常。
+- **修正已有报告必须 `memo_update` 更新、不新建**（2026-08-09 实测 memo_update 可用，长内容 12K+ 字更新成功；id 用 base64 slug 格式）：查重发现已有本报告且内容有增量时，一律更新原笔记 id，禁止再 `memo_create` 造成多版本重复；若 update 返回 "memo not found"（笔记已被清理）再考虑新建。
 - **隐私边界**：上传报告全文至用户自己的 flomo 笔记；素材库（gathered_*）、plan.md 仍仅存本地 `research/`（与 ima 隐私分级一致，见 docs/CONVENTIONS.md 第 7 节）。
 
 ## wechat_search.py — 微信公众号检索包装

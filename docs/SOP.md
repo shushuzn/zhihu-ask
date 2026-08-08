@@ -91,7 +91,7 @@
 - 产出 `report.md`（智库级报告，过「数据可靠性」硬性自查，关键数字与来源一致）。
 - 写 process_notes.md：有效关键词与踩坑点（不做经验方法总结）。
 - **沉淀（必做）**：有效关键词回填 `docs/KEYWORDS.md` 对应领域区块。
-- **报告上传 flomo（必做，不询问用户）**：`tools/report_to_flomo.py --slug <slug> --out flomo_full.md` 生成完整版 → flomo MCP `memo_search` 查重（relevance <0.5 新建 / 0.5-0.9 人工判断 / ≥0.9 跳过或更新）→ `memo_create`/`memo_update` 上传完整报告，flomo id 注释到 `flomo_full.md`（流程详见 `docs/TOOLS.md` flomo 章节）。flomo 未配置时跳过并在 process_notes 记录，不阻塞交付。
+- **报告上传 flomo（必做，不询问用户）**：`tools/report_to_flomo.py --slug <slug> --out flomo_full.md` 生成完整版 → flomo MCP `memo_search` 查重（relevance <0.5 新建 / 0.5-0.9 人工判断 / ≥0.9 跳过或更新）→ `memo_create`/`memo_update` 上传完整报告，flomo id 注释到 `flomo_full.md`（流程详见 `docs/TOOLS.md` flomo 章节）。**已有本报告且内容更新时，一律用 `memo_update` 覆盖原 id，禁止新建造成多版本重复**（2026-08-09 实测 memo_update 可用）。flomo 未配置时跳过并在 process_notes 记录，不阻塞交付。
 - 回填本地 plan.md 索引状态为"已完成"。
 **校验规则**：对 CHECKLIST.md 逐项自检，任何一项不通过即返回修正。**数据可靠性为硬性项**：关键数字必须可溯源；推断数字须标注"估算/推算"；媒体转述数字标注数据口径；不得用"据称/据说"式无出处引用。
 **决策点（需用户审批）**：report.md 交付前由用户验收；用户有权要求修订。
