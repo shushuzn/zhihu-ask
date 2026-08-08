@@ -112,6 +112,35 @@ def write_template(slug, cur_round, target_round):
     return notes_path
 
 
+def get_domain(slug):
+    """读取 .progress.json 中的领域字段（research_start 自 v18 起落盘）。"""
+    prog_path = os.path.join(ROOT, "research", slug, PROGRESS_FILE)
+    if os.path.exists(prog_path):
+        try:
+            with open(prog_path, "r", encoding="utf-8") as f:
+                prog = json.load(f)
+            return prog.get("data", {}).get("domain", "")
+        except (OSError, ValueError):
+            return ""
+    return ""
+
+
+# SOP A.8 领域最低轮次（与 docs/SOP.md 领域轮次表保持一致）
+DEEP_DOMAIN_KWS = ("财政", "宏观", "金融")
+DEEP_MIN_ROUNDS = 10
+DEFAULT_MIN_ROUNDS = 3
+
+
+def domain_min_round(domain):
+    """按领域返回最低迭代轮次：财政/宏观/金融投资 ≥10，其他 ≥3。"""
+    if not domain:
+        return DEFAULT_MIN_ROUNDS
+    d = domain.strip().lower()
+    if any(k in d for k in DEEP_DOMAIN_KWS):
+        return DEEP_MIN_ROUNDS
+    return DEFAULT_MIN_ROUNDS
+
+
 def main():
     args = parse_args(sys.argv[1:])
     slug = args["slug"]
@@ -137,13 +166,21 @@ def main():
     print(f"\n已生成问题清单模板: {os.path.relpath(notes_path, ROOT)}")
     print("  请人工打开并逐条填写未尽问题（参考报告中标注'仍无法核实/推算'的内容），不要自动提取。")
 
+    domain = get_domain(slug)
+    min_round = domain_min_round(domain)
+    if target_round >= min_round:
+        status = "已达领域最低轮次，可收敛（若问题清单未清空或用户要求继续则继续）"
+    else:
+        status = f"未达领域最低轮次，还需 {min_round - target_round} 轮"
+    print(f"\n领域轮次: {domain or '未记录'} | 最低 {min_round} 轮 | 目标 {target_round} 轮 -> {status}")
+
     update_round(slug, target_round)
     print(f"\n已更新轮次: .progress.json round = {target_round}")
 
     print("\n下一轮执行建议：")
     print("  1. 打开 round_notes.md，逐条填写未尽问题")
     print("  2. 补检索 -> 深化分析 -> 直接在 report.md 上更新（不创建 vN 版本文件）")
-    print("  3. 领域最低轮次：财政/宏观/金融 ≥10 轮，其他 ≥3 轮（见 docs/SOP.md A.8）")
+    print(f"  3. 领域最低轮次：{min_round} 轮（见 docs/SOP.md A.8；用户要求继续时以用户指示优先）")
 
 
 if __name__ == "__main__":

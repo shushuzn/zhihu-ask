@@ -94,6 +94,43 @@ def write_progress(slug, stage, data):
         print(f"WARN: 无法写进度文件 {p}: {e}")
 
 
+def get_ima_library_hints(domain):
+    """按领域从 docs/IMA_LIBRARIES.md 匹配订阅库候选，供通道 E2 提示。
+
+    解析「### 组名」及其后的库名表格行；匹配规则为词元双向包含：
+    组名与 domain 各自按分隔符拆成词元（如「金融 / 投研 / 宏观」→ 金融/投研/宏观），
+    domain 词元与组名词元任一互相包含（如 domain「金融投资」命中「金融」）即算匹配。
+    返回 [(组名, [库名, ...]), ...]，最多 2 组，不匹配返回 []。
+    """
+    lib_path = os.path.join(ROOT, "docs", "IMA_LIBRARIES.md")
+    if not os.path.isfile(lib_path):
+        return []
+    import re as _re
+    domain = (domain or "").strip()
+    if not domain:
+        return []
+    d_tokens = [t for t in _re.split(r"[/、,，\s]+", domain) if t]
+    groups = []
+    cur_group = None
+    with open(lib_path, "r", encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if s.startswith("### "):
+                cur_group = s[4:].strip()
+                groups.append([cur_group, []])
+            elif s.startswith("|") and cur_group is not None and not s.startswith("|---"):
+                # 表格行取第一列（库名）
+                cells = [c.strip() for c in s.strip("|").split("|")]
+                if cells and cells[0] and cells[0] != "库名":
+                    groups[-1][1].append(cells[0])
+    hits = []
+    for gname, libs in groups:
+        g_tokens = [t for t in _re.split(r"[/、,，\s]+", gname) if t]
+        if any(dt in gt or gt in dt for dt in d_tokens for gt in g_tokens):
+            hits.append((gname, libs))
+    return hits[:2]
+
+
 def main():
     if len(sys.argv) < 3 or sys.argv[1] != "--config":
         print("用法: python tools/research_start.py --config <json>")
@@ -202,6 +239,7 @@ def main():
     # ---- 记录阶段进度（闭环追溯）----
     write_progress(slug, "phase1_done", {
         "question": question,
+        "domain": domain,
         "has_wechat_material": has_material,
         "keyword_count": len(keywords),
         "has_zhihu_material": has_zhihu_material,
@@ -211,12 +249,23 @@ def main():
     })
 
     # ---- 后续步骤（阶段2-4 上下文）----
-    print("\n==> [阶段1 待办] 其余通道（执行顺序 E→B→C）")
-    print("  0. 通道 E（ima，执行顺序第一）：主代理直执连接器工具——search_knowledge_base 定位库")
+    print("\n==> [阶段1 待办] 其余通道（执行顺序 F查重 → E→B→C）")
+    print("  0. flomo 已有报告查重（执行顺序最先）：用问题主题词调 flomo MCP memo_search，")
+    print("     查是否已有本主题报告——relevance ≥0.9 复用/更新不重复研究；0.5-0.9 参考素材；<0.5 正常研究")
+    print("     前置：flomo MCP 已配置（~/.workbuddy/mcp.json）；未配置则跳过不阻塞")
+    print("  1. 通道 E（ima，执行顺序第一）：主代理直执连接器工具——search_knowledge_base 定位库")
     print("     + search_knowledge 库内检索（E1 经验 + E2 订阅库素材，落盘 gathered_ima.md），")
     print("     候选库见 docs/IMA_LIBRARIES.md；连接器未连接则跳过")
-    print("  1. 通道 B（Web）：官方数据/研报/新闻，落盘 gathered_web.md")
-    print("  2. 通道 C（领域数据源，按需）：finance 插件 / 通达信 / 企查查")
+    lib_hints = get_ima_library_hints(domain)
+    if lib_hints:
+        for gname, libs in lib_hints:
+            shown = libs[:8]
+            tail = "…" if len(libs) > 8 else ""
+            print(f"     [{gname}] 候选库（{len(libs)} 个）: {'、'.join(shown)}{tail}")
+    else:
+        print(f"     （未在 docs/IMA_LIBRARIES.md 匹配到领域「{domain}」的订阅库分组，检索时人工选库）")
+    print("  2. 通道 B（Web）：官方数据/研报/新闻，落盘 gathered_web.md")
+    print("  3. 通道 C（领域数据源，按需）：finance 插件 / 通达信 / 企查查")
     print("\n==> [阶段2-4] 后续步骤")
     print("  a. 阶段2 多视角收集：主代理按五视角（A公众号/B Web事实/C领域分析/D差异化/E反方）覆盖 plan.md 界定子问题")
     print("  b. 阶段3 交叉验证与量化：数据分级标注 + 至少一项量化测算")

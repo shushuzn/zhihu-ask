@@ -145,6 +145,32 @@ def check_placeholders(body):
     return issues
 
 
+def check_structure(body, full):
+    """结构完整性检查：
+    1. 必须存在参考文献章节且含至少 1 条 [标题](url) 链接（SOP 硬性要求：纯事实报告可溯源）。
+    2. 正文不得残留未决占位标记（TODO/待补充/待填写/此处填写 等；"仍无法核实"为合法口径标注，不在此列）。
+    """
+    issues = []
+    start = None
+    for marker in REF_MARKERS:
+        idx = full.find(marker)
+        if idx != -1:
+            start = idx
+            break
+    if start is None:
+        issues.append((1, "结构完整性", "缺少参考文献章节（## 参考文献），报告无法溯源", ""))
+    else:
+        section = full[start:]
+        ref_lines = [ln for ln in section.splitlines() if ln.strip()]
+        link_count = sum(1 for ln in ref_lines if re.search(r"\[[^\]]+\]\([^)]+\)", ln))
+        if link_count == 0:
+            issues.append((1, "结构完整性", "参考文献章节为空或条目非 [标题](url) 链接格式", ""))
+    for i, line in enumerate(body.splitlines(), 1):
+        if re.search(r"(TODO|FIXME|待补充|待填写|待填|此处填写)", line):
+            issues.append((i, "未决标记", "待补充/TODO 类残留", line.strip()[:60]))
+    return issues
+
+
 def main():
     argv = sys.argv[1:]
     filepath = None
@@ -173,6 +199,7 @@ def main():
     all_issues += check_unsourced_numbers(body)
     all_issues += check_placeholders(body)
     all_issues += check_references(full)
+    all_issues += check_structure(body, full)
 
     print("=" * 60)
     print(f"正文质量自动检查: {filepath}")

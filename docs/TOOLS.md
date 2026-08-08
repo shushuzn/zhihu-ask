@@ -30,7 +30,7 @@ python tools/init_research.py --config tools/init.json
 
 ## research_start.py — 一键研究启动器
 
-**作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 知乎官方检索并落盘素材库 `research/<slug>/gathered_zhihu.md`（阶段 1 通道 Z，可选）→ 素材库非空校验 → 记录阶段进度 `.progress.json` → 打印后续步骤（阶段 2-4 上下文）。
+**作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 知乎官方检索并落盘素材库 `research/<slug>/gathered_zhihu.md`（阶段 1 通道 Z，可选）→ 素材库非空校验 → 记录阶段进度 `.progress.json`（含 `domain` 字段，供 `check_progress --require_round auto` 按领域判定最低轮次）→ 打印后续步骤（阶段 2-4 上下文，其中通道 E 提示按领域从 `docs/IMA_LIBRARIES.md` 列出候选订阅库）。
 
 **用法**：
 
@@ -57,7 +57,7 @@ python tools/research_start.py --config tools/start.json
 
 ## iter_research.py — 多轮迭代研究
 
-**作用**：把"单轮研究"升级为"多轮迭代"。每完成一轮，生成下一轮问题清单模板（写 round_notes.md，历史轮次自动归档为 `round_notes_r<N>.md` 保留迭代轨迹）并更新 `.progress.json` 的 round 记录。问题清单由主代理人工编写——阅读报告中标注"仍无法核实/推算"的内容与数据口径缺口，逐条整理成明确、可执行的问题；不用自动提取（机械拆句语义不清）。逐轮深化，领域最低轮次见 SOP A.8（财政/宏观/金融 ≥10 轮，其他 ≥3 轮）。
+**作用**：把"单轮研究"升级为"多轮迭代"。每完成一轮，生成下一轮问题清单模板（写 round_notes.md，历史轮次自动归档为 `round_notes_r<N>.md` 保留迭代轨迹）并更新 `.progress.json` 的 round 记录。问题清单由主代理人工编写——阅读报告中标注"仍无法核实/推算"的内容与数据口径缺口，逐条整理成明确、可执行的问题；不用自动提取（机械拆句语义不清）。逐轮深化，领域最低轮次见 SOP A.8（财政/宏观/金融 ≥10 轮，其他 ≥3 轮）——工具按 `.progress.json` 的 domain 自动提示当前轮次与达标状态（未达标显示还需 N 轮）。
 
 **用法**：
 
@@ -75,7 +75,7 @@ python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
 
 ## quality_check.py — 正文质量自动检查
 
-**作用**：把报告模板/CHECKLIST 中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）、参考文献标注（参考文献区链接行不得带"一手/二手/推断"等分级标注，分级只在正文）。
+**作用**：把报告模板/CHECKLIST 中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）、模板占位符残留（`{{...}}`）、参考文献标注（参考文献区链接行不得带"一手/二手/推断"等分级标注，分级只在正文）、结构完整性（必须有含 `[标题](url)` 链接的 `## 参考文献` 章节、正文无"待补充/TODO"等未决标记）。
 
 **用法**：
 
@@ -97,9 +97,35 @@ python tools/quality_check.py --file research/<slug>/report.md --verbose
 ```bash
 python tools/check_progress.py --slug <slug>                      # 展示当前进度
 python tools/check_progress.py --slug <slug> --require phase1_done # 校验前置阶段（通过退出码0，阻塞退出码1）
+python tools/check_progress.py --slug <slug> --require_round auto # 校验迭代轮次（auto 按 .progress.json 的 domain 自动判定：财政/宏观/金融≥10，其他≥3）
+python tools/check_progress.py --slug <slug> --require_round 10  # 或显式指定轮次
 ```
 
-**说明**：当前已知阶段键为 `phase1_done`（阶段 0 初始化 + 阶段 1 通道 A 完成）。进入阶段 2 前先跑本工具确认前置就绪。
+**说明**：当前已知阶段键为 `phase1_done`（阶段 0 初始化 + 阶段 1 通道 A 完成）。进入阶段 2 前先跑本工具确认前置就绪。`--require_round auto` 依赖 `research_start.py` 落盘的 `domain` 字段；旧进度文件无该字段时回退为 3 轮。
+
+## report_to_flomo.py — 研究报告 → flomo 完整上传
+
+**作用**：把研究报告【完整内容】转换为 flomo 兼容格式（**只转格式、一字不改**），供上传到 flomo 个人笔记。参考 mynews 项目（D:/OpenClaw/mynews）的 flomo 集成模式。flomo 仅支持加粗/高亮/下划线/有序/无序列表，不支持标题/引用/代码块/链接/表格，故做机械转换：标题（#）→ 加粗、引用（>）→ 正文、表格行 → 列表（- a / b）、链接 [标题](url) → 标题（url）、反引号 → 去掉。首行追加 `#知识基座 #一级领域 #二级领域` 标签（分类元信息，非报告内容）。
+
+**用法**：
+
+```bash
+python tools/report_to_flomo.py --slug <slug>                     # 打印完整转换结果
+python tools/report_to_flomo.py --slug <slug> --out flomo_full.md # 写文件（research/<slug>/）
+```
+
+**查重-上传流程（上传前必做，主代理执行 flomo MCP）**：
+1. 用报告标题/主题词做 `memo_search`，取最相似笔记的 relevance（主题判断由主代理负责，脚本不自动提取关键词）。
+2. 决策规则：
+   - `relevance < 0.5`：主题无重叠 → `memo_create` 新建。
+   - `0.5 ≤ relevance < 0.9`：主题相近 → 人工判断（已有本报告则跳过；有新增量则合并后 `memo_update`）。
+   - `relevance ≥ 0.9`：高相似 → 已存在则跳过（skip），有新增内容则 `memo_update`。
+3. 上传内容为本工具输出的完整报告（已验证 flomo 单条支持 15K+ 字符，memo_create 直接传完整内容）。
+
+**注意**：
+- **不修改报告内容**：脚本只做格式转换，不摘要、不截断、不改写；如需更精炼的知识点表述由主代理判断，不在脚本内做。
+- **memo_update 权限**：当前 flomo MCP token 实测 memo_update 被拒（"memo not found or permission denied"），更新/合并需先确认 token 权限；新建用 memo_create 正常。
+- **隐私边界**：上传报告全文至用户自己的 flomo 笔记；素材库（gathered_*）、plan.md 仍仅存本地 `research/`（与 ima 隐私分级一致，见 docs/CONVENTIONS.md 第 7 节）。
 
 ## wechat_search.py — 微信公众号检索包装
 

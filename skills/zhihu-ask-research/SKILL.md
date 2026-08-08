@@ -39,8 +39,9 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 4. 判定查询类型：深度优先（单议题多角度）/ 广度优先（多个独立子议题）/ 直接查询（事实速查，一轮即可）。
 5. 写 `tools/start.json`（参考 `tools/start.example.json`，可含 `zhihu_keywords` 与 `zhihu_mode: zhihu|global|both`），执行 `python tools/research_start.py --config tools/start.json`（自动初始化目录 + 公众号检索 + 知乎官方检索 + 素材库落盘）。
 
-### 阶段 1 · 信息检索（五通道，执行顺序 E → A → B → C → Z）
+### 阶段 1 · 信息检索（五通道，执行顺序 F → E → A → B → C → Z）
 
+- 步骤 0 · flomo 已有报告查重（**执行顺序最先**）：用问题主题词（从 plan.md/start.json 的 question 取，主代理判断）调 flomo MCP `memo_search`——relevance ≥0.9（已有本报告）→ 复用/更新不重复研究；0.5-0.9（主题相近）→ 参考已有笔记素材；<0.5 → 正常检索；结果记 plan.md；flomo 未配置时跳过不阻塞（详见 `docs/SOP.md` 阶段 1 步骤 0 与 `docs/TOOLS.md` flomo 章节）。
 - 通道 E（ima 知识内容，**执行顺序第一**，可用时必用）：两级检索——E1 经验检索（`search_knowledge_base` 定位库 → 个人库 `search_knowledge`，命中片段纳入检索起点，与本地 `rag_search.py` 互补）；E2 内容素材检索（按领域取 `docs/IMA_LIBRARIES.md` 候选订阅库逐库 `search_knowledge`，命中落盘 `gathered_ima.md`，计入有效通道；原文用 `fetch_media_content`）。连接器未连接时跳过不阻塞（见 `docs/TOOLS.md` ima 章节与 `docs/IMA_INTEGRATION.md` 隐私分级）。
 - 通道 A（公众号，必用）：经 `tools/wechat_search.py` 检索，UTF-8 文件传参规避中文乱码，带时间参数（默认近 1 年），`--output` 落盘素材库。
 - 通道 B（Web）：`web_search`/`web_fetch` 获取官方数据、研报、新闻，优先一手来源。

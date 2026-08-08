@@ -9,12 +9,15 @@
     python tools/check_progress.py --slug deepseek-price-motivation
     python tools/check_progress.py --slug deepseek-price-motivation --require phase1_done
     python tools/check_progress.py --slug deepseek-price-motivation --require_round 10
+    python tools/check_progress.py --slug deepseek-price-motivation --require_round auto
 
 说明：
 - 不传 --require 时，展示当前进度并给出建议下一步。
 - 传 --require 时，校验指定阶段是否已完成；未完成则退出码 1（阻塞提示）。
 - 传 --require_round N 时，校验迭代轮次是否 ≥N（对应 SOP A.8 领域最低轮次：
   财政/宏观/金融 ≥10 轮，其他 ≥3 轮）；未达标则退出码 1（阻塞提示）。
+- --require_round auto 按 .progress.json 的 domain 字段自动判定最低轮次
+  （财政/宏观/金融投资 → 10，其他 → 3；domain 缺失时回退 3）。
 - 当前已知阶段键：phase1_done（阶段0初始化+阶段1通道A/通道Z完成）。
 """
 
@@ -30,6 +33,21 @@ except Exception:
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# SOP A.8 领域最低轮次（与 docs/SOP.md 领域轮次表保持一致）
+DOMAIN_MIN_ROUNDS = 10
+DEFAULT_MIN_ROUNDS = 3
+DEEP_DOMAIN_KWS = ("财政", "宏观", "金融")
+
+
+def domain_min_round(domain):
+    """按领域返回最低迭代轮次：财政/宏观/金融投资 ≥10，其他 ≥3。"""
+    if not domain:
+        return DEFAULT_MIN_ROUNDS
+    d = domain.strip().lower()
+    if any(k in d for k in DEEP_DOMAIN_KWS):
+        return DOMAIN_MIN_ROUNDS
+    return DEFAULT_MIN_ROUNDS
+
 
 def parse_args(argv):
     args = {"slug": None, "require": None, "require_round": None}
@@ -42,7 +60,7 @@ def parse_args(argv):
             args["require"] = argv[i + 1]
             i += 2
         elif argv[i] == "--require_round" and i + 1 < len(argv):
-            args["require_round"] = int(argv[i + 1])
+            args["require_round"] = argv[i + 1]  # 数字或 "auto"
             i += 2
         else:
             i += 1
@@ -73,10 +91,22 @@ def main():
             cur_round = int(data.get("round", 0) or 0)
         except (TypeError, ValueError):
             cur_round = 0
-        if cur_round >= args["require_round"]:
-            print(f"[通过] {slug}: 迭代轮次 {cur_round} ≥ 要求 {args['require_round']}，达标。")
+        req_val = args["require_round"]
+        if str(req_val).strip().lower() == "auto":
+            domain = data.get("domain", "")
+            req_round = domain_min_round(domain)
+            src = f"按领域「{domain or '未记录'}」自动判定"
+        else:
+            try:
+                req_round = int(req_val)
+            except (TypeError, ValueError):
+                print(f"[错误] --require_round 须为数字或 auto（收到: {req_val}）")
+                sys.exit(1)
+            src = "显式指定"
+        if cur_round >= req_round:
+            print(f"[通过] {slug}: 迭代轮次 {cur_round} ≥ 要求 {req_round}（{src}），达标。")
             sys.exit(0)
-        print(f"[阻塞] {slug}: 迭代轮次 {cur_round} < 要求 {args['require_round']}（SOP A.8 领域最低轮次），请继续迭代。")
+        print(f"[阻塞] {slug}: 迭代轮次 {cur_round} < 要求 {req_round}（{src}，SOP A.8 领域最低轮次），请继续迭代。")
         sys.exit(1)
 
     if args["require"]:
