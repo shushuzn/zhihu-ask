@@ -35,8 +35,9 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 1. 接收问题。若为知乎链接，先 `web_fetch`；失败（403/登录墙）则请用户粘贴标题或描述。
 2. 拆解问题：主概念、关键实体、隐含前提、真实诉求（科普/建议/案例）。
-3. 判定查询类型：深度优先（单议题多角度）/ 广度优先（多个独立子议题）/ 直接查询（事实速查，一轮即可）。
-4. 写 `tools/start.json`（参考 `tools/start.example.json`，可含 `zhihu_keywords` 与 `zhihu_mode: zhihu|global|both`），执行 `python tools/research_start.py --config tools/start.json`（自动初始化目录 + 公众号检索 + 知乎官方检索 + 素材库落盘）。
+3. 检索项目内经验：`python tools/rag_search.py "<主概念 关键实体>"`，把命中片段（流程规则/关键词词库/模板结构/踩坑沉淀）作为本次检索起点；索引缺失时先 `python tools/rag_build.py`。
+4. 判定查询类型：深度优先（单议题多角度）/ 广度优先（多个独立子议题）/ 直接查询（事实速查，一轮即可）。
+5. 写 `tools/start.json`（参考 `tools/start.example.json`，可含 `zhihu_keywords` 与 `zhihu_mode: zhihu|global|both`），执行 `python tools/research_start.py --config tools/start.json`（自动初始化目录 + 公众号检索 + 知乎官方检索 + 素材库落盘）。
 
 ### 阶段 1 · 信息检索（四通道）
 

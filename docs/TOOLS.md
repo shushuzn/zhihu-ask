@@ -203,6 +203,21 @@ python tools/health_check.py
 
 **输出**：逐项 `[OK]/[FAIL]`，全部通过退出码 0，有失败项退出码 1。新会话开始时先跑一遍，可快速确认环境是否就绪。
 
+## rag_build.py / rag_search.py — RAG 知识库（检索项目内经验）
+
+**作用**：把公开文档（docs/ + templates/）变成可检索知识库，研究启动前先查项目内已有经验——流程规则、关键词词库、模板结构、写作规范、踩坑沉淀，避免每次研究从零开始。
+
+**用法**：
+
+```bash
+python tools/rag_build.py                # 构建索引（改动 docs/ 后需重跑）
+python tools/rag_search.py "笔记本 8000 学生"     # BM25 检索，默认前 5 条
+python tools/rag_search.py "关键词 回填" -k 10    # 指定条数
+python tools/rag_search.py "立场 纯事实" --file docs/STYLE_GUIDE.md  # 限定文件
+```
+
+**说明**：零第三方依赖（中文按字符 bigram + 英文按词切分，BM25 打分）；索引为派生缓存，存 `.codebuddy/knowledge/` 仅本地，不进入 git。建议研究流程中在阶段 0/1 前执行一次，把命中片段作为检索起点。
+
 ## 降级方案
 
 `research_subagent` 配置的模型不可用（"Model not found"），**主代理直执是当前默认方式**（非降级）：web_search / web_fetch 均由主代理调用，公众号检索走上述包装工具。已实测可行（两份研究均以此完成）。若子代理配置修复，可升级回并行分派。

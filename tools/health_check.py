@@ -46,6 +46,8 @@ REQUIRED_FILES = [
     "tools/check_progress.py",
     "tools/iter_research.py",
     "tools/quality_check.py",
+    "tools/rag_build.py",
+    "tools/rag_search.py",
     "tools/wechat_search.py",
     "tools/zhihu_search.py",
     "tools/init_research.py",
