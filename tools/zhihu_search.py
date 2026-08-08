@@ -14,6 +14,7 @@ config 格式（UTF-8）:
   "queries": ["关键词1", "关键词2"],   // zhihu/global 模式必填
   "count": 10,                        // zhihu: 1-10, global: 1-20
   "search_db": "all",                 // global 模式可选: all|realtime|static
+  "filter": "host==\"gov.cn\"",       // global 模式可选：高级筛选表达式
   "limit": 20,                        // hot 模式: 1-30
   "output": "research/<slug>/gathered_zhihu.md"   // 可选，落盘素材库
 }
@@ -120,10 +121,12 @@ def search_zhihu(cli, query, count):
     return run_cli(cli, ["search", "zhihu", "--query", query, "--count", str(count)])
 
 
-def search_global(cli, query, count, search_db):
+def search_global(cli, query, count, search_db, filter_expr):
     cmd = ["search", "global", "--query", query, "--count", str(count)]
     if search_db:
         cmd += ["--search-db", search_db]
+    if filter_expr:
+        cmd += ["--filter", filter_expr]
     return run_cli(cli, cmd)
 
 
@@ -231,6 +234,7 @@ def main():
             sys.exit(2)
         count = int(cfg.get("count", 10))
         search_db = cfg.get("search_db", "all")
+        filter_expr = cfg.get("filter", "")
         for q in queries:
             print("\n" + "#" * 60)
             print(f"## 关键词: {q}")
@@ -240,7 +244,7 @@ def main():
             if mode == "zhihu":
                 code, out, err = search_zhihu(cli, q, count)
             else:
-                code, out, err = search_global(cli, q, count, search_db)
+                code, out, err = search_global(cli, q, count, search_db, filter_expr)
             if code != 0:
                 if report_error(code, out, err):
                     sys.exit(code)

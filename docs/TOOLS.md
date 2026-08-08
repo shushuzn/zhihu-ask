@@ -150,6 +150,7 @@ python tools/wechat_search.py --keywords tools/keywords.json --days 30 --output 
   "queries": ["<主题词> 高赞", "<主题词> 争议"],  // zhihu/global 必填
   "count": 10,                        // zhihu:1-10, global:1-20
   "search_db": "all",                 // global 可选: all|realtime|static
+  "filter": "host==\"gov.cn\"",       // global 可选: 高级筛选表达式（用于限定权威站点/时间）
   "limit": 20,                        // hot 模式: 1-30
   "output": "research/<slug>/gathered_zhihu.md"
 }

@@ -12,7 +12,7 @@
 说明：
 - 不传 --require 时，展示当前进度并给出建议下一步。
 - 传 --require 时，校验指定阶段是否已完成；未完成则退出码 1（阻塞提示）。
-- 当前已知阶段键：phase1_done（阶段0初始化+阶段1通道A完成）。
+- 当前已知阶段键：phase1_done（阶段0初始化+阶段1通道A/通道Z完成）。
 """
 
 import sys
@@ -75,8 +75,11 @@ def main():
     print(f"[状态] {slug}: 当前阶段 = {stage}")
     if data:
         print(f"  问题: {data.get('question', '?')}")
-        print(f"  素材库: {'有' if data.get('has_wechat_material') else '无'}")
-        print(f"  关键词数: {data.get('keyword_count', 0)}")
+        print(f"  公众号素材库: {'有' if data.get('has_wechat_material') else '无'}")
+        print(f"  知乎素材库: {'有' if data.get('has_zhihu_material') else '无'}")
+        print(f"  公众号关键词数: {data.get('keyword_count', 0)}")
+        print(f"  知乎关键词数: {data.get('zhihu_keyword_count', 0)}")
+        print(f"  当前迭代轮次: {data.get('round', 1)}")
     if stage == "phase1_done":
         print("  建议下一步: 进入阶段2（多视角收集）→ 阶段3（交叉验证量化）→ 阶段4（产出+沉淀）")
     sys.exit(0)
