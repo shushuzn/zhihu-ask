@@ -17,6 +17,8 @@ tools/keywords.*.json
 tools/init.*.json
 !tools/init.example.json
 tools/_start_*.json
+tools/zhihu_search.json
+tools/*.zip
 .commit_msg.tmp
 .desc.tmp.txt
 *.tmp
