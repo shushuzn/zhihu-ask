@@ -47,6 +47,7 @@ REQUIRED_FILES = [
     "tools/iter_research.py",
     "tools/quality_check.py",
     "tools/wechat_search.py",
+    "tools/zhihu_search.py",
     "tools/init_research.py",
     "tools/git_protect.py",
     "tools/install_git_hooks.py",
@@ -129,6 +130,29 @@ def main():
     missing = [f for f in REQUIRED_FILES if not os.path.exists(os.path.join(ROOT, f))]
     all_ok &= check("关键文件完整", not missing,
                     "缺失: " + ", ".join(missing) if missing else "")
+
+    # 8. zhihu skill / CLI（通道 Z 前置，不影响整体就绪判定）
+    import importlib.util
+    zhihu_ok = False
+    zhihu_detail = "未安装"
+    zhihu_cli_candidates = [
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "ZhihuCLI", "current", "zhihu-cli.exe"),
+        os.path.expanduser("~/Library/Application Support/zhihu-cli/current/zhihu-cli"),
+    ]
+    zhihu_cli = next((p for p in zhihu_cli_candidates if p and os.path.exists(p)), None)
+    if zhihu_cli:
+        zhihu_ok = True
+        zhihu_detail = f"CLI 已安装 ({os.path.basename(zhihu_cli)})"
+        try:
+            r = subprocess.run([zhihu_cli, "auth", "status"], capture_output=True,
+                               text=True, encoding="utf-8", timeout=30)
+            if r.returncode == 0:
+                zhihu_detail += " | 认证: 参考 auth status 输出"
+            else:
+                zhihu_detail += " | 认证: 未配置(AUTH_REQUIRED)"
+        except Exception:
+            zhihu_detail += " | 认证检查失败"
+    all_ok &= check("zhihu skill (通道 Z)", zhihu_ok, zhihu_detail)
 
     print("=" * 60)
     print("结论: " + ("全部就绪" if all_ok else "存在问题，请按上方 FAIL 项处理"))

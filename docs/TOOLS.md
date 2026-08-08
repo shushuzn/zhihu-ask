@@ -129,6 +129,40 @@ python tools/wechat_search.py --keywords tools/keywords.json --days 30 --output 
 - 触发验证码时返回 "触发验证码，请稍后重试"，稍后再试即可。
 - 检索词的有效组合可补充至 `docs/KEYWORDS.md`（通用词库），临时关键词文件用完即删。
 
+## zhihu_search.py — 知乎开放平台检索包装（通道 Z）
+
+**问题背景**：zhihu skill（`zhihu-cli`）是本机已安装的知乎官方开放平台 CLI，提供知乎站内搜索（`search zhihu`）、全网搜索（`search global`）、热榜（`hot`）与直答（`answer`）。但 CLI 是 exe，PowerShell 下向 exe 传中文参数同样会乱码。
+
+**解决方案**：包装脚本用 Python `subprocess` 直接以 Unicode 参数调用 `zhihu-cli`，绕开 PowerShell 命令行层。
+
+**前置条件**：
+1. zhihu skill 已 setup（CLI 已安装，本机路径 `C:\Users\35234\AppData\Local\ZhihuCLI\current\zhihu-cli.exe`）。
+2. Access Secret 已配置：`zhihu-cli auth set --secret-stdin`（通过标准输入传入，不进进程参数）。
+3. 未认证时本工具报 `AUTH_REQUIRED` 并提示配置方法，不落盘。
+
+**用法**：
+
+```bash
+# 1. 准备配置 tools/zhihu_search.json（UTF-8）
+{
+  "mode": "zhihu",                    // zhihu | global | hot
+  "queries": ["<主题词> 高赞", "<主题词> 争议"],  // zhihu/global 必填
+  "count": 10,                        // zhihu:1-10, global:1-20
+  "search_db": "all",                 // global 可选: all|realtime|static
+  "limit": 20,                        // hot 模式: 1-30
+  "output": "research/<slug>/gathered_zhihu.md"
+}
+
+# 2. 执行（落盘素材库）
+python tools/zhihu_search.py --config tools/zhihu_search.json
+```
+
+**输出**：每个关键词的知乎结果清单（标题/作者/赞同/类型/权威等级/链接/摘要），UTF-8 编码，落盘 `gathered_zhihu.md`。
+
+**数据边界（zhihu skill 官方口径）**：热榜只用于发现议题；深度研究必须用 search，不用直答（answer）替代；搜索返回的是摘要与链接，需要原文时用 `web_fetch` 打开 `Url`。
+
+**注意**：配置文件用完即删；检索词有效组合补充至 `docs/KEYWORDS.md`；Access Secret 不写入项目任何文件。
+
 ## git_protect.py — 提交前检查
 
 **作用**：提交前检查暂存区，阻止 `plan.md`、`research/`、`.codebuddy/`、`docs/PLAN_v1_ARCHIVE.md`、临时 config 等内部文件被误提交。

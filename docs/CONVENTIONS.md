@@ -35,6 +35,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 | 知乎网页/API | 不可用 | 未登录访问返回 403，需用户粘贴问题内容 |
 | `wechat-article-search` skill 脚本 | 中文参数乱码 | 使用 `tools/wechat_search.py` 包装（文件传参） |
 | `research_start.py` | 可用 | 一键启动研究（初始化+公众号检索+素材库落盘）；新会话先跑 `python tools/health_check.py` 自检 |
+| zhihu skill / `zhihu-cli` | 可用（已 setup） | 知乎开放平台官方 CLI；认证未配置时返回 AUTH_REQUIRED |
 
 ## 3. 数据与文件规范
 
@@ -64,3 +65,14 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 
 - 功能类：`feat: 一句话说明`；修复类：`fix: ...`；文档类：`docs: ...`；工具类：`chore/tool: ...`。
 - 提交前检查：临时文件已清理、`git status` 无多余文件、`.codebuddy/` 未入库。
+
+## 6. zhihu skill / zhihu-cli 使用约定
+
+- **安装位置**：skill 在 `C:\Users\35234\.codebuddy\skills\zhihu\`，CLI 在 `C:\Users\35234\AppData\Local\ZhihuCLI\current\zhihu-cli.exe`。
+- **状态检查**：`powershell -ExecutionPolicy Bypass -File <skill-dir>/scripts/run.ps1 status`。
+- **认证配置**：`zhihu-cli auth set --secret-stdin`（凭证经标准输入传入，不进进程参数、不回显明文、不写入项目文件，存于系统密钥链）。未配置时业务命令返回 `AUTH_REQUIRED`，引导用户打开 https://developer.zhihu.com/profile 申请 Access Secret 后配置。
+- **中文参数**：向 CLI 传中文一律经 `tools/zhihu_search.py`（Python subprocess 传 Unicode）调用，不在 PowerShell 直接写中文参数。
+- **数据边界**：热榜只做议题发现；深度研究用 search 不用直答；搜索返回摘要，原文需 `web_fetch` 打开链接。
+- **额度**：同一账号所有 Access Secret 共享当日池（全网/知乎搜索 5000 次、热榜 100 次、直答 100 次，邀测免费）；`Code:30001` 频率限制、`Code:30002` 配额耗尽时停止重试。
+- **凭证安全**：不得在回复、日志、Shell 历史或项目文件中重复完整 Access Secret；泄露后引导用户在开放平台删除并重新申请。
+- **前置检查**：研究流程在阶段 1 前用 `run.ps1 status` 确认 `auth.configured=true`，未配置则引导用户配置后重试，不阻塞其他通道。

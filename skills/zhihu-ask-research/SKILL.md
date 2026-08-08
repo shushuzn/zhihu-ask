@@ -7,7 +7,7 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 ## Overview
 
-把"知乎问题 → 研究报告"压缩为一条可重复的流水线：初始化研究目录 → 三通道检索（公众号/Web/领域插件）→ 五视角收集 → 交叉验证与量化 → 多轮迭代（至少 3 轮）→ 产出成品报告。报告为**纯事实陈述、零立场**，数据可溯源，局限如实列明即收敛终点。
+把"知乎问题 → 研究报告"压缩为一条可重复的流水线：初始化研究目录 → 四通道检索（公众号/Web/领域插件/知乎官方）→ 五视角收集 → 交叉验证与量化 → 多轮迭代（至少 3 轮）→ 产出成品报告。报告为**纯事实陈述、零立场**，数据可溯源，局限如实列明即收敛终点。
 
 ## 何时使用
 
@@ -38,12 +38,13 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 3. 判定查询类型：深度优先（单议题多角度）/ 广度优先（多个独立子议题）/ 直接查询（事实速查，一轮即可）。
 4. 写 `tools/start.json`，执行 `python tools/research_start.py --config tools/start.json`（自动初始化目录 + 公众号检索 + 素材库落盘）。
 
-### 阶段 1 · 信息检索（三通道）
+### 阶段 1 · 信息检索（四通道）
 
 - 通道 A（公众号，必用）：经 `tools/wechat_search.py` 检索，UTF-8 文件传参规避中文乱码，带时间参数（默认近 1 年），`--output` 落盘素材库。
 - 通道 B（Web）：`web_search`/`web_fetch` 获取官方数据、研报、新闻，优先一手来源。
 - 通道 C（领域插件）：金融问题用 finance 插件、产品问题用 product-management 插件。
-- 校验：素材库必须非空且含标题/公众号/链接；至少两个通道有有效素材才进入阶段 2。
+- 通道 Z（知乎官方，可用时必用）：经 `tools/zhihu_search.py` 调用 zhihu-cli（知乎开放平台官方 CLI），检索知乎站内与全网，`--output` 落盘素材库 `gathered_zhihu.md`；前置为 zhihu skill 已 setup 且 Access Secret 已配置（`zhihu-cli auth set --secret-stdin`），未认证报 AUTH_REQUIRED 不阻塞其余通道。
+- 校验：素材库必须非空且含标题/公众号（或作者）/链接；至少两个通道有有效素材才进入阶段 2。
 
 ### 阶段 2 · 多视角信息收集
 
@@ -96,7 +97,7 @@ python tools/check_progress.py --slug <slug> --require phase1_done
 
 ## 配套资源（项目内，直接引用，不在本目录复制）
 
-- 工具：`tools/`（research_start、init_research、iter_research、quality_check、check_progress、wechat_search、git_protect、install_git_hooks、health_check），详细用法见 `docs/TOOLS.md`。
+- 工具：`tools/`（research_start、init_research、iter_research、quality_check、check_progress、wechat_search、zhihu_search、git_protect、install_git_hooks、health_check），详细用法见 `docs/TOOLS.md`。
 - 流程：`docs/SOP.md`（完整 SOP + 附录 A 执行级流程）、`docs/CHECKLIST.md`（发布前检查清单）。
 - 词库：`docs/KEYWORDS.md`（预置关键词 + 回填机制）。
 - 环境约定：`docs/CONVENTIONS.md`（PowerShell 中文乱码文件传参、git 约定、禁止 force、隐私边界）。
