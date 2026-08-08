@@ -30,7 +30,7 @@ python tools/init_research.py --config tools/init.json
 
 ## research_start.py — 一键研究启动器
 
-**作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 素材库非空校验 → 记录阶段进度 `.progress.json` → 打印后续步骤（阶段 2-4 上下文）。
+**作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 知乎官方检索并落盘素材库 `research/<slug>/gathered_zhihu.md`（阶段 1 通道 Z，可选）→ 素材库非空校验 → 记录阶段进度 `.progress.json` → 打印后续步骤（阶段 2-4 上下文）。
 
 **用法**：
 
@@ -38,7 +38,7 @@ python tools/init_research.py --config tools/init.json
 python tools/research_start.py --config tools/start.json
 ```
 
-**config 格式**（UTF-8）：
+**config 格式**（UTF-8，完整示例见 `tools/start.example.json`）：
 ```json
 {
   "question": "问题完整标题",
@@ -46,12 +46,13 @@ python tools/research_start.py --config tools/start.json
   "slug": "example-slug",
   "priority": "高",
   "keywords": ["主题词 突破", "主题词 产业化"],
+  "zhihu_keywords": ["主题词 高赞", "主题词 争议"],
   "days": 30,
   "min_keywords": 6
 }
 ```
 
-**注意**：keywords 为公众号检索关键词组，days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A」，产出素材库后按 SOP 附录 A 进入阶段 2。
+**注意**：keywords 为公众号检索关键词组，zhihu_keywords 为知乎官方检索关键词组（可选，通道 Z；需 zhihu-cli 已安装且 Access Secret 已配置，未配置时自动跳过不阻塞），days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A/Z」，产出素材库后按 SOP 附录 A 进入阶段 2。
 
 ## iter_research.py — 多轮迭代研究
 

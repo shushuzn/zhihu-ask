@@ -6,27 +6,30 @@
   1. 配置校验：question/slug 必填；keywords 不足 N 组时提示补足（对应 A.2 边界）
   2. 初始化研究目录（模板生成 + 索引登记）—— 阶段 0 产出
   3. 公众号检索并落盘素材库 research/<slug>/gathered_wechat.md —— 阶段 1 通道 A
-  4. 素材库非空校验：为空时提示补关键词重试（对应 A.2 判断分支）
-  5. 输出后续步骤提示（阶段 2-4 的执行上下文）
+  4. 知乎官方检索并落盘素材库 research/<slug>/gathered_zhihu.md —— 阶段 1 通道 Z（可选，需已认证）
+  5. 素材库非空校验：为空时提示补关键词重试（对应 A.2 判断分支）
+  6. 输出后续步骤提示（阶段 2-4 的执行上下文）
 
 用法：
     python tools/research_start.py --config tools/start.json
 
-config 文件格式（UTF-8）：
+config 文件格式（UTF-8，示例见 tools/start.example.json）：
     {
       "question": "问题完整标题",
       "domain": "示例领域",
       "slug": "example-slug",
       "priority": "高",
       "keywords": ["主题词 突破", "主题词 产业化", "主题词 争议"],
+      "zhihu_keywords": ["主题词 高赞", "主题词 争议"],   // 可选，通道 Z 检索词
       "days": 30,
       "min_keywords": 6
     }
 
 说明：
 - keywords 为公众号检索关键词（每组一轮搜索）；days 为时间范围（天），默认 365。
+- zhihu_keywords 为知乎官方检索关键词（可选）。通道 Z 需要 zhihu-cli 已安装且 Access Secret 已配置；未配置时自动跳过并提示，不阻塞其余通道。
 - min_keywords 为关键词下限（默认 6，对应 SOP A.2「关键词≥6组」边界）；不足时提示但不阻塞（可降级以更少关键词继续）。
-- 本脚本做「阶段0初始化 + 阶段1通道A」，产出素材库后进入阶段2；不产观点，后续按 docs/SOP.md 附录 A 继续。
+- 本脚本做「阶段0初始化 + 阶段1通道A + 阶段1通道Z」，产出素材库后进入阶段2；不产观点，后续按 docs/SOP.md 附录 A 继续。
 """
 
 import sys
@@ -107,6 +110,7 @@ def main():
     domain = cfg.get("domain", "其他")
     priority = cfg.get("priority", "中")
     keywords = cfg.get("keywords") or []
+    zhihu_keywords = cfg.get("zhihu_keywords") or []
     days = cfg.get("days", 365)
     min_kw = int(cfg.get("min_keywords", 6))
 
@@ -149,19 +153,45 @@ def main():
     else:
         print("（未提供 keywords，跳过公众号检索）")
 
+    # ---- 阶段 1 通道 Z：知乎官方检索并落盘素材库（可选）----
+    print("\n==> [阶段1/通道Z] 知乎官方检索")
+    zhihu_path = os.path.join(ROOT, "research", slug, "gathered_zhihu.md")
+    if zhihu_keywords:
+        zcfg_path = os.path.join(ROOT, "tools", "_start_zhihu.json")
+        with open(zcfg_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "mode": "zhihu",
+                "queries": zhihu_keywords,
+                "count": 10,
+                "output": zhihu_path,
+            }, f, ensure_ascii=False)
+        ok_z = run([sys.executable, os.path.join(ROOT, "tools", "zhihu_search.py"),
+                    "--config", zcfg_path])
+        if not ok_z:
+            print("  - 通道Z检索未完成（常见：Access Secret 未配置 / 配额限制）。")
+            print("    未配置时请执行: zhihu-cli auth set --secret-stdin（见 docs/CONVENTIONS.md 第6节）")
+            print("    该通道跳过，不阻塞其余通道。")
+    else:
+        print("（未提供 zhihu_keywords，跳过知乎检索）")
+
     # ---- 素材库非空校验（A.2 判断分支）----
     has_material = os.path.exists(gathered_path) and os.path.getsize(gathered_path) > 0
     if keywords and not has_material:
-        print("\n[校验] 素材库为空。可能原因：关键词无命中 / 公众号接口限流。")
+        print("\n[校验] 公众号素材库为空。可能原因：关键词无命中 / 公众号接口限流。")
         print("  - 建议：补充或更换关键词后重跑；或转 Web 通道（阶段1/通道B）为主。")
     elif keywords and has_material:
-        print(f"\n[校验] 素材库非空: {os.path.relpath(gathered_path, ROOT)}，通道A通过。")
+        print(f"\n[校验] 公众号素材库非空: {os.path.relpath(gathered_path, ROOT)}，通道A通过。")
+    has_zhihu_material = os.path.exists(zhihu_path) and os.path.getsize(zhihu_path) > 0
+    if zhihu_keywords and has_zhihu_material:
+        print(f"[校验] 知乎素材库非空: {os.path.relpath(zhihu_path, ROOT)}，通道Z通过。")
 
     # ---- 记录阶段进度（闭环追溯）----
     write_progress(slug, "phase1_done", {
         "question": question,
         "has_wechat_material": has_material,
         "keyword_count": len(keywords),
+        "has_zhihu_material": has_zhihu_material,
+        "zhihu_keyword_count": len(zhihu_keywords),
     })
 
     # ---- 后续步骤（阶段2-4 上下文）----
@@ -173,11 +203,13 @@ def main():
     print(f"  e. 进度已记录于 research/{slug}/{PROGRESS_FILE}，供闭环追溯")
 
     # 清理临时文件
-    for p in (tmp_init, os.path.join(ROOT, "tools", "_start_keywords.json")):
+    for p in (tmp_init,
+              os.path.join(ROOT, "tools", "_start_keywords.json"),
+              os.path.join(ROOT, "tools", "_start_zhihu.json")):
         if os.path.exists(p):
             os.remove(p)
 
-    print("\n完成。阶段0初始化与阶段1通道A已就绪。")
+    print("\n完成。阶段0初始化与阶段1（通道A/通道Z）已就绪。")
 
 
 if __name__ == "__main__":
