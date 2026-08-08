@@ -5,6 +5,7 @@
   "priority": "高",
   "keywords": ["<主题词> 突破", "<主题词> 产业化", "<主题词> 企业数量", "<主题词> 政策", "<主题词> 争议", "<主题词> 案例"],
   "zhihu_keywords": ["<主题词> 高赞", "<主题词> 争议"],
+  "zhihu_mode": "zhihu",
   "days": 365,
   "min_keywords": 6
 }

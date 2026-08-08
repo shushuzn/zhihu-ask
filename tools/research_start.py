@@ -21,6 +21,7 @@ config 文件格式（UTF-8，示例见 tools/start.example.json）：
       "priority": "高",
       "keywords": ["主题词 突破", "主题词 产业化", "主题词 争议"],
       "zhihu_keywords": ["主题词 高赞", "主题词 争议"],   // 可选，通道 Z 检索词
+      "zhihu_mode": "zhihu",                             // 可选: zhihu|global|both
       "days": 30,
       "min_keywords": 6
     }
@@ -28,6 +29,7 @@ config 文件格式（UTF-8，示例见 tools/start.example.json）：
 说明：
 - keywords 为公众号检索关键词（每组一轮搜索）；days 为时间范围（天），默认 365。
 - zhihu_keywords 为知乎官方检索关键词（可选）。通道 Z 需要 zhihu-cli 已安装且 Access Secret 已配置；未配置时自动跳过并提示，不阻塞其余通道。
+- zhihu_mode 决定通道 Z 检索方式：zhihu（知乎站内，默认）/ global（知乎全网搜索）/ both（两者都跑，分别落盘 gathered_zhihu.md 与 gathered_zhihu_global.md）。
 - min_keywords 为关键词下限（默认 6，对应 SOP A.2「关键词≥6组」边界）；不足时提示但不阻塞（可降级以更少关键词继续）。
 - 本脚本做「阶段0初始化 + 阶段1通道A + 阶段1通道Z」，产出素材库后进入阶段2；不产观点，后续按 docs/SOP.md 附录 A 继续。
 """
@@ -111,6 +113,10 @@ def main():
     priority = cfg.get("priority", "中")
     keywords = cfg.get("keywords") or []
     zhihu_keywords = cfg.get("zhihu_keywords") or []
+    zhihu_mode = (cfg.get("zhihu_mode") or "zhihu").strip().lower()
+    if zhihu_mode not in ("zhihu", "global", "both"):
+        print("ERROR: zhihu_mode 只支持 zhihu/global/both")
+        sys.exit(1)
     days = cfg.get("days", 365)
     min_kw = int(cfg.get("min_keywords", 6))
 
@@ -157,20 +163,24 @@ def main():
     print("\n==> [阶段1/通道Z] 知乎官方检索")
     zhihu_path = os.path.join(ROOT, "research", slug, "gathered_zhihu.md")
     if zhihu_keywords:
-        zcfg_path = os.path.join(ROOT, "tools", "_start_zhihu.json")
-        with open(zcfg_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "mode": "zhihu",
-                "queries": zhihu_keywords,
-                "count": 10,
-                "output": zhihu_path,
-            }, f, ensure_ascii=False)
-        ok_z = run([sys.executable, os.path.join(ROOT, "tools", "zhihu_search.py"),
-                    "--config", zcfg_path])
-        if not ok_z:
-            print("  - 通道Z检索未完成（常见：Access Secret 未配置 / 配额限制）。")
-            print("    未配置时请执行: zhihu-cli auth set --secret-stdin（见 docs/CONVENTIONS.md 第6节）")
-            print("    该通道跳过，不阻塞其余通道。")
+        modes = ["zhihu", "global"] if zhihu_mode == "both" else [zhihu_mode]
+        for zmode in modes:
+            zout = os.path.join(ROOT, "research", slug,
+                                "gathered_zhihu.md" if zmode == "zhihu" else "gathered_zhihu_global.md")
+            zcfg_path = os.path.join(ROOT, "tools", "_start_zhihu.json")
+            with open(zcfg_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "mode": zmode,
+                    "queries": zhihu_keywords,
+                    "count": 10,
+                    "output": zout,
+                }, f, ensure_ascii=False)
+            ok_z = run([sys.executable, os.path.join(ROOT, "tools", "zhihu_search.py"),
+                        "--config", zcfg_path])
+            if not ok_z:
+                print("  - 通道Z检索未完成（常见：Access Secret 未配置 / 配额限制）。")
+                print("    未配置时请执行: zhihu-cli auth set --secret-stdin（见 docs/CONVENTIONS.md 第6节）")
+                print("    该通道跳过，不阻塞其余通道。")
     else:
         print("（未提供 zhihu_keywords，跳过知乎检索）")
 
@@ -182,8 +192,12 @@ def main():
     elif keywords and has_material:
         print(f"\n[校验] 公众号素材库非空: {os.path.relpath(gathered_path, ROOT)}，通道A通过。")
     has_zhihu_material = os.path.exists(zhihu_path) and os.path.getsize(zhihu_path) > 0
+    zhihu_global_path = os.path.join(ROOT, "research", slug, "gathered_zhihu_global.md")
+    has_zhihu_global_material = os.path.exists(zhihu_global_path) and os.path.getsize(zhihu_global_path) > 0
     if zhihu_keywords and has_zhihu_material:
         print(f"[校验] 知乎素材库非空: {os.path.relpath(zhihu_path, ROOT)}，通道Z通过。")
+    if zhihu_keywords and zhihu_mode in ("global", "both") and has_zhihu_global_material:
+        print(f"[校验] 知乎全网素材库非空: {os.path.relpath(zhihu_global_path, ROOT)}，通道Z(global)通过。")
 
     # ---- 记录阶段进度（闭环追溯）----
     write_progress(slug, "phase1_done", {
@@ -191,7 +205,9 @@ def main():
         "has_wechat_material": has_material,
         "keyword_count": len(keywords),
         "has_zhihu_material": has_zhihu_material,
+        "has_zhihu_global_material": has_zhihu_global_material,
         "zhihu_keyword_count": len(zhihu_keywords),
+        "zhihu_mode": zhihu_mode,
     })
 
     # ---- 后续步骤（阶段2-4 上下文）----

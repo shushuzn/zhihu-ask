@@ -131,28 +131,57 @@ def main():
     all_ok &= check("关键文件完整", not missing,
                     "缺失: " + ", ".join(missing) if missing else "")
 
-    # 8. zhihu skill / CLI（通道 Z 前置，不影响整体就绪判定）
-    import importlib.util
-    zhihu_ok = False
-    zhihu_detail = "未安装"
+    # 8. zhihu skill / CLI（通道 Z 增强，未安装/未认证不判 FAIL，仅提示）
+    import json
     zhihu_cli_candidates = [
         os.path.join(os.environ.get("LOCALAPPDATA", ""), "ZhihuCLI", "current", "zhihu-cli.exe"),
         os.path.expanduser("~/Library/Application Support/zhihu-cli/current/zhihu-cli"),
     ]
     zhihu_cli = next((p for p in zhihu_cli_candidates if p and os.path.exists(p)), None)
-    if zhihu_cli:
-        zhihu_ok = True
+    if not zhihu_cli:
+        check("通道 Z (zhihu-cli)", False, "未安装，跳过（可选增强，不影响其余通道）")
+    else:
         zhihu_detail = f"CLI 已安装 ({os.path.basename(zhihu_cli)})"
         try:
             r = subprocess.run([zhihu_cli, "auth", "status"], capture_output=True,
                                text=True, encoding="utf-8", timeout=30)
-            if r.returncode == 0:
-                zhihu_detail += " | 认证: 参考 auth status 输出"
-            else:
+            # auth status 为多层嵌套 JSON（外层 execute_command_result -> stdout 字符串）
+            # 循环剥离，直至找到含 "ok"/"source" 的认证对象
+            inner = {}
+            try:
+                obj = json.loads(r.stdout)
+                for _ in range(6):
+                    if isinstance(obj, dict) and "ok" in obj:
+                        inner = obj
+                        break
+                    out_str = obj.get("stdout") if isinstance(obj, dict) else None
+                    if not isinstance(out_str, str) or not out_str.strip():
+                        break
+                    obj = json.loads(out_str)
+                else:
+                    inner = {}
+            except Exception:
+                inner = {}
+            ok_flag = inner.get("ok") is True
+            source = inner.get("source", "")
+            keychain = inner.get("keychain", "")
+            masked = inner.get("masked", "")
+            verified_at = inner.get("last_verified_at", "")
+            if ok_flag and source:
+                zhihu_detail += f" | 认证: 已配置({source})"
+                if masked:
+                    zhihu_detail += f" | {masked}"
+                if verified_at:
+                    zhihu_detail += f" | 上次校验 {verified_at[:10]}"
+                elif inner.get("verification") == "not_performed":
+                    zhihu_detail += " | 未执行验证"
+            elif not ok_flag and keychain == "not_found":
                 zhihu_detail += " | 认证: 未配置(AUTH_REQUIRED)"
+            else:
+                zhihu_detail += " | 认证: 异常(ok=%s source=%s)" % (inner.get("ok"), source)
         except Exception:
             zhihu_detail += " | 认证检查失败"
-    all_ok &= check("zhihu skill (通道 Z)", zhihu_ok, zhihu_detail)
+        check("通道 Z (zhihu-cli)", True, zhihu_detail)
 
     print("=" * 60)
     print("结论: " + ("全部就绪" if all_ok else "存在问题，请按上方 FAIL 项处理"))

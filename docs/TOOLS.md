@@ -47,12 +47,13 @@ python tools/research_start.py --config tools/start.json
   "priority": "高",
   "keywords": ["主题词 突破", "主题词 产业化"],
   "zhihu_keywords": ["主题词 高赞", "主题词 争议"],
+  "zhihu_mode": "zhihu",
   "days": 30,
   "min_keywords": 6
 }
 ```
 
-**注意**：keywords 为公众号检索关键词组，zhihu_keywords 为知乎官方检索关键词组（可选，通道 Z；需 zhihu-cli 已安装且 Access Secret 已配置，未配置时自动跳过不阻塞），days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A/Z」，产出素材库后按 SOP 附录 A 进入阶段 2。
+**注意**：keywords 为公众号检索关键词组，zhihu_keywords 为知乎官方检索关键词组（可选，通道 Z；需 zhihu-cli 已安装且 Access Secret 已配置，未配置时自动跳过不阻塞），zhihu_mode 为通道 Z 检索方式（zhihu 站内 / global 全网 / both 两者，both 时分别落盘 `gathered_zhihu.md` 与 `gathered_zhihu_global.md`），days 为时间范围（天，默认 365），min_keywords 为关键词下限（默认 6，不足时提示但不阻塞）。脚本做「阶段 0 初始化 + 阶段 1 通道 A/Z」，产出素材库后按 SOP 附录 A 进入阶段 2。
 
 ## iter_research.py — 多轮迭代研究
 
