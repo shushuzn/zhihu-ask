@@ -87,9 +87,15 @@ def update_round(slug, new_round):
 
 
 def write_template(slug, cur_round, target_round):
-    """生成问题清单模板：问题部分留空，由主代理手动填写。"""
+    """生成问题清单模板：问题部分留空，由主代理手动填写。
+    历史轮次问题清单自动归档为 round_notes_r<N>.md，保留完整迭代轨迹。"""
     rdir = os.path.join(ROOT, "research", slug)
     notes_path = os.path.join(rdir, ROUND_NOTES)
+    # 归档上一轮：目标轮次比当前轮大 1 且旧文件存在时，改名保留
+    if os.path.isfile(notes_path) and target_round > cur_round and cur_round >= 2:
+        archive = os.path.join(rdir, f"round_notes_r{cur_round}.md")
+        os.replace(notes_path, archive)
+        print(f"  已归档上一轮问题清单: {os.path.relpath(archive, ROOT)}")
     with open(notes_path, "w", encoding="utf-8") as f:
         f.write(f"# 第 {target_round} 轮研究问题清单\n\n")
         f.write(f"> 由主代理人工编写，基于第 {cur_round} 轮报告中标注'仍无法核实/推算'的内容整理，日期 {date.today().isoformat()}。\n\n")
@@ -137,7 +143,7 @@ def main():
     print("\n下一轮执行建议：")
     print("  1. 打开 round_notes.md，逐条填写未尽问题")
     print("  2. 补检索 -> 深化分析 -> 直接在 report.md 上更新（不创建 vN 版本文件）")
-    print("  3. 全部完成后可再跑本工具进入第 {0} 轮，一般 3 轮收敛".format(target_round + 1))
+    print("  3. 领域最低轮次：财政/宏观/金融 ≥10 轮，其他 ≥3 轮（见 docs/SOP.md A.8）")
 
 
 if __name__ == "__main__":

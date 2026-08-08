@@ -119,14 +119,19 @@ def check_references(full):
 
 def check_unsourced_numbers(body):
     """启发式：行内出现"约 X 元/万亿/亿/万"等数字表述但同行无来源字样。
-    跳过表格行（| 开头），因表格数字通常在表前已说明来源。"""
+    跳过表格行（| 开头）与列表项（- 开头且带来源括注），因表格/列表数字通常在行内或表前已说明来源。
+    来源特征词含数据分级标注（一手/二手/计算/估算），与项目"每个数字标数据级别"约定配套。"""
+    source_words = (
+        r"(来源|据|数据|报道|测算|推算|口径|官方|媒体|实测|参考|定价|备查|"
+        r"一手|二手|计算|估算|预算|决算|公布|披露|统计)"
+    )
     issues = []
     for i, line in enumerate(body.splitlines(), 1):
         stripped = line.strip()
         if stripped.startswith("|"):
             continue
         if re.search(r"[约|超过|高达]\s*[\d.]+", line):
-            if not re.search(r"(来源|据|数据|报道|测算|推算|口径|官方|媒体|实测|参考|定价|备查)", line):
+            if not re.search(source_words, line):
                 issues.append((i, "无来源数字(待确认)", stripped[:60]))
     return issues
 
