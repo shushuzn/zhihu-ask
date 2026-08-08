@@ -54,6 +54,7 @@ REQUIRED_FILES = [
     "tools/health_check.py",
     "tools/init.example.json",
     "tools/keywords.example.json",
+    "tools/start.example.json",
 ]
 
 # 不应出现在 git 跟踪中的内部文件/目录（隐私红线，覆盖须完整）
