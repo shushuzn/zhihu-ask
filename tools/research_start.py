@@ -271,6 +271,8 @@ def main():
     print("  b. 阶段3 交叉验证与量化：数据分级标注 + 至少一项量化测算")
     print("  c. 阶段4 产出 report.md（过 CHECKLIST 数据可靠性自查）")
     print("  d. 沉淀（必做）：有效关键词回填 docs/KEYWORDS.md；写 process_notes.md；回填 plan.md 索引为已完成")
+    print("  e. 报告上传 flomo（必做，不询问）：tools/report_to_flomo.py 生成完整版 → memo_search 查重 → memo_create/update")
+    print("     （隐私边界：上传报告全文至用户 flomo；素材库/plan.md 仅存本地；flomo 未配置则跳过并在 process_notes 记录）")
     print(f"  e. 进度已记录于 research/{slug}/{PROGRESS_FILE}，供闭环追溯")
 
     # 清理临时文件

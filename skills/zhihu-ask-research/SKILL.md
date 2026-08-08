@@ -72,7 +72,8 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 3. **报告必须是成品**：正文禁止"第 N 轮/迭代"等过程性字样；无法核实的数据在正文如实标注即为收敛终点。
 4. 写 `process_notes.md`：有效关键词与踩坑点（参考 `templates/process_notes_TEMPLATE.md`）。
 5. **沉淀（必做）**：有效关键词回填 `docs/KEYWORDS.md` 对应领域区块。
-6. 回填本地 `plan.md` 索引状态为"已完成"。
+6. **报告上传 flomo（必做，不询问）**：`python tools/report_to_flomo.py --slug <slug> --out flomo_full.md` 生成完整版 → flomo MCP `memo_search` 查重 → `memo_create`/`memo_update` 上传，id 注释到 flomo_full.md；flomo 未配置则 process_notes 记录后跳过。
+7. 回填本地 `plan.md` 索引状态为"已完成"。
 
 ### 质量检查（交付前必跑）
 

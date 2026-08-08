@@ -49,6 +49,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 - 提交时 pre-commit hook 自动运行 `tools/git_protect.py` 检查暂存区（见 `docs/TOOLS.md`）；hook 未被安装时手动运行 `python tools/git_protect.py` 校验。
 - 若发现内容被误推，立即处理：`git rm --cached <文件>` + 更新 `.gitignore` + 提交修正；若已在历史提交中，用 `git filter-repo` 重写历史。
 - 禁止未经用户确认直接 `git push` 或 `gh repo create`；创建仓库、改可见性、强推等操作必须先获得用户明确同意。
+- **改进类提交默认直接推送（不询问）**：项目改进（docs/tools/skills 等公开文件）完成后，经 `git_protect` 校验后直接 commit + push，无需等待用户指示；研究产出（`research/`）按约定仅存本地、永不入库。
 
 ## 4. git / GitHub 约定
 
