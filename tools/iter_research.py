@@ -125,20 +125,13 @@ def get_domain(slug):
     return ""
 
 
-# SOP A.8 领域最低轮次（与 docs/SOP.md 领域轮次表保持一致）
-DEEP_DOMAIN_KWS = ("财政", "宏观", "金融")
-DEEP_MIN_ROUNDS = 10
-DEFAULT_MIN_ROUNDS = 3
+# SOP A.8 最低迭代轮次（2026-08-09 起所有领域统一 ≥10，与 docs/SOP.md 轮次表保持一致）
+MIN_ROUNDS = 10
 
 
 def domain_min_round(domain):
-    """按领域返回最低迭代轮次：财政/宏观/金融投资 ≥10，其他 ≥3。"""
-    if not domain:
-        return DEFAULT_MIN_ROUNDS
-    d = domain.strip().lower()
-    if any(k in d for k in DEEP_DOMAIN_KWS):
-        return DEEP_MIN_ROUNDS
-    return DEFAULT_MIN_ROUNDS
+    """返回最低迭代轮次：所有领域统一 ≥10（用户要求"都改成 10 轮以上"）。"""
+    return MIN_ROUNDS
 
 
 def main():

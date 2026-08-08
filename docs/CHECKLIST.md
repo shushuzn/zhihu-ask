@@ -15,7 +15,7 @@
 - [ ] 反方观点或风险提示已覆盖（针对有争议或涉及风险的议题）。
 - [ ] 至少完成一项量化测算（市场规模/成本结构/情景推演），非形容词式判断。
 - [ ] 利益相关方矩阵、对标比较、风险矩阵已覆盖（针对多维影响问题）。
-- [ ] 迭代轮次达标（SOP A.8）：财政/宏观/金融 ≥10 轮，其他 ≥3 轮；可用 `python tools/check_progress.py --slug <slug> --require_round auto` 校验（auto 按 .progress.json 的领域自动判定最低轮次）。
+- [ ] 迭代轮次达标（SOP A.8）：所有领域统一 ≥10 轮；可用 `python tools/check_progress.py --slug <slug> --require_round auto` 校验（auto 按项目统一最低轮次判定）。
 - [ ] 研究启动时已查 flomo 已有报告（SOP 阶段 1 步骤 0）：`memo_search` 搜问题主题词，relevance ≥0.9 复用/更新不重复研究；结果记录 plan.md。
 - [ ] 报告已上传 flomo（SOP 阶段 4 必做，不询问）：report_to_flomo.py 生成完整版 → 查重 → memo_create/update；flomo id 记录到 flomo_full.md；未配置则 process_notes 记录。
 - [ ] 通道 E（ima）已检索（如连接器可用）：`gathered_ima.md` 已落盘或记录"通道 E 无有效素材"；订阅库命中内容（研报/公告/论文等）已纳入交叉验证。
