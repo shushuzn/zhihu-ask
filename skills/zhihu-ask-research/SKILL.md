@@ -41,7 +41,7 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 ### 阶段 1 · 信息检索（五通道，执行顺序 E → A → B → C → Z）
 
-- 通道 E（ima 历史经验，**执行顺序第一**，可用时必用）：主代理直执 ima 连接器工具（`search_knowledge_base` 定位库 → `search_knowledge` 库内语义检索），命中片段纳入检索起点，与本地 `rag_search.py` 互补；连接器未连接时跳过不阻塞（见 `docs/TOOLS.md` ima 章节与 `docs/IMA_INTEGRATION.md` 隐私分级）。
+- 通道 E（ima 知识内容，**执行顺序第一**，可用时必用）：两级检索——E1 经验检索（`search_knowledge_base` 定位库 → 个人库 `search_knowledge`，命中片段纳入检索起点，与本地 `rag_search.py` 互补）；E2 内容素材检索（按领域取 `docs/IMA_LIBRARIES.md` 候选订阅库逐库 `search_knowledge`，命中落盘 `gathered_ima.md`，计入有效通道；原文用 `fetch_media_content`）。连接器未连接时跳过不阻塞（见 `docs/TOOLS.md` ima 章节与 `docs/IMA_INTEGRATION.md` 隐私分级）。
 - 通道 A（公众号，必用）：经 `tools/wechat_search.py` 检索，UTF-8 文件传参规避中文乱码，带时间参数（默认近 1 年），`--output` 落盘素材库。
 - 通道 B（Web）：`web_search`/`web_fetch` 获取官方数据、研报、新闻，优先一手来源。
 - 通道 C（领域数据源，按需）：金融/企业类优先用——finance 插件（财务建模）；通达信 `tdx-connector`（行情/K线/F10 财务/选股/宏观/新闻/公告/研报，code 先 `tdx_lookup_stock` 查码）；企查查 `qcc-company`（工商/股东/实控人穿透/财务/上市信息，先 `get_company_by_query` 锁定实体，多候选须用户确认）。纪律见 `docs/TOOLS.md`「领域连接器」与 `docs/CONVENTIONS.md` 第 8 节。

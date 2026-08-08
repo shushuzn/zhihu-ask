@@ -218,7 +218,7 @@ python tools/rag_search.py "立场 纯事实" --file docs/STYLE_GUIDE.md  # 限�
 
 **说明**：零第三方依赖（中文按字符 bigram + 英文按词切分，BM25 打分）；索引为派生缓存，存 `.codebuddy/knowledge/` 仅本地，不进入 git。建议研究流程中在阶段 0/1 前执行一次，把命中片段作为检索起点。
 
-## ima 连接器 — 通道 E（ima 历史经验检索）
+## ima 连接器 — 通道 E（ima 知识内容检索）
 
 **作用**：接入腾讯 ima 知识库（ima.qq.com），在阶段 1 检索历史经验沉淀（跨问题语义召回），与本地 `rag_search.py`（词面匹配）互补。ima 为 RAG 语义检索，可召回措辞不同但语义相关的内容。
 
@@ -234,11 +234,27 @@ python tools/rag_search.py "立场 纯事实" --file docs/STYLE_GUIDE.md  # 限�
 | `import_urls` | 批量导入网页链接（≤10 个/次） | knowledge_base_id, urls |
 | `create_media` + `add_knowledge` | 上传本地文件入库（先建 media 取 COS 凭证再上传再入库） | knowledge_base_id, file_* |
 
-**检索流程**（对应 SOP 阶段 1 通道 E；**通道 E 为阶段 1 执行顺序第一的检索**，先于 A–D 通道，为关键词与检索起点定基调）：先 `search_knowledge_base "主概念"` 定位相关库 → 对命中库 `search_knowledge "主概念 关键实体"` → 命中片段纳入检索起点；无命中记录"通道 E 无有效素材"。
+**检索流程**（对应 SOP 阶段 1 通道 E；**通道 E 为阶段 1 执行顺序第一的检索**，先于 A–D 通道，为关键词与检索起点定基调），两级执行：
+
+1. **E1 经验检索**（检索项目历史沉淀）：`search_knowledge_base "主概念"` 定位相关库 → 对个人库/项目沉淀库 `search_knowledge "主概念 关键实体"` → 命中片段纳入检索起点；无命中记录"E1 无有效素材"。
+2. **E2 内容素材检索**（核心，把订阅库变成素材通道）：按问题领域从 `docs/IMA_LIBRARIES.md` 选取候选订阅库（金融/法律/AI/学术/工程等分组，已列库名+ID+内容量）→ 对每个候选库执行 `search_knowledge (knowledge_base_id, query)` → 命中内容落盘素材库。
+
+**gathered_ima.md 落盘格式**（每条命中的一个条目）：
+
+```markdown
+- **[标题]**（库名 · 类型 · 时间）
+  摘要/简介首段（截断至 ~200 字）
+  命中片段：`<highlight_content>`
+  media_id: <media_id> ｜ knowledge_base_id: <id>
+```
+
+**正文读取**：阶段 3 交叉验证需要原文时，`fetch_media_content(media_id)` 获取全文（PDF/MD/网页均支持，can_fetch_content=true 条目可读）。
 
 **注意**：
+- E2 候选库按领域取 2–5 个即可；命中过多（单库返回超限）时收窄库范围或换更精确关键词（见 SOP 异常表）。
+- 订阅库为只读（can_add_knowledge=false），仅检索引用；写入（import_urls / add_knowledge）仅限自己的库。
 - 无「新建知识库」接口；建库需在 ima 网页/客户端操作。
-- 读取无隐私限制；**写入（import_urls / add_knowledge）仅限公开级内容**：docs/、templates/、脱敏经验与词库；report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入（见 `docs/IMA_INTEGRATION.md` 隐私分级矩阵）。
+- **写入仅限公开级内容**：docs/、templates/、脱敏经验与词库；report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入（见 `docs/IMA_INTEGRATION.md` 隐私分级矩阵）。
 - 脚本化（OpenAPI，`tools/ima_*.py`）为可选增强：需在 https://ima.qq.com/agent-interface 生成 Client ID + API Key（存 `~/.config/ima/`，凭证不入项目），当前未实施。
 
 ## 领域连接器 — 通道 C 数据源（通达信 / 企查查）

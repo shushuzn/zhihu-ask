@@ -20,7 +20,8 @@ zhihu-ask/
 │   ├── TEMPLATE_INDEX.md          # 模板说明与使用规则
 │   ├── TOOLS.md                   # 项目内工具说明
 │   ├── CONVENTIONS.md             # 环境约定（乱码处理/git 用法/zhihu-cli/ima/领域连接器）
-│   └── IMA_INTEGRATION.md         # ima 知识库接入评估与隐私分级
+│   ├── IMA_INTEGRATION.md         # ima 知识库接入评估与隐私分级
+│   └── IMA_LIBRARIES.md           # ima 领域-订阅库映射（通道 E2 候选库）
 ├── tools/
 │   ├── research_start.py          # 一键研究启动器（通道 A 公众号 + 通道 Z 知乎）
 │   ├── wechat_search.py           # 公众号检索包装
