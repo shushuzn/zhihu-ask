@@ -136,6 +136,15 @@ def check_unsourced_numbers(body):
     return issues
 
 
+def check_placeholders(body):
+    """检测模板占位符未替换残留（{{...}}），防止模板内容漏发。"""
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        for m in re.finditer(r"\{\{[^{}]*\}\}", line):
+            issues.append((i, "模板占位符", m.group(0), line.strip()[:60]))
+    return issues
+
+
 def main():
     argv = sys.argv[1:]
     filepath = None
@@ -162,6 +171,7 @@ def main():
     all_issues += check_words(body, EVALUATIVE_WORDS, "评价词")
     all_issues += check_exclamation(body)
     all_issues += check_unsourced_numbers(body)
+    all_issues += check_placeholders(body)
     all_issues += check_references(full)
 
     print("=" * 60)

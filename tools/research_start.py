@@ -211,6 +211,12 @@ def main():
     })
 
     # ---- 后续步骤（阶段2-4 上下文）----
+    print("\n==> [阶段1 待办] 其余通道（执行顺序 E→B→C）")
+    print("  0. 通道 E（ima，执行顺序第一）：主代理直执连接器工具——search_knowledge_base 定位库")
+    print("     + search_knowledge 库内检索（E1 经验 + E2 订阅库素材，落盘 gathered_ima.md），")
+    print("     候选库见 docs/IMA_LIBRARIES.md；连接器未连接则跳过")
+    print("  1. 通道 B（Web）：官方数据/研报/新闻，落盘 gathered_web.md")
+    print("  2. 通道 C（领域数据源，按需）：finance 插件 / 通达信 / 企查查")
     print("\n==> [阶段2-4] 后续步骤")
     print("  a. 阶段2 多视角收集：主代理按五视角（A公众号/B Web事实/C领域分析/D差异化/E反方）覆盖 plan.md 界定子问题")
     print("  b. 阶段3 交叉验证与量化：数据分级标注 + 至少一项量化测算")

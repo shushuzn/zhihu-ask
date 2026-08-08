@@ -39,6 +39,8 @@ REQUIRED_FILES = [
     "docs/STYLE_GUIDE.md",
     "docs/TEMPLATE_INDEX.md",
     "docs/TOOLS.md",
+    "docs/IMA_INTEGRATION.md",
+    "docs/IMA_LIBRARIES.md",
     "templates/research_plan_TEMPLATE.md",
     "templates/research_report_TEMPLATE.md",
     "templates/process_notes_TEMPLATE.md",

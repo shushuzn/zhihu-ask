@@ -8,10 +8,13 @@
 用法：
     python tools/check_progress.py --slug deepseek-price-motivation
     python tools/check_progress.py --slug deepseek-price-motivation --require phase1_done
+    python tools/check_progress.py --slug deepseek-price-motivation --require_round 10
 
 说明：
 - 不传 --require 时，展示当前进度并给出建议下一步。
 - 传 --require 时，校验指定阶段是否已完成；未完成则退出码 1（阻塞提示）。
+- 传 --require_round N 时，校验迭代轮次是否 ≥N（对应 SOP A.8 领域最低轮次：
+  财政/宏观/金融 ≥10 轮，其他 ≥3 轮）；未达标则退出码 1（阻塞提示）。
 - 当前已知阶段键：phase1_done（阶段0初始化+阶段1通道A/通道Z完成）。
 """
 
@@ -29,7 +32,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def parse_args(argv):
-    args = {"slug": None, "require": None}
+    args = {"slug": None, "require": None, "require_round": None}
     i = 0
     while i < len(argv):
         if argv[i] == "--slug" and i + 1 < len(argv):
@@ -37,6 +40,9 @@ def parse_args(argv):
             i += 2
         elif argv[i] == "--require" and i + 1 < len(argv):
             args["require"] = argv[i + 1]
+            i += 2
+        elif argv[i] == "--require_round" and i + 1 < len(argv):
+            args["require_round"] = int(argv[i + 1])
             i += 2
         else:
             i += 1
@@ -60,6 +66,18 @@ def main():
 
     stage = prog.get("stage", "unknown")
     data = prog.get("data", {})
+
+    if args["require_round"] is not None:
+        # 校验迭代轮次是否达标（SOP A.8 领域最低轮次）
+        try:
+            cur_round = int(data.get("round", 0) or 0)
+        except (TypeError, ValueError):
+            cur_round = 0
+        if cur_round >= args["require_round"]:
+            print(f"[通过] {slug}: 迭代轮次 {cur_round} ≥ 要求 {args['require_round']}，达标。")
+            sys.exit(0)
+        print(f"[阻塞] {slug}: 迭代轮次 {cur_round} < 要求 {args['require_round']}（SOP A.8 领域最低轮次），请继续迭代。")
+        sys.exit(1)
 
     if args["require"]:
         # 校验指定前置阶段是否完成

@@ -49,7 +49,7 @@ zhihu-ask/
 1. 一键启动研究：写 `tools/start.json`（参考 `tools/start.example.json`）后运行
    `python tools/research_start.py --config tools/start.json`，自动初始化目录、跑公众号检索（通道 A）与知乎官方检索（通道 Z）并生成素材库。
 2. 在 `research/<topic_slug>/plan.md` 补齐「问题界定」与「检索关键词」（可参考 `docs/KEYWORDS.md` 选词）。
-3. 按 `docs/SOP.md` 阶段 1–3 执行检索与研究（主代理直执，公众号/Web/领域数据源（finance、通达信、企查查）/知乎/ima 五通道）。
+3. 按 `docs/SOP.md` 阶段 1–3 执行检索与研究（主代理直执，**通道 E ima 先行** → 公众号/Web/领域数据源（finance、通达信、企查查）/知乎 五通道；ima 候选库见 `docs/IMA_LIBRARIES.md`）。
 4. 按模板产出 `report.md`，进入多轮迭代（至少 3 轮，问题清单清空才收敛；质量检查见 `docs/CHECKLIST.md`）。
 5. 完成后写 `process_notes.md` 记录检索与踩坑，有效关键词回填 `docs/KEYWORDS.md`，回填 `plan.md` 状态，删除临时 config 文件。
 
