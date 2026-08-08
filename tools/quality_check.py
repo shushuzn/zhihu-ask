@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-回答质量自动检查工具（zhihu-ask 项目专用）
+正文质量自动检查工具（zhihu-ask 项目专用）
 
-把回答模板/CHECKLIST 中的"去 AI 味 + 立场中立"检查落地为自动扫描：
+把报告模板/CHECKLIST 中的"去 AI 味 + 立场中立"检查落地为自动扫描：
   1. 立场词检测：我认为/我的判断/结论很硬/显然/可见/证明/应该/不该/建议/最好/总之
   2. 框架词检测：先说结论/总结一下/综上所述/不难发现/总而言之
   3. 评价词检测：太猛/很差/厉害/离谱/糟糕/完美/惊人（评价性形容词）
@@ -160,7 +160,7 @@ def main():
     all_issues += check_references(full)
 
     print("=" * 60)
-    print(f"回答质量自动检查: {filepath}")
+    print(f"正文质量自动检查: {filepath}")
     print("=" * 60)
 
     if not all_issues:
