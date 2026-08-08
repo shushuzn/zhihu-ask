@@ -7,7 +7,7 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 ## Overview
 
-把"知乎问题 → 研究报告"压缩为一条可重复的流水线：初始化研究目录 → 四通道检索（公众号/Web/领域插件/知乎官方）→ 五视角收集 → 交叉验证与量化 → 多轮迭代（至少 3 轮）→ 产出成品报告。报告为**纯事实陈述、零立场**，数据可溯源，无法核实的数据在正文如实标注即收敛终点。
+把"知乎问题 → 研究报告"压缩为一条可重复的流水线：初始化研究目录 → 五通道检索（公众号/Web/领域数据源/知乎官方/ima）→ 五视角收集 → 交叉验证与量化 → 多轮迭代（至少 3 轮）→ 产出成品报告。报告为**纯事实陈述、零立场**，数据可溯源，无法核实的数据在正文如实标注即收敛终点。
 
 ## 何时使用
 
@@ -39,11 +39,12 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 4. 判定查询类型：深度优先（单议题多角度）/ 广度优先（多个独立子议题）/ 直接查询（事实速查，一轮即可）。
 5. 写 `tools/start.json`（参考 `tools/start.example.json`，可含 `zhihu_keywords` 与 `zhihu_mode: zhihu|global|both`），执行 `python tools/research_start.py --config tools/start.json`（自动初始化目录 + 公众号检索 + 知乎官方检索 + 素材库落盘）。
 
-### 阶段 1 · 信息检索（四通道）
+### 阶段 1 · 信息检索（五通道，执行顺序 E → A → B → C → Z）
 
+- 通道 E（ima 历史经验，**执行顺序第一**，可用时必用）：主代理直执 ima 连接器工具（`search_knowledge_base` 定位库 → `search_knowledge` 库内语义检索），命中片段纳入检索起点，与本地 `rag_search.py` 互补；连接器未连接时跳过不阻塞（见 `docs/TOOLS.md` ima 章节与 `docs/IMA_INTEGRATION.md` 隐私分级）。
 - 通道 A（公众号，必用）：经 `tools/wechat_search.py` 检索，UTF-8 文件传参规避中文乱码，带时间参数（默认近 1 年），`--output` 落盘素材库。
 - 通道 B（Web）：`web_search`/`web_fetch` 获取官方数据、研报、新闻，优先一手来源。
-- 通道 C（领域插件）：金融问题用 finance 插件、产品问题用 product-management 插件。
+- 通道 C（领域数据源，按需）：金融/企业类优先用——finance 插件（财务建模）；通达信 `tdx-connector`（行情/K线/F10 财务/选股/宏观/新闻/公告/研报，code 先 `tdx_lookup_stock` 查码）；企查查 `qcc-company`（工商/股东/实控人穿透/财务/上市信息，先 `get_company_by_query` 锁定实体，多候选须用户确认）。纪律见 `docs/TOOLS.md`「领域连接器」与 `docs/CONVENTIONS.md` 第 8 节。
 - 通道 Z（知乎官方，可用时必用）：经 `tools/zhihu_search.py` 调用 zhihu-cli（知乎开放平台官方 CLI），检索知乎站内与全网，`--output` 落盘素材库 `gathered_zhihu.md`；前置为 zhihu skill 已 setup 且 Access Secret 已配置（`zhihu-cli auth set --secret-stdin`），未认证报 AUTH_REQUIRED 不阻塞其余通道。
 - 校验：素材库必须非空且含标题/公众号（或作者）/链接；至少两个通道有有效素材才进入阶段 2。
 
@@ -98,8 +99,9 @@ python tools/check_progress.py --slug <slug> --require phase1_done
 
 ## 配套资源（项目内，直接引用，不在本目录复制）
 
-- 工具：`tools/`（research_start、init_research、iter_research、quality_check、check_progress、wechat_search、zhihu_search、git_protect、install_git_hooks、health_check），详细用法见 `docs/TOOLS.md`。
+- 工具：`tools/`（research_start、init_research、iter_research、quality_check、check_progress、wechat_search、zhihu_search、git_protect、install_git_hooks、health_check），详细用法见 `docs/TOOLS.md`（含 ima 连接器通道 E）。
 - 流程：`docs/SOP.md`（完整 SOP + 附录 A 执行级流程）、`docs/CHECKLIST.md`（发布前检查清单）。
 - 词库：`docs/KEYWORDS.md`（预置关键词 + 回填机制）。
-- 环境约定：`docs/CONVENTIONS.md`（PowerShell 中文乱码文件传参、git 约定、禁止 force、隐私边界）。
+- 环境约定：`docs/CONVENTIONS.md`（PowerShell 中文乱码文件传参、git 约定、禁止 force、隐私边界、ima 约定）。
 - 模板：`templates/`（research_report_TEMPLATE.md、research_plan_TEMPLATE.md、process_notes_TEMPLATE.md）。
+- ima：`docs/IMA_INTEGRATION.md`（接入评估、工具用法、隐私分级矩阵）。

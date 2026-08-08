@@ -218,6 +218,66 @@ python tools/rag_search.py "立场 纯事实" --file docs/STYLE_GUIDE.md  # 限�
 
 **说明**：零第三方依赖（中文按字符 bigram + 英文按词切分，BM25 打分）；索引为派生缓存，存 `.codebuddy/knowledge/` 仅本地，不进入 git。建议研究流程中在阶段 0/1 前执行一次，把命中片段作为检索起点。
 
+## ima 连接器 — 通道 E（ima 历史经验检索）
+
+**作用**：接入腾讯 ima 知识库（ima.qq.com），在阶段 1 检索历史经验沉淀（跨问题语义召回），与本地 `rag_search.py`（词面匹配）互补。ima 为 RAG 语义检索，可召回措辞不同但语义相关的内容。
+
+**使用方式**：非脚本，由主代理直执连接器工具（已授权连接，侧边栏「更多 → ima知识库」）：
+
+| 工具 | 用途 | 关键参数 |
+|---|---|---|
+| `search_knowledge_base` | 按关键词搜索知识库（名称/描述） | query, limit |
+| `search_knowledge` | 在指定库内语义检索内容 | knowledge_base_id, query |
+| `get_knowledge_base_list` | 列出个人/共享/订阅知识库 | params[{type, limit}]（type 必填，如 KBT_MINE_KB） |
+| `get_knowledge_list` | 列出库内文件 | knowledge_base_id, limit |
+| `fetch_media_content` | 读取文件正文 | media_id |
+| `import_urls` | 批量导入网页链接（≤10 个/次） | knowledge_base_id, urls |
+| `create_media` + `add_knowledge` | 上传本地文件入库（先建 media 取 COS 凭证再上传再入库） | knowledge_base_id, file_* |
+
+**检索流程**（对应 SOP 阶段 1 通道 E；**通道 E 为阶段 1 执行顺序第一的检索**，先于 A–D 通道，为关键词与检索起点定基调）：先 `search_knowledge_base "主概念"` 定位相关库 → 对命中库 `search_knowledge "主概念 关键实体"` → 命中片段纳入检索起点；无命中记录"通道 E 无有效素材"。
+
+**注意**：
+- 无「新建知识库」接口；建库需在 ima 网页/客户端操作。
+- 读取无隐私限制；**写入（import_urls / add_knowledge）仅限公开级内容**：docs/、templates/、脱敏经验与词库；report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入（见 `docs/IMA_INTEGRATION.md` 隐私分级矩阵）。
+- 脚本化（OpenAPI，`tools/ima_*.py`）为可选增强：需在 https://ima.qq.com/agent-interface 生成 Client ID + API Key（存 `~/.config/ima/`，凭证不入项目），当前未实施。
+
+## 领域连接器 — 通道 C 数据源（通达信 / 企查查）
+
+**作用**：金融与企业类研究的一手数据源，主代理直执连接器工具（已授权连接）。覆盖：行情/K线/F10 财务（通达信）、企业工商/股东/实控人穿透/财务/上市信息（企查查）。
+
+### 通达信 tdx-connector（金融行情与数据）
+
+| 工具 | 用途 | 关键参数 |
+|---|---|---|
+| `tdx_lookup_stock` | 名称/别名 → 证券代码（**行情类工具前置步骤**） | query；range: AG=A股(默认)/HK-GP/QH 期货/QQ 期权等 |
+| `tdx_quotes` | 实时行情快照（含 PE/PB/ROE/市值，hasCwInfo="1"） | code（纯数字）, setcode（1=沪 0=深 31=港） |
+| `tdx_kline` | 历史 K 线走势 | code, period |
+| `tdx_api_data` | F10 深度数据：财报 6 年/股东/资金流向/龙虎榜/分红/研报评级等 30 接口 | entry（精确接口名）, code, fixedTag |
+| `tdx_screener` | 条件选股 | 选股条件 |
+| `tdx_indicator_select` | 技术指标（MACD/KDJ/RSI）NLP 查询 | 指标+标的 |
+| `wenda_macro_query` | 宏观数据问答 | 宏观指标 |
+| `wenda_news_query` / `wenda_notice_query` / `wenda_report_query` | 新闻 / 公告 / 研报检索 | 关键词 |
+
+### 企查查 qcc-company（企业尽调）
+
+| 工具 | 用途 | 关键参数 |
+|---|---|---|
+| `get_company_by_query` | 模糊搜索锁定企业实体（**尽调类工具前置步骤**） | searchKey；多候选必须展示给用户确认，禁止自动选第一条 |
+| `get_company_profile` | 企业画像（业务/行业） | 完整企业名或统一社会信用代码 |
+| `get_company_registration_info` | 工商登记（法定代表人/注册资本/成立日期） | 同上 |
+| `get_shareholder_info` | 一层直接股东 | 同上 |
+| `get_actual_controller` | 实控人（穿透终值，服务端已聚合） | 同上 |
+| `get_financial_data` | 核心财务（比率均为服务端精算） | 同上 |
+| `get_listing_info` | 上市信息（代码/市值/股本） | 同上 |
+
+**使用纪律（金融数据红线）**：
+- 通达信 code 只接受纯数字，中文名必须先 `tdx_lookup_stock` 查码；code 与 setcode 必须匹配。
+- 接口返回空结果时**如实报告"该数据暂无"**，禁止用训练知识填充数字（金融场景虚假数据会严重误导）。
+- 企查查 `get_company_by_query` 返回多候选时**必须将候选列表完整展示、等待用户确认**后再调下游工具；自动选第一候选属于错误操作。
+- 企查查穿透类结果（实控人持股比例、受益股份、财务比率）为服务端精算终值，**逐字引用，禁止自行乘法重算或臆测中间层**（模型多位小数乘法不可靠，已实测算错案例）。
+- 两者均为只读数据源：只做查询引用，不执行交易、不写回任何数据。
+- 连接器未连接/返回空时跳过该数据源，改用 Web 或其他插件补位，不阻塞流程（见 SOP 异常表）。
+
 ## 降级方案
 
 `research_subagent` 配置的模型不可用（"Model not found"），**主代理直执是当前默认方式**（非降级）：web_search / web_fetch 均由主代理调用，公众号检索走上述包装工具。已实测可行（两份研究均以此完成）。若子代理配置修复，可升级回并行分派。

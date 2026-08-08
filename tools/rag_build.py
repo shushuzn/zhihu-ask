@@ -37,10 +37,17 @@ OUT_DIR = os.path.join(ROOT, ".codebuddy", "knowledge")
 INDEX_FILE = os.path.join(OUT_DIR, "index.json")
 META_FILE = os.path.join(OUT_DIR, "meta.json")
 
-DEFAULT_DIRS = ["docs", "templates"]
+DEFAULT_DIRS = ["docs", "templates", "research"]
 MAX_CHUNK = 2000
 
 HEADING_RE = re.compile(r"^#{2,3}\s+(.*)$")
+
+
+def is_indexable(relpath, filename):
+    """research/ 只收录 process_notes.md（经验笔记），避免报告/素材库噪音。"""
+    if relpath.startswith("research/"):
+        return filename == "process_notes.md"
+    return filename.endswith(".md")
 
 
 def parse_args(argv):
@@ -85,7 +92,8 @@ def build():
             continue
         for root, _, files in os.walk(base):
             for fn in sorted(files):
-                if fn.endswith(".md"):
+                relpath = os.path.relpath(root, ROOT).replace("\\", "/")
+                if is_indexable(relpath, fn):
                     docs.append(os.path.join(root, fn))
 
     chunks = []

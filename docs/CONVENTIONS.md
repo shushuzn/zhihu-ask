@@ -76,3 +76,20 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 - **额度**：同一账号所有 Access Secret 共享当日池（全网/知乎搜索 5000 次、热榜 100 次、直答 100 次，邀测免费）；`Code:30001` 频率限制、`Code:30002` 配额耗尽时停止重试。
 - **凭证安全**：不得在回复、日志、Shell 历史或项目文件中重复完整 Access Secret；泄露后引导用户在开放平台删除并重新申请。
 - **前置检查**：研究流程在阶段 1 前用 `run.ps1 status` 确认 `auth.configured=true`，未配置则引导用户配置后重试，不阻塞其他通道。
+
+## 7. ima 知识库使用约定（通道 E）
+
+- **连接状态**：ima 连接器（ima-mcp）经 WorkBuddy 侧边栏「更多 → ima知识库」OAuth 授权；连接器管理页显示 connected 即可用。未连接时通道 E 跳过，不阻塞其余通道。
+- **检索**：主代理直执连接器工具（`search_knowledge_base` 搜库 / `search_knowledge` 库内检索），与本地 `rag_search.py` 互补；ima 无 CLI，不涉及乱码问题。
+- **凭证**：连接器方案无需凭证。脚本化（OpenAPI）才需 Client ID + API Key（https://ima.qq.com/agent-interface 生成，仅显示一次），存 `~/.config/ima/` 或环境变量；**凭证不入项目文件、不入日志**，泄露后引导在 agent-interface 撤销重建（沿用第 6 节凭证安全原则）。
+- **隐私边界（写入硬性管控）**：读取无限制；写入（import_urls / add_knowledge）仅限公开级内容——docs/、templates/、脱敏经验与词库；已定稿 report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入。ima 为云服务，与「research/ 仅存本地」红线冲突的内容一律不上云。
+- **参考**：能力盘点与分级矩阵见 `docs/IMA_INTEGRATION.md`。
+
+## 8. 领域连接器约定（通道 C：通达信 / 企查查）
+
+- **连接状态**：通达信（tdx-connector）、企查查（qcc-company）经 WorkBuddy 连接器授权（连接器管理页 connected 即可用）；未连接或调用失败时跳过该数据源，改用 Web/其他插件补位，不阻塞流程。
+- **只读原则**：两者均为只读数据源，仅查询引用，不执行交易、不写回数据。
+- **通达信纪律**：`tdx_quotes`/`tdx_api_data` 的 code 只接受纯数字，中文名必须先 `tdx_lookup_stock` 查码（期货传 range="QH"、期权传 range="QQ"）；code 与 setcode 必须匹配；接口返回空结果时如实报告"该数据暂无"，禁止用训练数据填充行情/财务数字。
+- **企查查纪律**：先用 `get_company_by_query` 锁定实体；返回多候选时必须把候选列表完整展示给用户、等用户确认后再调下游工具，自动选第一条属错误操作；穿透类结果（实控人持股/受益股份/财务比率）为服务端精算终值，逐字引用，禁止自乘重算或臆测中间层主体（实测算错案例：79.8674%×11.5446% 曾被算成 9.2145%，正确 9.2204%）。
+- **凭证/额度**：无需项目内凭证（连接器托管授权）；企查查查询有账号额度限制，批量尽调前控制查询次数。
+- **用法**：工具表与调用示例见 `docs/TOOLS.md`「领域连接器」章节。
