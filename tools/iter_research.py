@@ -77,6 +77,9 @@ def update_round(slug, new_round):
         with open(prog_path, "r", encoding="utf-8") as f:
             prog = json.load(f)
     data = prog.setdefault("data", {})
+    # 迭代发生于阶段 4，说明阶段 1 已完成；旧进度文件可能缺 stage 键，此处自愈补齐
+    if "stage" not in prog:
+        prog["stage"] = "phase1_done"
     data["round"] = new_round
     data["round_updated"] = date.today().isoformat()
     with open(prog_path, "w", encoding="utf-8") as f:

@@ -63,6 +63,7 @@ INTERNAL_FILES = [
     "docs/PLAN_v1_ARCHIVE.md",
     "research/",
     ".codebuddy/",
+    "tools/start.json",
 ]
 
 
@@ -90,8 +91,6 @@ def main():
 
     # 2. git 状态
     rc, out, _ = run_git("status", "--short", "--branch")
-    clean = "## " in out and "nothing to commit" not in out.lower() or out.startswith("## main")
-    # 简单判断：输出以 ## 开头即正常（含分支信息）
     branch_info = out.splitlines()[0] if out else "?"
     all_ok &= check("git 仓库状态", rc == 0, branch_info)
 

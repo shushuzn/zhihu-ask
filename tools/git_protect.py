@@ -13,7 +13,7 @@
     docs/PLAN_v1_ARCHIVE.md
     .codebuddy/
     *.tmp
-    tools/init.*.json / tools/keywords.*.json（临时 config）
+    tools/init.*.json / tools/keywords.*.json / tools/start.*.json（临时 config，example 除外）
 """
 
 import sys
@@ -34,8 +34,17 @@ INTERNAL_PATTERNS = [
     ".codebuddy/",
     ".commit_msg.tmp",
     ".desc.tmp.txt",
-    "tools/init.test.json",
-    "tools/keywords.test.json",
+    "tools/init.",
+    "tools/keywords.",
+    "tools/start.",
+    "tools/zhihu_search.json",
+]
+
+# 上述模式中允许提交的公开示例文件（与 .gitignore 的 ! 规则对应）
+PUBLIC_EXCEPTIONS = [
+    "tools/init.example.json",
+    "tools/keywords.example.json",
+    "tools/start.example.json",
 ]
 
 
@@ -50,6 +59,8 @@ def staged_files():
 
 def is_internal(path):
     p = path.replace("\\", "/")
+    if p in PUBLIC_EXCEPTIONS:
+        return False
     return any(
         p == pat.rstrip("/") or p.startswith(pat)
         for pat in INTERNAL_PATTERNS

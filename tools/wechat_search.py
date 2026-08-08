@@ -29,12 +29,8 @@ try:
 except Exception:
     pass
 
-# 接入 skill 脚本（兼容不同路径）
+# 接入 skill 脚本（本机绝对路径；换机器需同步更新此路径）
 SKILL_PATHS = [
-    os.path.join(os.path.dirname(__file__), "..", "..",
-                 "C", "Users", "35234", ".codebuddy", "plugins",
-                 "marketplaces", "cb_teams_marketplace", "plugins",
-                 "deep-research", "skills", "wechat-article-search", "scripts"),
     r"C:\Users\35234\.codebuddy\plugins\marketplaces\cb_teams_marketplace\plugins\deep-research\skills\wechat-article-search\scripts",
 ]
 sogou = None

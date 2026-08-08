@@ -64,12 +64,20 @@ def main():
     if args["require"]:
         # 校验指定前置阶段是否完成
         expected = {"phase1_done"}
-        if args["require"] in expected and stage == args["require"]:
-            print(f"[通过] {slug}: 前置阶段 {args['require']} 已完成，可进入下一阶段。")
-            sys.exit(0)
-        else:
-            print(f"[阻塞] {slug}: 前置阶段 {args['require']} 未完成（当前 {stage}），请先完成再继续。")
-            sys.exit(1)
+        if args["require"] in expected:
+            done = stage == args["require"]
+            if not done and args["require"] == "phase1_done":
+                # 兼容旧进度文件：无 stage 键但已迭代（round>=1）说明阶段 1 已完成
+                try:
+                    cur_round = int(data.get("round", 0) or 0)
+                except (TypeError, ValueError):
+                    cur_round = 0
+                done = cur_round >= 1
+            if done:
+                print(f"[通过] {slug}: 前置阶段 {args['require']} 已完成，可进入下一阶段。")
+                sys.exit(0)
+        print(f"[阻塞] {slug}: 前置阶段 {args['require']} 未完成（当前 {stage}），请先完成再继续。")
+        sys.exit(1)
 
     # 展示模式
     print(f"[状态] {slug}: 当前阶段 = {stage}")
