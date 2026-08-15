@@ -38,6 +38,8 @@
 
 **F 查重（第一步，阻断）**：`memo_search` 查本主题已有**笔记**；relevance ≥0.9 复用/更新（只补新信息）、0.5–0.9 参考（须合规 GB/T 来源）、<0.5 正常检索；命中旧笔记过时信息须原地更新。flomo 命中笔记作素材须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测），不合规/没有 → 联网找对应来源 → 找不到则不可用。
 
+**统一检索入口**：`python tools/search_all.py --config tools/start.json` 并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
+
 **素材落盘与登记**：各通道命中写 `research/<slug>/gathered_*.md`（非空且含标题/来源/链接）。A/B/P 落盘自动登记；F 查重**结论人工判读**（relevance ≥0.9 复用/更新、0.5–0.9 参考、<0.5 正常检索；命中但判定不相关的假阳性按 <0.5 处理）后用 mark_channel 登记；E/C 未配置由初始化自动登记 skip（环境级，跨研究共享，无需逐篇检查）；其余用 `python tools/mark_channel.py --slug <slug> --channel <F|E|A|B|C|P> --status <done|empty|skip> [--note ...]`。
 
 **门禁**：`python tools/check_progress.py --slug <slug> --require report_channels` 做「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。

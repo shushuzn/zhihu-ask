@@ -512,9 +512,42 @@ def auto_register_channel_b(out_path, slug, items, engine):
         return False, f"通道 B 自动登记失败（不影响落盘）: {e}"
 
 
+def load_queries_file(path):
+    """读取多查询 JSON（{"queries": ["q1", ...]} 或纯列表），返回去空字符串列表。"""
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, dict):
+        data = data.get("queries") or []
+    return [str(q).strip() for q in data if str(q).strip()]
+
+
+def run_queries(queries, args):
+    """并行执行多组查询，返回 [(query, items, error), ...]（保持传入顺序）。
+
+    --parallel 控制并发（1=串行）；单个查询失败记 error，不影响其他查询。
+    """
+    def _one(q):
+        try:
+            return (q, search(q, args.max, args.news, args.engine, args.timelimit,
+                              engine_timeout=args.timeout), None)
+        except Exception as e:
+            return (q, [], f"{type(e).__name__}: {e}")
+
+    if len(queries) <= 1 or args.parallel <= 1:
+        return [_one(q) for q in queries]
+    from concurrent.futures import ThreadPoolExecutor
+    results = []
+    with ThreadPoolExecutor(max_workers=args.parallel) as ex:
+        for r in ex.map(_one, queries):
+            results.append(r)
+    return results
+
+
 def main():
     ap = argparse.ArgumentParser(description="Web 搜索工具（多引擎聚合，无需 API key）")
-    ap.add_argument("query", help="搜索关键词（中文/英文均可）")
+    ap.add_argument("query", nargs="?", help="搜索关键词（中文/英文均可）；与 --queries-file 二选一")
+    ap.add_argument("--queries-file", help="多查询 JSON 文件（{\"queries\": [\"q1\", ...]} 或纯列表），并行搜索")
+    ap.add_argument("--parallel", type=int, default=4, help="多查询并行数（默认 4；1=串行）")
     ap.add_argument("--max", type=int, default=10, help="结果条数（默认 10）")
     ap.add_argument("--news", action="store_true", help="新闻搜索模式（仅 ddgs）")
     ap.add_argument("--engine", default="auto", choices=["auto", "ddgs", "openalex", "crossref", "hn", "bing", "tavily"],
@@ -528,47 +561,71 @@ def main():
     ap.add_argument("--json", action="store_true", help="输出原始 JSON")
     args = ap.parse_args()
 
-    try:
-        items = search(args.query, args.max, args.news, args.engine, args.timelimit,
-                       engine_timeout=args.timeout)
-    except Exception as e:
-        print(f"[失败] 搜索异常：{e}", file=sys.stderr)
-        print("  提示：已尝试全部引擎+重试+查询变体仍失败，稍后再试或改用 agent 的 WebSearch/WebFetch 工具。", file=sys.stderr)
-        sys.exit(1)
+    # 查询列表：--queries-file（多查询并行）或单个 positional query
+    if args.queries_file:
+        try:
+            queries = load_queries_file(args.queries_file)
+        except Exception as e:
+            print(f"ERROR: 无法读取 --queries-file：{e}", file=sys.stderr)
+            sys.exit(2)
+        if not queries:
+            print("ERROR: --queries-file 未包含有效 queries 列表", file=sys.stderr)
+            sys.exit(2)
+    else:
+        if not args.query:
+            print("ERROR: 需提供 query 或 --queries-file", file=sys.stderr)
+            sys.exit(2)
+        queries = [args.query]
 
-    if not items:
-        if not args.out:
-            print(f"[无结果] 关键词「{args.query}」无命中，可换词重试。", file=sys.stderr)
-            sys.exit(0)
-        # 有 --out 时仍落盘「零命中」标记并自动登记 empty，保证通道完成态闭环
-        print(f"[无结果] 关键词「{args.query}」无命中，已落盘零命中标记。", file=sys.stderr)
+    results = run_queries(queries, args)
+    total_items = sum(len(items) for _, items, _ in results)
+    failed = [q for q, _items, err in results if err]
 
     if args.json:
-        print(json.dumps(items, ensure_ascii=False, indent=1))
+        print(json.dumps([{"query": q, "items": items, "error": err}
+                          for q, items, err in results], ensure_ascii=False, indent=1))
     else:
-        print(f"命中 {len(items)} 条（引擎 {args.engine}，{'新闻' if args.news else '网页'}）：", file=sys.stderr)
-        for i, r in enumerate(items, 1):
-            print(f"{i}. {r['title']}", file=sys.stderr)
-            print(f"   {r['href']}", file=sys.stderr)
-            if r.get("body"):
-                print(f"   {r['body'][:120]}", file=sys.stderr)
-        print(file=sys.stderr)
+        for q, items, err in results:
+            if err:
+                print(f"[失败] 关键词「{q}」：{err}", file=sys.stderr)
+                continue
+            print(f"命中 {len(items)} 条（{q}，引擎 {args.engine}，{'新闻' if args.news else '网页'}）：", file=sys.stderr)
+            for i, r in enumerate(items, 1):
+                print(f"{i}. {r['title']}", file=sys.stderr)
+                print(f"   {r['href']}", file=sys.stderr)
+                if r.get("body"):
+                    print(f"   {r['body'][:120]}", file=sys.stderr)
+            print(file=sys.stderr)
+        if failed:
+            print(f"[汇总] {len(queries)} 组查询中 {len(failed)} 组失败：{', '.join(failed[:3])}", file=sys.stderr)
+
+    if not total_items and not args.out and not args.queries_file:
+        print(f"[无结果] 关键词「{args.query}」无命中，可换词重试。", file=sys.stderr)
+        sys.exit(0)
 
     if args.out:
         with open(args.out, "a", encoding="utf-8") as f:
-            f.write(f"\n## Web 检索：{args.query}（{date.today()}，引擎 {args.engine}，ddgs {'news' if args.news else 'text'}）\n\n")
-            for r in items:
-                f.write(f"- **{r['title']}**\n  - 链接：{r['href']}\n")
-                if r.get("body"):
-                    f.write(f"  - 摘要：{r['body'][:200]}\n")
-            if not items:
-                f.write("（零命中，换词重试后仍无则登记通道 B 无有效素材）\n")
-            f.write("\n")
+            for q, items, err in results:
+                f.write(f"\n## Web 检索：{q}（{date.today()}，引擎 {args.engine}）\n\n")
+                for r in items:
+                    f.write(f"- **{r['title']}**\n  - 链接：{r['href']}\n")
+                    if r.get("body"):
+                        f.write(f"  - 摘要：{r['body'][:200]}\n")
+                if err:
+                    f.write(f"（检索失败：{err}）\n")
+                elif not items:
+                    f.write("（零命中，换词重试后仍无则登记通道 B 无有效素材）\n")
+                f.write("\n")
         print(f"[已落盘] {args.out}", file=sys.stderr)
         # 落盘即自动登记通道 B（Web）：写到标准 research/<slug>/gathered_web.md 即登记，
         # 无需手动 mark_channel（可用 --slug 显式指定；否则从输出路径反推，同 A/P 通道惯例）。
-        ok, msg = auto_register_channel_b(args.out, args.slug, items, args.engine)
+        ok, msg = auto_register_channel_b(args.out, args.slug,
+                                          [r for _, items, _ in results for r in items], args.engine)
         print(f"[自动登记] {msg}" if ok else f"[提示] {msg}", file=sys.stderr)
+
+    # 全部查询失败 → 退出码 1；部分失败/零命中 → 0（零命中已有 empty 登记闭环）
+    if failed and len(failed) == len(queries):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

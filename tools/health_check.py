@@ -82,6 +82,7 @@ REQUIRED_FILES = [
     "tools/wechat_publish.py",
     "tools/net_check.py",
     "tools/run_pipeline.py",
+    "tools/search_all.py",
     "tools/maintain.py",
     "tools/flomo_search.py",
     "tools/note_assemble.py",

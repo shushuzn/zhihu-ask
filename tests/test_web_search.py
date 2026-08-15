@@ -261,6 +261,42 @@ def test_auto_register_b():
         shutil.rmtree(base, ignore_errors=True)
 
 
+def test_queries_file():
+    import tempfile, os as _os
+    d = testutil.mktestdir(prefix="tqf_")
+    p = _os.path.join(d, "q.json")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write('{"queries": ["q1", "  ", "q2"]}')
+    expect("qf+ dict 格式解析", ws.load_queries_file(p), ["q1", "q2"])
+    with open(p, "w", encoding="utf-8") as f:
+        f.write('["a", "b"]')
+    expect("qf+ 纯列表格式", ws.load_queries_file(p), ["a", "b"])
+    with open(p, "w", encoding="utf-8") as f:
+        f.write('{"queries": []}')
+    expect("qf+ 空列表", ws.load_queries_file(p), [])
+
+
+def test_run_queries_parallel():
+    # 用 mock 的 search：顺序保持、错误捕获、串行/并行结果一致
+    calls = []
+
+    def fake_search(q, maxn, news, engine, timelimit, engine_timeout=None):
+        calls.append(q)
+        if q == "bad":
+            raise RuntimeError("boom")
+        return [{"title": q, "href": "http://x/" + q}]
+
+    import types
+    ns = types.SimpleNamespace(max=5, news=False, engine="auto", timelimit=None, timeout=10)
+    with mock.patch.object(ws, "search", side_effect=fake_search):
+        res4 = ws.run_queries(["a", "bad", "c"], types.SimpleNamespace(**{**vars(ns), "parallel": 4}))
+        res1 = ws.run_queries(["a", "bad", "c"], types.SimpleNamespace(**{**vars(ns), "parallel": 1}))
+    expect("rq+ 顺序保持", [r[0] for r in res4], ["a", "bad", "c"])
+    expect("rq+ 错误查询捕获", res4[1][2] is not None and "boom" in res4[1][2], True)
+    expect("rq+ 正常查询有结果", len(res4[0][1]), 1)
+    expect("rq+ 并行与串行结果一致", res4 == res1, True)
+
+
 if __name__ == "__main__":
     test_domain_of()
     test_filter_results()
