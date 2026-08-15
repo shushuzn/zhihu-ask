@@ -1,0 +1,5 @@
+# zhihu-ask 项目 Python 依赖（隔离 venv 用）
+# 安装：python -m venv venv && venv/Scripts/pip install -r requirements.txt
+# report_to_docx.py 会在缺失时自动创建 venv 并安装，本文件供显式/复现使用。
+python-docx>=1.1
+ddgs>=0.14

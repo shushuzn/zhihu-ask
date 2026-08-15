@@ -1,0 +1,43 @@
+# 本地工具数据
+.codebuddy/
+.workbuddy/
+
+# 知乎回答内容与项目内部计划（隐私，仅存本地，不推送公开仓库）
+research/
+plan.md
+docs/PLAN_v1_ARCHIVE.md
+# 关键词库：本地沉淀，不推送公开仓库
+docs/KEYWORDS.md
+# 架构图渲染产物（可随时 python docs/render_svg.py 重新生成）
+docs/architecture.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+
+# 临时文件（config 含知乎问题原文，隐私红线）
+# 字符类 [._] 同时覆盖点分隔与下划线分隔命名：keywords.x.json / keywords_meta.json
+tools/keywords[._]*.json
+!tools/keywords.example.json
+tools/init[._]*.json
+!tools/init.example.json
+tools/_start_*.json
+tools/start*.json
+!tools/start.example.json
+tools/*.zip
+.commit_msg.tmp
+.desc.tmp.txt
+*.tmp
+
+# 本地敏感配置（API key 等，不入库）
+.env
+.env.local
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 旧 git 历史备份（含已移除凭证，仅本地，勿入库）
+/.git.bak

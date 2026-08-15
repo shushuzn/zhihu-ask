@@ -1,0 +1,97 @@
+"""run_pipeline.py 回归测试：流水线门禁顺序与清单（9 项）。
+
+覆盖：
+- agent_checklist：slug/query 替换、六通道步骤齐全、无占位符残留、
+  query=None 时替换为空
+- finish：收尾门禁执行顺序（结构→质量→轮次→落报告→docx→flomo）——
+  顺序/缺步回归会静默跳过 SOP 硬门禁
+- bootstrap：WECHAT_ARTICLE_SEARCH_SCRIPTS 未设时预警 + research_start 调用
+- main：无参数报错退出
+
+run()/subprocess 用 Mock 替换，不触发真实子进程。
+
+运行：python tests/test_run_pipeline.py
+"""
+import os
+import sys
+import io
+import contextlib
+from unittest import mock
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import run_pipeline as rp
+
+PASS = 0
+FAIL = 0
+
+
+def expect(label, got, must_be):
+    global PASS, FAIL
+    if got == must_be:
+        PASS += 1
+    else:
+        FAIL += 1
+        print(f"  FAIL {label}: got {got!r}, expected {must_be!r}")
+
+
+# ---- agent_checklist：占位符替换与步骤覆盖 ----
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    rp.agent_checklist("my-slug", "formal proof")
+out = buf.getvalue()
+expect("acl+ slug 替换", "my-slug" in out, True)
+expect("acl+ query 替换", "formal proof" in out, True)
+expect("acl+ 无占位符残留", "<slug>" not in out and "<query>" not in out, True)
+for step in ("通道 F", "通道 E", "通道 B", "通道 C", "通道 P", "preprint_search.py", "mark_channel.py"):
+    expect(f"acl+ 步骤 {step}", step in out, True)
+
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    rp.agent_checklist("s2", None)
+out2 = buf.getvalue()
+expect("acl+ query=None 替换为空", "<query>" not in out2, True)
+
+# ---- finish：门禁执行顺序 ----
+calls = []
+
+def fake_run(cmd, check=True, label=""):
+    calls.append(os.path.basename(cmd[0]))
+    return 0
+
+with mock.patch("run_pipeline.run", side_effect=fake_run), \
+     mock.patch("run_pipeline.subprocess.run", return_value=mock.Mock(returncode=0)):
+    rp.finish("demo-slug")
+expect("fin+ 十一步门禁顺序",
+       calls == ["clean_workspace.py", "check_report_structure.py", "quality_check.py",
+                 "check_ai_voice.py", "check_gbt_refs.py", "check_citation_validity.py",
+                 "check_consistency.py", "check_progress.py", "check_progress.py",
+                 "report_to_docx.py", "report_to_flomo.py"], True)
+
+# ---- bootstrap：环境变量预警 + research_start 调用 ----
+bootstrap_calls = []
+with (
+    mock.patch("run_pipeline.run",
+               side_effect=lambda cmd, check=True, label="": bootstrap_calls.append(cmd)),
+    mock.patch("run_pipeline.subprocess.run", return_value=mock.Mock(returncode=0)),
+    mock.patch.dict(os.environ, {}, clear=False),
+):
+    os.environ.pop("WECHAT_ARTICLE_SEARCH_SCRIPTS", None)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        # 用示例配置（tools/start.json 为本地遗留物，可随时删除，测试不依赖它）
+        rp.bootstrap("tools/start.example.json")
+    out = buf.getvalue()
+expect("boot+ 未设环境变量预警", "WECHAT_ARTICLE_SEARCH_SCRIPTS" in out, True)
+expect("boot+ 调用 research_start", any("research_start.py" in c[0] for c in bootstrap_calls), True)
+
+# ---- main：无参数报错退出 ----
+with mock.patch("sys.argv", ["run_pipeline.py"]):
+    try:
+        rp.main()
+        expect("main- 无参数应退出", False, True)
+    except SystemExit as e:
+        expect("main- 无参数退出码 1", e.code, 1)
+
+
+print(f"TOTAL: PASS={PASS} FAIL={FAIL}")

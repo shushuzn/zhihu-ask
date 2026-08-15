@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { background: #ffffff; margin: 0; padding: 40px; font-family: "Microsoft YaHei", "Segoe UI", sans-serif; }
+  svg { display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<svg width="2200" height="2520" viewBox="0 0 2200 2520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1e3a5f"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#c62828"/>
+    </marker>
+    <linearGradient id="grad-title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#0d47a1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Title -->
+  <rect x="400" y="20" width="1400" height="60" rx="10" fill="url(#grad-title)" stroke="#0d47a1" stroke-width="2"/>
+  <text x="1100" y="58" text-anchor="middle" fill="#fff" font-size="28" font-weight="bold">zhihu-ask · 知乎深度回答研究流水线架构</text>
+
+  <!-- ============ Phase 0 ============ -->
+  <rect x="60" y="110" width="2080" height="230" rx="12" fill="#f7fafc" stroke="#1e3a5f" stroke-width="2"/>
+  <text x="80" y="145" fill="#0d47a1" font-size="20" font-weight="bold">阶段 0 · 初始化（research_start.py --config tools/start.json）</text>
+
+  <rect x="90" y="165" width="260" height="150" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="220" y="200" text-anchor="middle" fill="#1b5e20" font-size="14" font-weight="bold">📥 用户提交</text>
+  <text x="220" y="225" text-anchor="middle" fill="#455a64" font-size="12">标题 / 知乎链接 / URL</text>
+  <text x="220" y="248" text-anchor="middle" fill="#607d8b" font-size="11">web_fetch 抓取</text>
+  <text x="220" y="268" text-anchor="middle" fill="#607d8b" font-size="11">失败 → 用户粘贴内容</text>
+
+  <text x="365" y="250" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="385" y="165" width="260" height="150" rx="8" fill="#e3edfa" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="515" y="200" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">拆解问题</text>
+  <text x="515" y="225" text-anchor="middle" fill="#455a64" font-size="12">主概念 / 关键实体</text>
+  <text x="515" y="248" text-anchor="middle" fill="#455a64" font-size="12">隐含前提 / 真实诉求</text>
+  <text x="515" y="268" text-anchor="middle" fill="#607d8b" font-size="11">阅读价值评估</text>
+
+  <text x="660" y="250" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="680" y="165" width="260" height="150" rx="8" fill="#e3edfa" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="810" y="200" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">tools/start.json</text>
+  <text x="810" y="225" text-anchor="middle" fill="#455a64" font-size="12">question · domain · slug</text>
+  <text x="810" y="248" text-anchor="middle" fill="#455a64" font-size="12">priority · keywords · days</text>
+
+  <text x="955" y="250" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="975" y="165" width="390" height="150" rx="8" fill="#e3edfa" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="1170" y="200" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">init_research.py</text>
+  <text x="1170" y="225" text-anchor="middle" fill="#455a64" font-size="12">research/&lt;slug&gt;/ 目录创建</text>
+  <text x="1170" y="248" text-anchor="middle" fill="#455a64" font-size="12">plan.md · report.md · process_notes.md</text>
+  <text x="1170" y="268" text-anchor="middle" fill="#455a64" font-size="12">notes/（含 note_TEMPLATE）+ .progress.json</text>
+  <text x="1170" y="288" text-anchor="middle" fill="#607d8b" font-size="11">plan.md 问题索引表登记（进行中）</text>
+
+  <text x="1380" y="250" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="1400" y="165" width="380" height="150" rx="8" fill="#e3edfa" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="1590" y="200" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">channel_state 领域判定</text>
+  <text x="1590" y="225" text-anchor="middle" fill="#455a64" font-size="12">学术科研 / 科技产业 / 财经时政</text>
+  <text x="1590" y="248" text-anchor="middle" fill="#455a64" font-size="12">→ 通道优先级矩阵</text>
+  <text x="1590" y="271" text-anchor="middle" fill="#607d8b" font-size="11">rag_search.py 本地经验检索</text>
+
+  <text x="1795" y="250" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="1815" y="165" width="295" height="150" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="1962" y="200" text-anchor="middle" fill="#1b5e20" font-size="14" font-weight="bold">公众号 A 通道初检</text>
+  <text x="1962" y="225" text-anchor="middle" fill="#2e7d32" font-size="12">wechat_search.py</text>
+  <text x="1962" y="248" text-anchor="middle" fill="#2e7d32" font-size="12">→ gathered_wechat.md</text>
+  <text x="1962" y="268" text-anchor="middle" fill="#558b2f" font-size="11">（自动登记通道 A）</text>
+
+  <line x1="1100" y1="340" x2="1100" y2="380" stroke="#1e3a5f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============ Phase 1 ============ -->
+  <rect x="60" y="380" width="2080" height="560" rx="12" fill="#f7fafc" stroke="#1e3a5f" stroke-width="2"/>
+  <text x="80" y="415" fill="#0d47a1" font-size="20" font-weight="bold">阶段 1 · 六通道信息检索（F → E → A → B → C → P）</text>
+
+  <!-- F -->
+  <rect x="90" y="440" width="300" height="180" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="240" y="470" text-anchor="middle" fill="#4a148c" font-size="15" font-weight="bold">F · flomo 查重（最先）</text>
+  <text x="240" y="495" text-anchor="middle" fill="#4a148c" font-size="12">flomo_search.py memo_search</text>
+  <text x="240" y="518" text-anchor="middle" fill="#6a1b9a" font-size="11">≥0.9 复用/更新 ｜ 0.5~0.9 参考</text>
+  <text x="240" y="538" text-anchor="middle" fill="#6a1b9a" font-size="11">&lt;0.5 正常检索</text>
+  <text x="240" y="561" text-anchor="middle" fill="#6a1b9a" font-size="11">check_flomo_note_refs 素材合规</text>
+  <text x="240" y="584" text-anchor="middle" fill="#6a1b9a" font-size="11">旧笔记过时信息原地更新</text>
+  <text x="240" y="610" text-anchor="middle" fill="#c62828" font-size="12" font-weight="bold">▸ 执行顺序最先</text>
+
+  <text x="400" y="535" fill="#1e3a5f" font-size="18">→</text>
+
+  <!-- E -->
+  <rect x="415" y="440" width="300" height="180" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="565" y="470" text-anchor="middle" fill="#1b5e20" font-size="15" font-weight="bold">E · ima 知识库（P1）</text>
+  <text x="565" y="495" text-anchor="middle" fill="#1b5e20" font-size="12">E1 经验检索</text>
+  <text x="565" y="518" text-anchor="middle" fill="#2e7d32" font-size="12">E2 逐库 search_knowledge</text>
+  <text x="565" y="541" text-anchor="middle" fill="#2e7d32" font-size="12">候选库取全 · ≥2 关键词/库</text>
+  <text x="565" y="564" text-anchor="middle" fill="#558b2f" font-size="11">→ gathered_ima.md</text>
+  <text x="565" y="587" text-anchor="middle" fill="#558b2f" font-size="11">未连接记 skip</text>
+
+  <text x="725" y="535" fill="#1e3a5f" font-size="18">→</text>
+
+  <!-- A -->
+  <rect x="740" y="440" width="300" height="180" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="890" y="470" text-anchor="middle" fill="#1b5e20" font-size="15" font-weight="bold">A · 公众号（分档）</text>
+  <text x="890" y="495" text-anchor="middle" fill="#1b5e20" font-size="12">wechat_search.py</text>
+  <text x="890" y="518" text-anchor="middle" fill="#2e7d32" font-size="12">sogou / ddgs 降级</text>
+  <text x="890" y="541" text-anchor="middle" fill="#2e7d32" font-size="12">UTF-8 文件传参</text>
+  <text x="890" y="564" text-anchor="middle" fill="#558b2f" font-size="11">→ gathered_wechat.md</text>
+  <text x="890" y="587" text-anchor="middle" fill="#558b2f" font-size="11">自动登记 ｜ 零命中重试 1 次</text>
+
+  <text x="1050" y="535" fill="#1e3a5f" font-size="18">→</text>
+
+  <!-- B -->
+  <rect x="1065" y="440" width="320" height="180" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="1225" y="470" text-anchor="middle" fill="#1b5e20" font-size="15" font-weight="bold">B · Web（P0 通用）</text>
+  <text x="1225" y="495" text-anchor="middle" fill="#1b5e20" font-size="12">web_search.py 多引擎</text>
+  <text x="1225" y="518" text-anchor="middle" fill="#2e7d32" font-size="12">ddgs / bing / tavily</text>
+  <text x="1225" y="538" text-anchor="middle" fill="#2e7d32" font-size="12">openalex / crossref</text>
+  <text x="1225" y="561" text-anchor="middle" fill="#558b2f" font-size="11">+ curl 兜底（独立 SSL 栈）</text>
+  <text x="1225" y="584" text-anchor="middle" fill="#558b2f" font-size="11">web_fetch.py 三级降级直抓</text>
+  <text x="1225" y="607" text-anchor="middle" fill="#558b2f" font-size="11">→ gathered_web.md</text>
+
+  <text x="1395" y="535" fill="#1e3a5f" font-size="18">→</text>
+
+  <!-- C -->
+  <rect x="1410" y="440" width="320" height="180" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="1570" y="470" text-anchor="middle" fill="#1b5e20" font-size="15" font-weight="bold">C · 领域连接器（分档）</text>
+  <text x="1570" y="495" text-anchor="middle" fill="#1b5e20" font-size="12">通达信 tdx_query.py</text>
+  <text x="1570" y="518" text-anchor="middle" fill="#2e7d32" font-size="12">行情 / K线 / F10 / 选股</text>
+  <text x="1570" y="541" text-anchor="middle" fill="#1b5e20" font-size="12">企查查 · 智慧芽</text>
+  <text x="1570" y="564" text-anchor="middle" fill="#2e7d32" font-size="12">工商/股东 · 专利/论文全文</text>
+  <text x="1570" y="587" text-anchor="middle" fill="#558b2f" font-size="11">→ gathered_c.md ｜ 分档 P0/P1</text>
+
+  <text x="1740" y="535" fill="#1e3a5f" font-size="18">→</text>
+
+  <!-- P -->
+  <rect x="1755" y="440" width="355" height="180" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="1932" y="470" text-anchor="middle" fill="#1b5e20" font-size="15" font-weight="bold">P · 学术预印本聚合（分档）</text>
+  <text x="1932" y="495" text-anchor="middle" fill="#1b5e20" font-size="12">preprint_search.py --platform all</text>
+  <text x="1932" y="518" text-anchor="middle" fill="#2e7d32" font-size="12">arxiv + bioRxiv + 浪淘沙 + PSSXiv</text>
+  <text x="1932" y="541" text-anchor="middle" fill="#2e7d32" font-size="12">arxiv_search.py 单独检索</text>
+  <text x="1932" y="564" text-anchor="middle" fill="#558b2f" font-size="11">WebFetch 降级 / curl 兜底</text>
+  <text x="1932" y="587" text-anchor="middle" fill="#558b2f" font-size="11">→ gathered_arxiv.md</text>
+  <text x="1932" y="607" text-anchor="middle" fill="#558b2f" font-size="11">+ gathered_preprints.md 自动登记</text>
+
+  <!-- Gate -->
+  <rect x="90" y="650" width="950" height="80" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+  <text x="565" y="678" text-anchor="middle" fill="#b71c1c" font-size="15" font-weight="bold">✅ 门禁 check_progress --require report_channels</text>
+  <text x="565" y="700" text-anchor="middle" fill="#c62828" font-size="11">mark_channel.py 六通道登记（done / empty / skip + note）</text>
+  <text x="565" y="720" text-anchor="middle" fill="#c62828" font-size="10">A/P 落盘自动登记 · F/E/B/C 手动登记 ｜ 声明态 ⊕ 证据双向校验</text>
+
+  <rect x="1100" y="650" width="1010" height="80" rx="8" fill="#e3edfa" stroke="#3f51b5" stroke-width="1.5"/>
+  <text x="1605" y="678" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">💾 素材库文件（各通道命中即落盘）</text>
+  <text x="1605" y="700" text-anchor="middle" fill="#3949ab" font-size="11">gathered_ima.md ｜ gathered_wechat.md ｜ gathered_web.md ｜ gathered_c.md</text>
+  <text x="1605" y="720" text-anchor="middle" fill="#3949ab" font-size="11">gathered_arxiv.md ｜ gathered_preprints.md ｜ 报告须引用 ≥2 条</text>
+
+  <line x1="565" y1="730" x2="565" y2="760" stroke="#1e3a5f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Notes placeholder arrow -->
+  <rect x="90" y="760" width="950" height="60" rx="8" fill="#fffde7" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="565" y="790" text-anchor="middle" fill="#f57f17" font-size="14" font-weight="bold">📝 检索完成后撰写模块化笔记（见下方区块）</text>
+  <text x="565" y="810" text-anchor="middle" fill="#8d6e63" font-size="11">检索素材是笔记原料，笔记是报告的直接素材</text>
+
+  <!-- ============ Notes ============ -->
+  <rect x="60" y="820" width="2080" height="330" rx="12" fill="#fffdf5" stroke="#f9a825" stroke-width="2"/>
+  <text x="80" y="855" fill="#f57f17" font-size="20" font-weight="bold">📝 模块化笔记（notes/ 扁平目录 · 标签区分类型）</text>
+
+  <rect x="90" y="880" width="470" height="140" rx="8" fill="#fffde7" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="325" y="910" text-anchor="middle" fill="#f57f17" font-size="14" font-weight="bold">目录与标签体系</text>
+  <text x="325" y="935" text-anchor="middle" fill="#795548" font-size="12">notes/ 扁平目录（无子目录）</text>
+  <text x="325" y="958" text-anchor="middle" fill="#795548" font-size="12">首行标签：#维度1 #维度2 #主题/slug</text>
+  <text x="325" y="981" text-anchor="middle" fill="#795548" font-size="12">索引笔记：#索引（00_index.md）</text>
+  <text x="325" y="1004" text-anchor="middle" fill="#8d6e63" font-size="11">编号命名：00_index / 01_问题_… / 02_历史_…</text>
+
+  <text x="575" y="955" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="595" y="880" width="470" height="140" rx="8" fill="#fffde7" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="830" y="910" text-anchor="middle" fill="#f57f17" font-size="14" font-weight="bold">每篇笔记结构</text>
+  <text x="830" y="935" text-anchor="middle" fill="#795548" font-size="12">标签行 + 标题 + 正文</text>
+  <text x="830" y="958" text-anchor="middle" fill="#795548" font-size="12">+ 来源（GB/T 7714 编号著录）</text>
+  <text x="830" y="981" text-anchor="middle" fill="#795548" font-size="12">+ 来源类型（一手/二手/综合推断）</text>
+  <text x="830" y="1004" text-anchor="middle" fill="#8d6e63" font-size="11">独立可读四要求：自含出处/不依赖他篇</text>
+  <text x="830" y="1020" text-anchor="middle" fill="#8d6e63" font-size="11">不裸用内部编号/指代明确</text>
+
+  <text x="1080" y="955" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="1100" y="880" width="470" height="140" rx="8" fill="#fffde7" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="1335" y="910" text-anchor="middle" fill="#f57f17" font-size="14" font-weight="bold">00_index.md 索引笔记（#索引）</text>
+  <text x="1335" y="935" text-anchor="middle" fill="#795548" font-size="12">## 问题 / 历史 / 证明 / 结论 / 缺口</text>
+  <text x="1335" y="958" text-anchor="middle" fill="#795548" font-size="12">每小节 → #01 #02 … 引用对应笔记</text>
+  <text x="1335" y="981" text-anchor="middle" fill="#795548" font-size="12">缺口小节列未决问题</text>
+  <text x="1335" y="1004" text-anchor="middle" fill="#8d6e63" font-size="11">报告结构由索引笔记决定</text>
+
+  <text x="1585" y="955" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="1605" y="880" width="505" height="140" rx="8" fill="#fffde7" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="1857" y="910" text-anchor="middle" fill="#f57f17" font-size="14" font-weight="bold">note_assemble.py 组装</text>
+  <text x="1857" y="935" text-anchor="middle" fill="#795548" font-size="12">--slug 读索引笔记 → 报告结构</text>
+  <text x="1857" y="958" text-anchor="middle" fill="#795548" font-size="12">按索引顺序组装模块化笔记</text>
+  <text x="1857" y="981" text-anchor="middle" fill="#795548" font-size="12">→ report_draft.md 骨架</text>
+  <text x="1857" y="1004" text-anchor="middle" fill="#8d6e63" font-size="11">标记过渡段 TODO · 收集参考来源</text>
+  <text x="1857" y="1020" text-anchor="middle" fill="#8d6e63" font-size="11">--dry-run 预览</text>
+
+  <!-- Notes → P2-3 -->
+  <line x1="1100" y1="1150" x2="1100" y2="1190" stroke="#1e3a5f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============ Phase 2-3 ============ -->
+  <rect x="60" y="1190" width="2080" height="220" rx="12" fill="#f7fafc" stroke="#1e3a5f" stroke-width="2"/>
+  <text x="80" y="1225" fill="#0d47a1" font-size="20" font-weight="bold">阶段 2-3 · 五视角收集 + 交叉验证量化</text>
+
+  <rect x="90" y="1250" width="600" height="130" rx="8" fill="#eceff1" stroke="#78909c" stroke-width="1.5"/>
+  <text x="390" y="1280" text-anchor="middle" fill="#37474f" font-size="14" font-weight="bold">五视角信息收集</text>
+  <text x="390" y="1305" text-anchor="middle" fill="#546e7a" font-size="12">A 公众号观点 · B Web 事实</text>
+  <text x="390" y="1328" text-anchor="middle" fill="#546e7a" font-size="12">C 领域分析 · D 高赞争议 · E 反方风险</text>
+  <text x="390" y="1351" text-anchor="middle" fill="#78909c" font-size="11">子问题与五视角逐一对照覆盖</text>
+
+  <text x="720" y="1325" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="760" y="1250" width="600" height="130" rx="8" fill="#fbe9e7" stroke="#6d4c41" stroke-width="1.5"/>
+  <text x="1060" y="1280" text-anchor="middle" fill="#4e342e" font-size="14" font-weight="bold">多源冲突取舍</text>
+  <text x="1060" y="1305" text-anchor="middle" fill="#6d4c41" font-size="12">最新 + 一手优先 + 口径一致</text>
+  <text x="1060" y="1328" text-anchor="middle" fill="#6d4c41" font-size="12">来源类型（笔记）：一手 / 二手 / 综合推断</text>
+  <text x="1060" y="1351" text-anchor="middle" fill="#8d6e63" font-size="11">媒体转述回溯一手来源</text>
+
+  <text x="1390" y="1325" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="1430" y="1250" width="680" height="130" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="1.5"/>
+  <text x="1770" y="1280" text-anchor="middle" fill="#b71c1c" font-size="14" font-weight="bold">算式按需但必验</text>
+  <text x="1770" y="1305" text-anchor="middle" fill="#c62828" font-size="12">verify_calcs.py Python 实际验证</text>
+  <text x="1770" y="1328" text-anchor="middle" fill="#c62828" font-size="12">验证脚本留存研究目录 · 融入小节叙述</text>
+  <text x="1770" y="1351" text-anchor="middle" fill="#c62828" font-size="12">论证完整：定理-引理-证明 / 步骤归约</text>
+
+  <line x1="1100" y1="1410" x2="1100" y2="1450" stroke="#1e3a5f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============ Phase 4 ============ -->
+  <rect x="60" y="1450" width="2080" height="420" rx="12" fill="#f7fafc" stroke="#1e3a5f" stroke-width="2"/>
+  <text x="80" y="1485" fill="#0d47a1" font-size="20" font-weight="bold">阶段 4 · 报告生成与质检门禁（run_pipeline.py --slug 编排）</text>
+
+  <rect x="90" y="1505" width="380" height="100" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="280" y="1540" text-anchor="middle" fill="#1b5e20" font-size="16" font-weight="bold">📝 report.md</text>
+  <text x="280" y="1565" text-anchor="middle" fill="#2e7d32" font-size="12">结论 ≤300 字符 · 首行无结论字样</text>
+  <text x="280" y="1587" text-anchor="middle" fill="#2e7d32" font-size="12">公式 LaTeX · 正文 [n] 引注</text>
+  <text x="280" y="1600" text-anchor="middle" fill="#558b2f" font-size="11">概念主体 · 独立组织 · 无过程字样</text>
+
+  <text x="495" y="1560" fill="#1e3a5f" font-size="20">→</text>
+
+  <rect x="520" y="1500" width="1590" height="250" rx="10" fill="#e3edfa" stroke="#3f51b5" stroke-width="2"/>
+  <text x="1315" y="1530" text-anchor="middle" fill="#1a237e" font-size="15" font-weight="bold">质检八件套门禁（全通过才可交付）</text>
+
+  <rect x="550" y="1550" width="240" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="670" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">check_report_structure</text>
+  <text x="670" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">结构/素材引用≥2</text>
+
+  <rect x="810" y="1550" width="240" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="930" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">quality_check</text>
+  <text x="930" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">立场/框架/AI腔/公式/标题</text>
+  <text x="930" y="1604" text-anchor="middle" fill="#607d8b" font-size="9">过程字样/内部标识/A股行情</text>
+
+  <rect x="1070" y="1550" width="210" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1175" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">check_ai_voice</text>
+  <text x="1175" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">禁用表达/立靶子</text>
+
+  <rect x="1300" y="1550" width="210" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1405" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">check_gbt_refs</text>
+  <text x="1405" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">GB/T 7714/引注对应</text>
+
+  <rect x="1530" y="1550" width="250" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1655" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">check_citation_validity</text>
+  <text x="1655" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">作者/题名联网核验</text>
+
+  <rect x="1800" y="1550" width="200" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1900" y="1570" text-anchor="middle" fill="#1a237e" font-size="11">check_consistency</text>
+  <text x="1900" y="1590" text-anchor="middle" fill="#607d8b" font-size="10">矛盾/废话/旧表述</text>
+
+  <rect x="550" y="1620" width="260" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="680" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">check_progress ×2</text>
+  <text x="680" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">轮次 auto + 落报告</text>
+
+  <rect x="830" y="1620" width="420" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1040" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">report_to_docx / report_to_flomo</text>
+  <text x="1040" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">report.docx · flomo_full.md（仅存档）</text>
+
+  <rect x="1270" y="1620" width="420" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1480" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">check_all 全库体检</text>
+  <text x="1480" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">九列汇总（信息性，不阻断）</text>
+
+  <rect x="1710" y="1620" width="290" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
+  <text x="1855" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">health_check</text>
+  <text x="1855" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">环境/规则文档无废话</text>
+
+  <rect x="550" y="1695" width="420" height="40" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="760" y="1721" text-anchor="middle" fill="#1b5e20" font-size="14" font-weight="bold">✅ 全部通过 → 产出</text>
+
+  <rect x="1000" y="1695" width="420" height="40" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+  <text x="1210" y="1721" text-anchor="middle" fill="#b71c1c" font-size="14" font-weight="bold">❌ 硬伤 → 迭代轮次</text>
+  <path d="M 1210,1735 C 1210,1795 250,1795 250,1410" stroke="#c62828" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#arrow-red)"/>
+  <text x="180" y="1815" fill="#c62828" font-size="11">iter_research.py → round_notes.md</text>
+  <text x="180" y="1833" fill="#c62828" font-size="11">补检索/深化 · 问题清单清空为止</text>
+
+  <line x1="760" y1="1735" x2="760" y2="1775" stroke="#1e3a5f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============ Outputs ============ -->
+  <rect x="60" y="1890" width="2080" height="190" rx="12" fill="#f7fafc" stroke="#e65100" stroke-width="2"/>
+  <text x="80" y="1925" fill="#e65100" font-size="20" font-weight="bold">📤 产出与沉淀</text>
+
+  <rect x="90" y="1950" width="320" height="110" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="250" y="1985" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">模块化笔记上传 flomo</text>
+  <text x="250" y="2010" text-anchor="middle" fill="#6a1b9a" font-size="11">note_upload.py 逐条质检后上传</text>
+  <text x="250" y="2032" text-anchor="middle" fill="#6a1b9a" font-size="11">00_index / report 禁止上传</text>
+  <text x="250" y="2054" text-anchor="middle" fill="#6a1b9a" font-size="11">--update 原地更新旧笔记</text>
+
+  <rect x="440" y="1950" width="270" height="110" rx="8" fill="#fbe9e7" stroke="#6d4c41" stroke-width="1.5"/>
+  <text x="575" y="1985" text-anchor="middle" fill="#4e342e" font-size="13" font-weight="bold">ai_cover.png</text>
+  <text x="575" y="2010" text-anchor="middle" fill="#6d4c41" font-size="11">report_images.py</text>
+  <text x="575" y="2032" text-anchor="middle" fill="#6d4c41" font-size="11">纯抽象视觉 · 无文字/徽章</text>
+  <text x="575" y="2054" text-anchor="middle" fill="#6d4c41" font-size="11">合规/主题/构图三重复检</text>
+
+  <rect x="740" y="1950" width="270" height="110" rx="8" fill="#e3edfa" stroke="#3f51b5" stroke-width="1.5"/>
+  <text x="875" y="1985" text-anchor="middle" fill="#1a237e" font-size="13" font-weight="bold">report.docx</text>
+  <text x="875" y="2010" text-anchor="middle" fill="#3949ab" font-size="11">report_to_docx.py</text>
+  <text x="875" y="2032" text-anchor="middle" fill="#3949ab" font-size="11">图片嵌入 · 公式 OMML</text>
+
+  <rect x="1040" y="1950" width="270" height="110" rx="8" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+  <text x="1175" y="1985" text-anchor="middle" fill="#004d40" font-size="13" font-weight="bold">公众号草稿（按需）</text>
+  <text x="1175" y="2010" text-anchor="middle" fill="#00796b" font-size="11">wechat_publish.py</text>
+  <text x="1175" y="2032" text-anchor="middle" fill="#00796b" font-size="11">latex_unicode 转可读文本</text>
+  <text x="1175" y="2054" text-anchor="middle" fill="#00796b" font-size="11">推送草稿箱 · 后台发表</text>
+
+  <rect x="1340" y="1950" width="760" height="110" rx="8" fill="#eceff1" stroke="#78909c" stroke-width="1.5"/>
+  <text x="1720" y="1985" text-anchor="middle" fill="#37474f" font-size="13" font-weight="bold">知识沉淀（必做）</text>
+  <text x="1720" y="2010" text-anchor="middle" fill="#546e7a" font-size="11">KEYWORDS.md 有效关键词回填</text>
+  <text x="1720" y="2032" text-anchor="middle" fill="#546e7a" font-size="11">process_notes.md 检索与踩坑记录</text>
+  <text x="1720" y="2054" text-anchor="middle" fill="#546e7a" font-size="11">plan.md 索引回填（已完成）</text>
+
+  <!-- ============ Final ============ -->
+  <rect x="60" y="2110" width="2080" height="120" rx="12" fill="#f7fafc" stroke="#2e7d32" stroke-width="2"/>
+  <text x="80" y="2145" fill="#1b5e20" font-size="20" font-weight="bold">✅ 收尾</text>
+
+  <rect x="90" y="2165" width="680" height="55" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="430" y="2190" text-anchor="middle" fill="#1b5e20" font-size="13" font-weight="bold">git 提交推送（仅公开文件）</text>
+  <text x="430" y="2212" text-anchor="middle" fill="#558b2f" font-size="11">pre-commit hook 拦截内部文件 · git_protect.py · internal_files.py</text>
+
+  <rect x="800" y="2165" width="680" height="55" rx="8" fill="#e3edfa" stroke="#3f51b5" stroke-width="1.5"/>
+  <text x="1140" y="2190" text-anchor="middle" fill="#1a237e" font-size="13" font-weight="bold">多轮迭代（未尽问题时）</text>
+  <text x="1140" y="2212" text-anchor="middle" fill="#3949ab" font-size="11">iter_research.py → round_notes.md · check_progress --require_round auto</text>
+
+  <rect x="1510" y="2165" width="600" height="55" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
+  <text x="1810" y="2190" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">会话启动检查</text>
+  <text x="1810" y="2212" text-anchor="middle" fill="#6a1b9a" font-size="11">health_check.py · 规则文档无废话门禁</text>
+
+  <!-- ============ Docs ============ -->
+  <rect x="60" y="2260" width="2080" height="140" rx="12" fill="#f7fafc" stroke="#7b1fa2" stroke-width="2"/>
+  <text x="80" y="2295" fill="#6a1b9a" font-size="20" font-weight="bold">📚 规则与支撑</text>
+
+  <rect x="90" y="2315" width="620" height="75" rx="6" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1"/>
+  <text x="400" y="2345" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">docs/ 规则文档</text>
+  <text x="400" y="2367" text-anchor="middle" fill="#6a1b9a" font-size="11">SOP · TOOLS · CHECKLIST · STYLE_GUIDE</text>
+  <text x="400" y="2385" text-anchor="middle" fill="#6a1b9a" font-size="11">CONVENTIONS · KEYWORDS</text>
+
+  <rect x="750" y="2315" width="620" height="75" rx="6" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1"/>
+  <text x="1060" y="2345" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">templates/ 模板</text>
+  <text x="1060" y="2367" text-anchor="middle" fill="#6a1b9a" font-size="11">research_report_TEMPLATE · research_plan_TEMPLATE</text>
+  <text x="1060" y="2385" text-anchor="middle" fill="#6a1b9a" font-size="11">note_TEMPLATE · process_notes_TEMPLATE</text>
+
+  <rect x="1410" y="2315" width="620" height="75" rx="6" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1"/>
+  <text x="1720" y="2345" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">数据与配置</text>
+  <text x="1720" y="2367" text-anchor="middle" fill="#6a1b9a" font-size="11">channel_state.py 通道单一真相源</text>
+  <text x="1720" y="2385" text-anchor="middle" fill="#6a1b9a" font-size="11">.progress.json · verify_calcs.py · .flomo_ids.json</text>
+
+  <!-- Legend -->
+  <rect x="60" y="2430" width="2080" height="60" rx="8" fill="#fafafa" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="80" y="2455" fill="#455a64" font-size="14" font-weight="bold">图例</text>
+  <rect x="80" y="2465" width="14" height="14" rx="2" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
+  <text x="102" y="2476" fill="#37474f" font-size="12">必做通道 / 成功路径</text>
+  <rect x="240" y="2465" width="14" height="14" rx="2" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1"/>
+  <text x="262" y="2476" fill="#37474f" font-size="12">flomo / 知识库</text>
+  <rect x="410" y="2465" width="14" height="14" rx="2" fill="#ffebee" stroke="#c62828" stroke-width="1"/>
+  <text x="432" y="2476" fill="#37474f" font-size="12">门禁 / 阻断</text>
+  <rect x="560" y="2465" width="14" height="14" rx="2" fill="#e3edfa" stroke="#3f51b5" stroke-width="1"/>
+  <text x="582" y="2476" fill="#37474f" font-size="12">工具 / 工具链</text>
+  <rect x="730" y="2465" width="14" height="14" rx="2" fill="#eceff1" stroke="#78909c" stroke-width="1"/>
+  <text x="752" y="2476" fill="#37474f" font-size="12">视角 / 分析节点</text>
+  <rect x="910" y="2465" width="14" height="14" rx="2" fill="#fbe9e7" stroke="#6d4c41" stroke-width="1"/>
+  <text x="932" y="2476" fill="#37474f" font-size="12">验证 / 量化</text>
+  <rect x="1080" y="2465" width="14" height="14" rx="2" fill="#fffde7" stroke="#f9a825" stroke-width="1"/>
+  <text x="1102" y="2476" fill="#37474f" font-size="12">模块化笔记</text>
+  <rect x="1240" y="2465" width="14" height="14" rx="2" fill="#e0f2f1" stroke="#00695c" stroke-width="1"/>
+  <text x="1262" y="2476" fill="#37474f" font-size="12">可选 / 按需</text>
+
+</svg>
+</body>
+</html>
