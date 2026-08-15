@@ -294,9 +294,10 @@ def main():
     hard_issues = [i for i in issues if "硬伤" in str(i[1])]
     warn_issues = [i for i in issues if "提示" in str(i[1])]
     
-    # 显示所有问题
+    # 显示所有问题（issues 元组长度不定：2 元组 (行, 消息) 或 4 元组 (行, 消息, 详情, 原文片段)）
     seen = {}
-    for line_no, msg in issues:
+    for item in issues:
+        line_no, msg = item[0], item[1]
         seen.setdefault(msg, []).append(line_no)
     for msg, lns in seen.items():
         prefix = "[硬伤]" if "硬伤" in msg else "[提示]"
