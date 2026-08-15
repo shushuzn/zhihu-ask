@@ -18,6 +18,8 @@ import io
 import contextlib
 from unittest import mock
 
+import testutil
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import run_pipeline as rp
@@ -84,6 +86,47 @@ with (
     out = buf.getvalue()
 expect("boot+ 未设环境变量预警", "WECHAT_ARTICLE_SEARCH_SCRIPTS" in out, True)
 expect("boot+ 调用 research_start", any("research_start.py" in c[0] for c in bootstrap_calls), True)
+flomo_calls = [c for c in bootstrap_calls if "flomo_search.py" in c[0]]
+expect("boot+ flomo 查重带 --slug（自动登记 F）",
+       any("--slug" in c and "example-slug" in c for c in flomo_calls), True)
+
+# ---- mark_plan_done：plan.md 索引回填 ----
+plan_dir = testutil.mktestdir(prefix="tplan_")
+plan_file = os.path.join(plan_dir, "plan.md")
+with open(plan_file, "w", encoding="utf-8") as f:
+    f.write("# 索引\n\n| 日期 | 领域 | topic_slug | 状态 |\n|---|---|---|---|\n"
+            "| 2026-08-15 | 数学 | done-slug | 进行中 |\n"
+            "| 2026-08-15 | 数学 | already-slug | 已完成（1 轮迭代） |\n")
+old_root = rp.ROOT
+rp.ROOT = plan_dir
+try:
+    expect("plan+ 进行中 → 已完成", rp.mark_plan_done("done-slug", plan_file), True)
+    txt = open(plan_file, encoding="utf-8").read()
+    expect("plan+ 行状态已回填", "| done-slug | 已完成 |" in txt, True)
+    expect("plan+ 已完成的行不动", "| already-slug | 已完成（1 轮迭代） |" in txt, True)
+    expect("plan+ 幂等（再跑无改动）", rp.mark_plan_done("done-slug", plan_file), False)
+    expect("plan+ 缺失行返回 False", rp.mark_plan_done("nonexistent", plan_file), False)
+    expect("plan+ 无 plan.md 返回 False", rp.mark_plan_done("x", os.path.join(plan_dir, "nope.md")), False)
+finally:
+    rp.ROOT = old_root
+
+# ---- finish 收尾自动回填 plan.md ----
+plan_dir2 = testutil.mktestdir(prefix="tplan2_")
+plan_file2 = os.path.join(plan_dir2, "plan.md")
+with open(plan_file2, "w", encoding="utf-8") as f:
+    f.write("| 日期 | 领域 | topic_slug | 状态 |\n|---|---|---|---|\n"
+            "| 2026-08-15 | 数学 | demo-slug | 进行中 |\n")
+old_root2 = rp.ROOT
+rp.ROOT = plan_dir2
+try:
+    calls2 = []
+    with mock.patch("run_pipeline.run", side_effect=lambda cmd, check=True, label="": calls2.append(cmd) or 0), \
+         mock.patch("run_pipeline.subprocess.run", return_value=mock.Mock(returncode=0)):
+        rp.finish("demo-slug")
+    txt2 = open(plan_file2, encoding="utf-8").read()
+    expect("fin+ 门禁通过后自动回填 plan.md", "| demo-slug | 已完成 |" in txt2, True)
+finally:
+    rp.ROOT = old_root2
 
 # ---- main：无参数报错退出 ----
 with mock.patch("sys.argv", ["run_pipeline.py"]):

@@ -67,9 +67,14 @@ def flomo_gate(config):
     if not query:
         print("[阻断] config 中缺少 question/keywords，无法执行 flomo 查重。")
         sys.exit(1)
-    run([os.path.join(TOOLS, "flomo_search.py"), "--keywords", query, "--limit", "10"],
-        label="flomo_search（F 通道查重，第一步阻断）")
-    print("[通过] flomo 查重已实际执行；若输出中存在同主题已有笔记/知识条目，须先按复用/更新规则处理再继续。")
+    cmd = [os.path.join(TOOLS, "flomo_search.py"), "--keywords", query, "--limit", "10"]
+    slug = (cfg.get("slug") or "").strip()
+    if slug:
+        # 带 --slug 查重即自动登记通道 F（done，note 含 memo_search 证据），无需再手动 mark_channel
+        cmd += ["--slug", slug]
+    run(cmd, label="flomo_search（F 通道查重，第一步阻断）")
+    print("[通过] flomo 查重已实际执行" + (f"，通道 F 已自动登记（{slug}）" if slug else "")
+          + "；若输出中存在同主题已有笔记/知识条目，须先按复用/更新规则处理再继续。")
 
 
 def bootstrap(config):
@@ -93,9 +98,9 @@ def agent_checklist(slug, query):
     banner("需 agent 介入的检索与写作步骤（脚本无法自动化）")
     print("请逐项完成，再运行收尾：python tools/run_pipeline.py --slug " + slug)
     print("""
-1) 通道 F 查重：已由启动阶段 flomo_gate 实际执行并阻断校验；
-   如手工启动，必须先跑 `python tools/flomo_search.py --keywords "<主题词>"`，
-   并把执行结果写入 .progress.json 的 F note（含 memo_search/flomo_search 证据）
+1) 通道 F 查重：已由启动阶段 flomo_gate 实际执行并阻断校验（config 含 slug 时
+   已自动登记通道 F，note 含 memo_search 证据）；如手工启动，先跑
+   `python tools/flomo_search.py --keywords "<主题词>" --slug <slug>`（自动登记 F）
 2) 通道 E（ima）：连接器已连接时两级检索并落盘 gathered_ima.md
 3) 通道 B（Web）：web_search / web_fetch 拿官方数据、研报、新闻
 4) 通道 C 必做：企查查 get_company_by_query / 通达信 tdx_lookup_stock /
@@ -165,6 +170,13 @@ def finish(slug, offline=False):
     except Exception as e:
         print(f"[提示] check_all 运行异常：{e}")
 
+    # 沉淀自动化：门禁全过后回填本地 plan.md 索引状态「进行中 → 已完成」（幂等）
+    try:
+        if mark_plan_done(slug):
+            print(f"[回填] plan.md 索引：{slug} → 已完成")
+    except Exception as e:
+        print(f"[提示] plan.md 回填失败（不影响交付）: {e}")
+
     banner("agent 待办（收尾人工步骤）")
     print(f"""
 - flomo 笔记上传：python tools/note_upload.py research/{slug}/notes/ 逐条质检后上传（索引/报告禁止上传）；
@@ -175,6 +187,37 @@ def finish(slug, offline=False):
 - 全库体检（check_all）已在上方自动跑过；如需单独复跑：
   python tools/check_all.py
 """)
+
+
+def mark_plan_done(slug, plan_path=None):
+    """回填本地 plan.md 问题索引：<slug> 行状态 进行中/规划中 → 已完成（幂等）。
+
+    plan.md 为本地文件（gitignore，不入库）；行缺失或已为「已完成」时不做改动。
+    返回 True 表示有行被更新。
+    """
+    import re as _re
+    plan_path = plan_path or os.path.join(ROOT, "plan.md")
+    if not os.path.isfile(plan_path):
+        return False
+    try:
+        with open(plan_path, "r", encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return False
+    changed = False
+    for i, line in enumerate(lines):
+        if f"| {slug} |" in line and "已完成" not in line:
+            new_line = _re.sub(r"\| (进行中|规划中) \|\s*$", "| 已完成 |", line)
+            if new_line != line:
+                lines[i] = new_line
+                changed = True
+    if changed:
+        try:
+            with open(plan_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        except OSError:
+            return False
+    return changed
 
 
 def main():

@@ -152,7 +152,7 @@ python tools/run_pipeline.py --config tools/start.json --slug <slug>
 python tools/run_pipeline.py --slug <slug> --offline
 ```
 
-**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
+**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；config 含 slug 时 F 查重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
 
 ## quality_check.py — 正文质量自动检查
 

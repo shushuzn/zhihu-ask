@@ -61,7 +61,7 @@
 - 按 `templates/research_report_TEMPLATE.md` 产出 report.md：结论（≤300 字）→ 关键事实与数据（事实叙述+测算融入+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。
 - **脚本收尾**：`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity → check_consistency → check_progress 轮次 → check_progress 落报告；硬伤与提示级均阻断）→ `report_to_docx.py` → `report_to_flomo.py`（本地存档）→ `check_all.py` 全库体检。
 - **配图**：`tools/report_images.py --slug <slug>` —— AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `docs/CHECKLIST.md`）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
-- **沉淀（必做）**：有效关键词写 SQLite 关键词库（`keywords_db.py --add` + `--export docs/KEYWORDS.md`）；写 `process_notes.md`；`note_upload.py research/<slug>/notes/` 逐条质检后上传（索引/报告自动拦截；flomo 未配置则跳过并记录）；回填 `plan.md` 状态为"已完成"。
+- **沉淀（必做）**：有效关键词写 SQLite 关键词库（`keywords_db.py --add` + `--export docs/KEYWORDS.md`）；写 `process_notes.md`；`note_upload.py research/<slug>/notes/` 逐条质检后上传（索引/报告自动拦截；flomo 未配置则跳过并记录）；回填 `plan.md` 状态为"已完成"（`run_pipeline.py` 收尾门禁全过后自动回填）。
 - **按需**：`wechat_publish.py` 推送公众号草稿（用户指示时执行）。
 - **决策点**：交付前用户验收；被拒（AI 味/质量）则按 STYLE_GUIDE 重写后重新提交。
 
