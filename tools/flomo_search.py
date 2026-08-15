@@ -100,26 +100,12 @@ def fetch_full(memos):
     return full
 
 
-def auto_register_f(slug, n_hits):
-    """查重执行后自动登记通道 F（done，note 含 memo_search 证据）。返回 (ok, message)。"""
-    try:
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        import channel_state as _cs
-        note = f"memo_search 已执行：命中 {n_hits} 条（查重结论以人工判读为准）"
-        if _cs.mark(slug, "F", "done", note=note):
-            return True, f"通道 F（flomo 查重）: done —— {note}"
-        return False, f"未找到 research/{slug}/.progress.json，跳过通道 F 自动登记（请先 research_start）"
-    except Exception as e:
-        return False, f"通道 F 自动登记失败（不影响查重输出）: {e}"
-
-
 def main():
     parser = argparse.ArgumentParser(description="flomo 笔记搜索")
     parser.add_argument("--keywords", help="搜索关键词 (空格分隔=AND)")
     parser.add_argument("--tag", help="按标签筛选")
     parser.add_argument("--limit", type=int, default=10, help="最多返回条数")
     parser.add_argument("--full", action="store_true", help="输出完整笔记正文（默认只显示摘要）")
-    parser.add_argument("--slug", help="查重执行后自动登记通道 F（写入 research/<slug>/.progress.json 的 channels_done）")
     args = parser.parse_args()
 
     if not args.keywords and not args.tag:
@@ -131,11 +117,10 @@ def main():
     except Exception as e:
         print(f"ERROR: flomo 查重失败：{e}")
         sys.exit(1)
-    # F 通道自动登记：查重已实际执行即登记 done（note 含 memo_search 证据，供 report_channels 门禁）。
-    # 命中≥0.9 复用/更新、0.5~0.9 参考等结论由 agent 阅读结果后用 mark_channel 补充/覆盖 note。
-    if args.slug:
-        ok, msg = auto_register_f(args.slug, len(memos))
-        print(f"[自动登记] {msg}" if ok else f"[提示] {msg}")
+    # 注意：查重结论（relevance ≥0.9 复用/更新、0.5~0.9 参考、<0.5 正常检索，含假阳性甄别）
+    # 由主代理人工判读，并用 mark_channel 登记通道 F（done/empty + note 判读结论）——
+    # 本工具只负责执行 memo_search 并输出结果，不做自动登记（自动登记会把
+    # 「已执行查重」与「查重结论」混为一谈，假阳性会漏判）。
 
     if not memos:
         print("未找到匹配的笔记。")

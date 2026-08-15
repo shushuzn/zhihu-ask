@@ -39,7 +39,7 @@
 | test_rag_build (23) | is_indexable / chunks | test_clean_workspace (8) | 清理路径收集 |
 | test_rag_search (29) | tokenize / bm25 / highlight | test_env_loader (16) | .env 加载 |
 | test_knowledge_store (17) | 关键词库 roundtrip | test_gbt_refs (23) | 国标著录 |
-| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (10) | token 环境变量 / F 自动登记 |
+| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (6) | token 只从环境变量读取 |
 | test_report_to_docx (41) | md→docx 转换契约 | test_web_fetch (20) | 抓取降级 |
 | test_iter_research (27) | 轮次推进 / 归档 | test_preprint_search (31) | 四平台聚合 |
 | test_net_check (9) | 外网出口探测 | | |
@@ -85,12 +85,12 @@ python tools/note_assemble.py --slug <slug> --output custom.md  # 指定输出�
 python tools/flomo_search.py --keywords "AI 编程"                  # 关键词搜索
 python tools/flomo_search.py --tag "AI编程" --keywords "定价"       # 组合搜
 python tools/flomo_search.py --keywords "定价" --full              # 拉完整正文（memo_batch_get）
-python tools/flomo_search.py --keywords "主题词" --slug <slug>     # 查重后自动登记通道 F（done，note 含 memo_search 证据）
+python tools/flomo_search.py --keywords "主题词"                  # 查重（结论人工判读后用 mark_channel 登记 F）h 证据）
 ```
 
 **要点**：
 - **凭证**：Token 只从环境变量 `FLOMO_MCP_TOKEN` 读取（不读 .env，见 docs/CONVENTIONS.md）；此前硬编码进公开仓库，**须在 flomo 后台撤销旧 token 重建**。
-- **F 自动登记**：带 `--slug` 即登记 done（note 含 memo_search 证据）；≥0.9 复用/更新、0.5~0.9 参考等结论由主代理阅读结果后用 `mark_channel.py` 补充/覆盖 note。
+- **F 查重为人工判读门禁**：工具只执行 memo_search 并输出结果，不做自动登记（自动登记会把「已执行查重」与「查重结论」混为一谈，假阳性会漏判）；结论由主代理判读（≥0.9 复用/更新、0.5~0.9 参考、<0.5 正常检索，命中但判定不相关按 <0.5 处理）后用 `mark_channel --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"` 登记。nnel.py` 补充/覆盖 note。
 ## research_start.py — 一键研究启动器
 
 **作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 素材库非空校验 → 记录阶段进度 `.progress.json`（含 `domain` 字段，供 `check_progress --require_round auto` 按领域判定最低轮次）→ 打印后续步骤（阶段 2-4 上下文，其中通道 E 提示按领域从 `docs/IMA_LIBRARIES.md` 列出候选订阅库）。
@@ -152,7 +152,7 @@ python tools/run_pipeline.py --config tools/start.json --slug <slug>
 python tools/run_pipeline.py --slug <slug> --offline
 ```
 
-**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；config 含 slug 时 F 查重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
+**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；F 查重执行但结论由主代理人工判读后 mark_channel 登记，重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
 
 ## quality_check.py — 正文质量自动检查
 

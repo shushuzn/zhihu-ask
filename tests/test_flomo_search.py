@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-"""flomo_search.py 回归测试：token 环境变量化（凭证不入库）+ 通道 F 自动登记。"""
+"""flomo_search.py 回归测试：token 只从环境变量读取（凭证不入库）。"""
 import os
 import sys
-import json
-import shutil
 import importlib
-
-import testutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
@@ -50,31 +46,9 @@ else:
     os.environ["FLOMO_MCP_TOKEN"] = _old_token
 fs = importlib.reload(fs)
 
-# ---- 通道 F 自动登记（查重执行后登记 done，note 含 memo_search 证据） ----
-base = testutil.mktestdir(prefix="tf_")
-slug = "f-slug"
-slug_dir = os.path.join(base, "research", slug)
-os.makedirs(slug_dir)
-with open(os.path.join(slug_dir, ".progress.json"), "w", encoding="utf-8") as f:
-    json.dump({"stage": "phase1_done", "data": {}}, f)
-import channel_state as cs
-old_root = cs.ROOT
-cs.ROOT = base
-try:
-    ok, msg = fs.auto_register_f(slug, 3)
-    expect("F+ 自动登记返回 True", ok, True)
-    prog = json.load(open(os.path.join(slug_dir, ".progress.json"), encoding="utf-8"))
-    e = prog["data"]["channels_done"]["F"]
-    expect("F+ status done", e["status"], "done")
-    expect("F+ note 含 memo_search 证据", "memo_search" in e["note"], True)
-    expect("F+ note 含命中数", "3 条" in e["note"], True)
-
-    ok2, msg2 = fs.auto_register_f("nosuch", 0)
-    expect("F- 无 progress 不登记", ok2, False)
-    expect("F- 缺 progress 提示", "未找到 research" in msg2, True)
-finally:
-    cs.ROOT = old_root
-    shutil.rmtree(base, ignore_errors=True)
+# F 查重为人工判读门禁：查重结论（复用/更新/参考/正常检索，含假阳性甄别）由主代理
+# 判读后用 mark_channel 登记，工具不做自动登记（自动登记会把「已执行查重」与
+# 「查重结论」混为一谈，假阳性会漏判）。token 相关测试见上方。
 
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
 sys.exit(1 if FAIL else 0)

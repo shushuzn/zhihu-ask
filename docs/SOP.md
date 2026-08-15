@@ -29,7 +29,7 @@
 
 | 通道 | 学术科研 | 科技产业 | 财经时政 | 登记方式 |
 |---|---|---|---|---|
-| F flomo 查重 | P0（最先·阻断） | P0 | P0 | `flomo_search.py --slug` 自动登记 |
+| F flomo 查重 | P0（最先·阻断） | P0 | P0 | 人工判读结论后 mark_channel 登记 |
 | B Web | P0 | P0 | P0 | `web_search.py --out gathered_web.md` 落盘自动登记 |
 | P 预印本聚合（arxiv/bioRxiv/浪淘沙/PSSXiv） | P0 | P2 | P2 | `preprint_search.py --platform all` 落盘自动登记 |
 | C 领域连接器（企查查/通达信/智慧芽） | P1 | P0 | P0 | 未配置：环境级自动 skip；已配置手动登记 |
@@ -38,7 +38,7 @@
 
 **F 查重（第一步，阻断）**：`memo_search` 查本主题已有**笔记**；relevance ≥0.9 复用/更新（只补新信息）、0.5–0.9 参考（须合规 GB/T 来源）、<0.5 正常检索；命中旧笔记过时信息须原地更新。flomo 命中笔记作素材须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测），不合规/没有 → 联网找对应来源 → 找不到则不可用。
 
-**素材落盘与登记**：各通道命中写 `research/<slug>/gathered_*.md`（非空且含标题/来源/链接）。A/B/P 落盘自动登记，F 带 `--slug` 自动登记，E/C 未配置由初始化自动登记 skip（环境级，跨研究共享，无需逐篇检查）；其余用 `python tools/mark_channel.py --slug <slug> --channel <F|E|A|B|C|P> --status <done|empty|skip> [--note ...]`。
+**素材落盘与登记**：各通道命中写 `research/<slug>/gathered_*.md`（非空且含标题/来源/链接）。A/B/P 落盘自动登记；F 查重**结论人工判读**（relevance ≥0.9 复用/更新、0.5–0.9 参考、<0.5 正常检索；命中但判定不相关的假阳性按 <0.5 处理）后用 mark_channel 登记；E/C 未配置由初始化自动登记 skip（环境级，跨研究共享，无需逐篇检查）；其余用 `python tools/mark_channel.py --slug <slug> --channel <F|E|A|B|C|P> --status <done|empty|skip> [--note ...]`。
 
 **门禁**：`python tools/check_progress.py --slug <slug> --require report_channels` 做「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。
 

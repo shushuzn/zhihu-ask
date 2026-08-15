@@ -87,8 +87,8 @@ with (
 expect("boot+ 未设环境变量预警", "WECHAT_ARTICLE_SEARCH_SCRIPTS" in out, True)
 expect("boot+ 调用 research_start", any("research_start.py" in c[0] for c in bootstrap_calls), True)
 flomo_calls = [c for c in bootstrap_calls if "flomo_search.py" in c[0]]
-expect("boot+ flomo 查重带 --slug（自动登记 F）",
-       any("--slug" in c and "example-slug" in c for c in flomo_calls), True)
+expect("boot+ flomo 查重执行（不带 --slug——查重结论人工判读后 mark_channel 登记）",
+       len(flomo_calls) >= 1 and all("--slug" not in c for c in flomo_calls), True)
 
 # ---- mark_plan_done：plan.md 索引回填 ----
 plan_dir = testutil.mktestdir(prefix="tplan_")

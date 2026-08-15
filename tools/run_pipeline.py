@@ -67,14 +67,10 @@ def flomo_gate(config):
     if not query:
         print("[阻断] config 中缺少 question/keywords，无法执行 flomo 查重。")
         sys.exit(1)
-    cmd = [os.path.join(TOOLS, "flomo_search.py"), "--keywords", query, "--limit", "10"]
-    slug = (cfg.get("slug") or "").strip()
-    if slug:
-        # 带 --slug 查重即自动登记通道 F（done，note 含 memo_search 证据），无需再手动 mark_channel
-        cmd += ["--slug", slug]
-    run(cmd, label="flomo_search（F 通道查重，第一步阻断）")
-    print("[通过] flomo 查重已实际执行" + (f"，通道 F 已自动登记（{slug}）" if slug else "")
-          + "；若输出中存在同主题已有笔记/知识条目，须先按复用/更新规则处理再继续。")
+    run([os.path.join(TOOLS, "flomo_search.py"), "--keywords", query, "--limit", "10"],
+        label="flomo_search（F 通道查重，第一步阻断）")
+    print("[通过] flomo 查重已实际执行；查重结论（复用/更新/参考/正常检索，含假阳性甄别）由主代理"
+          "人工判读并用 mark_channel 登记通道 F，不做自动登记。")
 
 
 def bootstrap(config):
@@ -98,9 +94,11 @@ def agent_checklist(slug, query):
     banner("需 agent 介入的检索与写作步骤（脚本无法自动化）")
     print("请逐项完成，再运行收尾：python tools/run_pipeline.py --slug " + slug)
     print("""
-1) 通道 F 查重：已由启动阶段 flomo_gate 实际执行并阻断校验（config 含 slug 时
-   已自动登记通道 F，note 含 memo_search 证据）；如手工启动，先跑
-   `python tools/flomo_search.py --keywords "<主题词>" --slug <slug>`（自动登记 F）
+1) 通道 F 查重：已由启动阶段 flomo_gate 实际执行并阻断校验；
+   查重结论由主代理人工判读（relevance ≥0.9 复用/更新、0.5~0.9 参考、<0.5 正常检索；
+   命中但判定不相关的假阳性按 <0.5 处理），然后用
+   `python tools/mark_channel.py --slug <slug> --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"`
+   登记通道 F（note 须含 memo_search 证据，供 report_channels 门禁）
 2) 通道 E（ima）：连接器已连接时两级检索并落盘 gathered_ima.md
 3) 通道 B（Web）：web_search / web_fetch 拿官方数据、研报、新闻
 4) 通道 C 必做：企查查 get_company_by_query / 通达信 tdx_lookup_stock /
