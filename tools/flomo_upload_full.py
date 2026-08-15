@@ -10,8 +10,7 @@
   python tools/flomo_upload_full.py --slug <slug>
   （读取 research/<slug>/flomo_full.md 全文，memo_create 上传，id 注释回文件）
 
-凭证：优先从环境变量 FLOMO_TOKEN 读取（Windows 用户环境变量已持久化），
-兜底从 ~/.workbuddy/mcp.json 读取；不落盘、不打日志。
+凭证：只从环境变量 FLOMO_MCP_TOKEN 读取（不读 .env、不读 mcp.json）；不落盘、不打日志。
 """
 import json
 import sys
@@ -23,21 +22,9 @@ import argparse
 
 
 def load_mcp_flomo():
-    """返回 (url, token)。
-
-    优先读环境变量 FLOMO_TOKEN（用户级持久化），未设置时兜底读
-    ~/.workbuddy/mcp.json 的 mcpServers.flomo 配置。
-    """
+    """返回 (url, token)。只从环境变量 FLOMO_MCP_TOKEN 读取（不读 .env、不读 mcp.json）。"""
     url = "https://flomoapp.com/mcp"
-    env_token = os.environ.get("FLOMO_TOKEN", "").strip()
-    if env_token:
-        return url, env_token
-    path = os.path.expanduser("~/.workbuddy/mcp.json")
-    with open(path, encoding="utf-8") as f:
-        cfg = json.load(f)
-    server = cfg["mcpServers"]["flomo"]
-    url = server["url"]
-    token = server.get("headers", {}).get("Authorization", "")
+    token = os.environ.get("FLOMO_MCP_TOKEN", "").strip()
     if token.startswith("Bearer "):
         token = token[len("Bearer "):]
     return url, token
