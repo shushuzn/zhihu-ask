@@ -114,11 +114,11 @@ def check_words(body, word_list, label):
                 if w == "证明这" and re.search(r"(论文|文章|该文|作者)证明这", line):
                     continue
                 # 术语豁免：图论/组合数学术语「完美图/完美可除/完美权可除/
-                # 完美划分/完美横贯」中"完美"是标准技术名词（perfect graph /
-                # perfect divisibility），非评价性形容——gromov 系列与
-                # fork-free 系列命中案例（完美图核心概念无法回避）。
+                # 完美划分/完美横贯/完美匹配」中"完美"是标准技术名词（perfect
+                # graph / perfect divisibility / perfect matching），非评价性
+                # 形容——gromov 系列与 fork-free 系列命中案例。
                 # 允许词间含 LaTeX（如"完美 $\Omega_{G^h}$-横贯"）。
-                if w == "完美" and re.search(r"完美.{0,30}?(图|权可除|可除|划分|横贯)", line):
+                if w == "完美" and re.search(r"完美.{0,30}?(图|权可除|可除|划分|横贯|匹配)", line):
                     continue
                 issues.append((i, label, w, line.strip()[:60]))
     return issues
@@ -606,6 +606,11 @@ def check_source_attribution(body):
         return []
     issues = []
     for m in NUMBERED_LABEL_RE.finditer(body):
+        # 计数语境过滤：「1000 例 0 不符 / 400 例」中"例"是量词（案例/个例），
+        # 前 8 字符内出现数字即视为计数，非编号标签——transversal 系列命中案例。
+        if m.group(0).startswith("例") and re.search(r"\d[\s　]*$",
+                                                    body[max(0, m.start() - 8):m.start()]):
+            continue
         line_no = body[:m.start()].count("\n") + 1
         seg = body[m.start():m.start() + 40].replace("\n", " ")
         issues.append((line_no, "来源标注缺失",
