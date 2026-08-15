@@ -30,9 +30,9 @@ try:
 except Exception:
     pass
 
-# flomo MCP 配置：Token 从环境变量/项目根 .env 读取（凭证不入库，见 docs/CONVENTIONS.md）。
-# 曾硬编码在代码并进入公开仓库——请在 flomo 后台撤销旧 token 重建，然后写入 .env：
-#   FLOMO_MCP_TOKEN=fmcp_xxxxxxxx
+# flomo MCP 配置：Token 从环境变量 FLOMO_MCP_TOKEN 读取（凭证不入库，见 docs/CONVENTIONS.md）。
+# 优先真实环境变量，其次项目根 .env 兜底（沙箱下 setx 被拒的既有做法，见 tools/env_loader.py）。
+# 曾硬编码在代码并进入公开仓库——请在 flomo 后台撤销旧 token 重建，再设环境变量（或 .env 兜底）。
 MCP_URL = "https://flomoapp.com/mcp"
 _raw = os.environ.get("FLOMO_MCP_TOKEN", "").strip()
 MCP_TOKEN = _raw if _raw.startswith("Bearer ") else (f"Bearer {_raw}" if _raw else "")
@@ -42,8 +42,8 @@ def mcp_call(method, params=None):
     """调用 flomo MCP。"""
     if not MCP_TOKEN:
         raise RuntimeError(
-            "未配置 FLOMO_MCP_TOKEN：请在项目根 .env 写入 FLOMO_MCP_TOKEN=fmcp_xxx"
-            "（此前硬编码 token 已从代码移除，请先在 flomo 后台撤销旧 token 重建）")
+            "未配置 FLOMO_MCP_TOKEN：请设置环境变量 FLOMO_MCP_TOKEN=fmcp_xxx"
+            "（或项目根 .env 兜底；此前硬编码 token 已从代码移除，请先在 flomo 后台撤销旧 token 重建）")
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
