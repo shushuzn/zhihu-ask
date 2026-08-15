@@ -58,6 +58,29 @@ expect("dash+ 长插入语提示", len(dashes) > 0, dashes)
 dashes = av.check_dashes("该模型性能提升明显——经验证。")
 expect("dash- 短解释通过", not dashes, dashes)
 
+# ---- 参考文献区不适用正文行检查（著录题名可含合法标点） ----
+ref_text = ("正文叙述段。\n\n## 参考文献\n\n"
+            "[1] 博客园. 系统论 (十二)——混沌中的系统：复杂性、时间与形态的动态[EB/OL]. "
+            "(2025-06-12)[2026-08-16]. https://example.com/p/1.")
+dashes = av.check_dashes(ref_text)
+expect("dash- 参考文献题名破折号跳过", not dashes, dashes)
+
+hard = av.check_hard(ref_text)
+expect("hard- 参考文献区硬伤规则跳过", not hard, hard)
+
+warn = av.check_warn(ref_text)
+expect("warn- 参考文献区启发式跳过", not warn, warn)
+
+quotes = av.check_quotes(ref_text)
+expect("quote- 参考文献区引号跳过", not quotes, quotes)
+
+titles = av.check_title_words(ref_text)
+expect("title- 参考文献标题行跳过", not titles, titles)
+
+# ---- 正文区检查不受参考文献截断影响 ----
+dashes = av.check_dashes("正文有长插入语——这是经过大量实验验证得出的结论，其统计显著性经过了严格检验且排除了多种干扰因素。\n\n## 参考文献\n\n[1] 题名。[EB/OL]. https://example.com.")
+expect("dash+ 参考文献前正文仍检查", len(dashes) > 0, dashes)
+
 # ---- 引号 ----
 quotes = av.check_quotes("他说了\"消失\"的话。")
 expect("quote+ 引号包裹日常词提示", len(quotes) > 0, quotes)

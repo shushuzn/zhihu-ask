@@ -119,7 +119,7 @@ def agent_checklist(slug, query):
 """.replace("<slug>", slug).replace("<query>", query or ""))
 
 
-def finish(slug, offline=False):
+def finish(slug, offline=False, ack=None):
     banner(f"阶段 4 收尾 · slug={slug}")
     # 收尾前自动清理工作区缓存/临时文件
     run([os.path.join(TOOLS, "clean_workspace.py")],
@@ -138,9 +138,12 @@ def finish(slug, offline=False):
         label="check_gbt_refs")
     # 违规引用门禁（学术纪律）：编造作者/题名不符/URL 伪造/佚名误用/
     # 引用日期早于发布/死链——硬伤与提示级命中均阻断（工具默认严格阻断）。
+    # --ack：人工判读确认合规的条目号（词面差异机器无法判定时由人确认后放行，输出注明）。
     citation_cmd = [os.path.join(TOOLS, "check_citation_validity.py"), "--slug", slug]
     if offline:
         citation_cmd.append("--offline")
+    if ack:
+        citation_cmd += ["--ack", ack]
     run(citation_cmd, label="check_citation_validity" + (" (offline)" if offline else ""))
     # 矛盾与废话门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
     # check_consistency 是项目级检查，不接受 --slug。
@@ -225,6 +228,7 @@ def main():
     ap.add_argument("--query", help="arxiv 检索词（仅用于打印提示，可选）")
     ap.add_argument("--offline", action="store_true",
                     help="违规引用检查使用离线模式（跳过 CrossRef/arXiv 联网核验）")
+    ap.add_argument("--ack", help="违规引用检查人工确认条目号（逗号分隔，透传 check_citation_validity --ack）")
     args = ap.parse_args()
 
     if not args.config and not args.slug:
@@ -249,11 +253,11 @@ def main():
             print("[提示] 未解析到 slug，无法打印 agent 步骤清单；请手动按 SOP 继续。")
         # 若已同时给了 --slug，直接收尾
         if args.slug:
-            finish(args.slug, offline=args.offline)
+            finish(args.slug, offline=args.offline, ack=args.ack)
         return
 
     # 仅收尾
-    finish(args.slug, offline=args.offline)
+    finish(args.slug, offline=args.offline, ack=args.ack)
 
 
 if __name__ == "__main__":

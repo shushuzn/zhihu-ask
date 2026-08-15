@@ -236,6 +236,62 @@ hard, warn = ccv.check(CITE_CONTEXT_MISMATCH, offline=True)
 expect("提示- 正文与题名疑似不符",
        any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
 
+# 词面差异（题名「遍历论」vs 正文「遍历理论」）与长窗口（题名完整出现但距引注 >40 字）
+WORD_VARIANT = """# 测试报告
+
+遍历论（ergodic theory，即遍历理论）是「从可测或统计的观点研究动力系统」的数学分支[1]，其时间平均与空间平均在遍历条件下相等，这一关系由伯克霍夫逐点遍历定理保证。
+
+**参考文献**
+[1] 知乎专栏. 遍历论 (Ergodic theory)讲义 Week 1[EB/OL]. (2021-04-02)[2026-08-16]. https://example.com/p/1.
+"""
+hard, warn = ccv.check(WORD_VARIANT, offline=True)
+expect("提示- 词面差异不误报（遍历论 vs 遍历理论）",
+       not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+# 7 字题名贪婪切词丢尾（「什么是混沌理论」→「什么是混沌理」）不误报
+SEVEN_CHAR = """# 测试报告
+
+混沌理论的应用已扩展至量子力学、宇宙学与人工智能领域[1]。
+
+**参考文献**
+[1] 知乎专栏. 什么是混沌理论[EB/OL]. (2024-08-27)[2026-08-16]. https://example.com/p/1.
+"""
+hard, warn = ccv.check(SEVEN_CHAR, offline=True)
+expect("提示- 7 字题名切词不误报",
+       not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+LONG_GAP = """# 测试报告
+
+知乎问题「该如何理解随机过程中的遍历性？」同样把遍历性理论表述为从统计学角度研究系统长时间演化的数学分支[1]，其核心是时间平均与空间平均的关系。
+
+**参考文献**
+[1] 知乎. 该如何理解随机过程中的遍历性？[EB/OL]. [2026-08-16]. https://example.com/q/1.
+"""
+hard, warn = ccv.check(LONG_GAP, offline=True)
+expect("提示- 长窗口不误报（题名距引注 >40 字）",
+       not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+# 0 命中（真张冠李戴）仍拦截
+ZERO_HIT = """# 测试报告
+
+香蕉种植与热带农业的气候条件分析[1]完全与电力无关。
+
+**参考文献**
+[1] 佚名. 电力股大涨，六大投资主线曝光（附股）[EB/OL]. 21世纪经济报道. (2026-08-13)[2026-08-14]. https://view.inews.qq.com/a/20260813A0BQJH00.
+"""
+hard, warn = ccv.check(ZERO_HIT, offline=True)
+expect("提示- 0 命中仍报疑似不符",
+       any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+# ack 机制：人工判读确认合规的条目跳过「疑似不符」提示
+hard, warn = ccv.check(ZERO_HIT, offline=True, ack=(1,))
+expect("ack- 人工确认条目跳过疑似不符",
+       not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+hard, warn = ccv.check(ZERO_HIT, offline=True, ack=(2,))
+expect("ack- 未确认条目仍报疑似不符",
+       any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
 # ---- 作者格式提示 ----
 hard, warn = ccv.check("正文[1]。\n\n**参考文献**\n[1] miao yuchun. 题名[M]. 京: 社, 2024. https://x.org/a.", offline=True)
 expect("提示- 英文作者格式异常",
@@ -279,6 +335,33 @@ with mock.patch.object(ccv, "fetch_text", side_effect=fake_arxiv_fetch):
            any(h[2] == "作者误用（佚名）" for h in hard), f"hard={hard}")
     expect("html链接- 题名不符拦截",
            any(h[2] == "题名与文献不符" for h in hard), f"hard={hard}")
+
+
+# ---- 403/000 反爬拦截：WebFetch 降级复核（死链判定核心是内容不存在，非直连被拒）----
+class _FakeCompleted:
+    def __init__(self, code):
+        self.stdout = code.encode()
+
+
+with mock.patch("subprocess.run", return_value=_FakeCompleted("403")), \
+     mock.patch.object(ccv, "_probe_via_webfetch", return_value=(True, "mock 复核可达")):
+    ok, detail = ccv.check_url_reachable("https://example.org/x")
+    expect("403+ WebFetch 复核可达通过", ok is True, detail)
+
+with mock.patch("subprocess.run", return_value=_FakeCompleted("403")), \
+     mock.patch.object(ccv, "_probe_via_webfetch", return_value=(False, "mock 复核失败")):
+    ok, detail = ccv.check_url_reachable("https://example.org/x")
+    expect("403- WebFetch 复核失败仍判死链", ok is False, detail)
+
+with mock.patch("subprocess.run", return_value=_FakeCompleted("000")), \
+     mock.patch.object(ccv, "_probe_via_webfetch", return_value=(True, "mock 复核可达")):
+    ok, detail = ccv.check_url_reachable("https://example.org/x")
+    expect("000+ WebFetch 复核可达通过", ok is True, detail)
+
+with mock.patch("subprocess.run", return_value=_FakeCompleted("404")), \
+     mock.patch.object(ccv, "_probe_via_webfetch", return_value=(True, "不应调用")):
+    ok, detail = ccv.check_url_reachable("https://example.org/x")
+    expect("404- 明确死链不降级", ok is False, detail)
 
 
 print(f"\nTOTAL: PASS={PASS} FAIL={FAIL}")

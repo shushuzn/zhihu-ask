@@ -109,9 +109,19 @@ def read_file(filepath):
 
 
 def scan_lines(text):
-    """逐行扫描，跳过图片引用行与表格行（多数检查只针对叙述行）。"""
-    return [l for l in text.splitlines()
-            if not l.strip().startswith("![") and not l.strip().startswith("|")]
+    """逐行扫描正文，跳过图片引用行与表格行。
+
+    ## 参考文献 区（模板规定为文件末尾唯一顶层章节）不适用正文行检查：
+    著录的题名可含合法标点（如破折号、引号），且不属叙述行，自该标题起截断。
+    """
+    out = []
+    for l in text.splitlines():
+        if l.strip().startswith("## 参考文献"):
+            break
+        if l.strip().startswith("![") or l.strip().startswith("|"):
+            continue
+        out.append(l)
+    return out
 
 
 def check_hard(body):
@@ -130,6 +140,8 @@ def check_title_words(body):
     """硬伤：标题行禁词（先/必须/清楚/反直觉）。"""
     issues = []
     for i, line in enumerate(body.splitlines(), 1):
+        if line.strip().startswith("## 参考文献"):
+            break
         if not line.startswith("#") or line.startswith("#!"):
             continue
         for pat, label in TITLE_BANNED:
@@ -154,18 +166,14 @@ def check_warn(body):
 def check_dashes(body):
     """提示：破折号长插入语 / 段内扎堆（用户：只在后接一句很短的解释时用）。"""
     issues = []
-    for i, line in enumerate(body.splitlines(), 1):
-        if line.strip().startswith("![") or line.strip().startswith("|"):
-            continue
+    for i, line in enumerate(scan_lines(body), 1):
         # 长插入语：破折号后第一个完整小句（到句末标点为止）超过 25 字
         for m in re.finditer(r"——+([^——。！？]*。?)", line):
             tail = m.group(1).strip()
             if len(tail) > 25:
                 issues.append((i, "破折号长插入语（>25 字，应改冒号或拆句）", line.strip()[:70]))
     # 同行 ≥2 个破折号即提示扎堆
-    for i, line in enumerate(body.splitlines(), 1):
-        if line.strip().startswith("![") or line.strip().startswith("|"):
-            continue
+    for i, line in enumerate(scan_lines(body), 1):
         if line.count("——") >= 2:
             issues.append((i, "破折号扎堆（同行 ≥2 处）", line.strip()[:70]))
     return issues
@@ -174,9 +182,7 @@ def check_dashes(body):
 def check_quotes(body):
     """提示：引号包裹日常词（短引号 1–8 字命中日常词清单）。"""
     issues = []
-    for i, line in enumerate(body.splitlines(), 1):
-        if line.strip().startswith("![") or line.strip().startswith("|"):
-            continue
+    for i, line in enumerate(scan_lines(body), 1):
         for m in re.finditer(r'"([^"\n]{1,8})"', line):
             word = m.group(1)
             for cw in COMMON_QUOTED_WORDS:

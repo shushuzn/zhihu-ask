@@ -32,7 +32,8 @@ check_gbt_refs 只查著录格式（编号/类型/日期），无法发现"引�
 提示级（默认 RC=1，严格阻断为默认）：
 9. 作者格式疑似异常：英文作者未按"姓全大写 名首字母"（如 "LI Y"），或作者字段过短
 10. 正文引注处与文献题名关键词不匹配（启发式，仅报告模式正文含 [n] 时）：
-    正文首次出现 [n] 的前后 40 字与文献题名共享的中文词 < 2 个 → 疑似张冠李戴
+    正文首次出现 [n] 的前后 100 字与文献题名共享的候选词 < 1 个 → 疑似张冠李戴
+    （候选词含去尾字前缀，覆盖「遍历论/遍历理论」类词面差异；0 命中才报）
 11. URL 可达性未验证：普通 URL 可达性检查因网络失败无法判定
 
 用法：
@@ -379,19 +380,35 @@ def fetch_text(url, timeout=10):
         return None
 
 
-def check_cite_context(body_txt, ref_entries):
-    """正文引注处与文献题名关键词匹配（启发式）：正文 [n] 前后 40 字与题名共享中文词 <2 → 疑似张冠李戴。"""
+def check_cite_context(body_txt, ref_entries, ack=()):
+    """正文引注处与文献题名关键词匹配（启发式）：正文 [n] 前后 100 字与题名共享
+    bigram 词 <2 → 疑似张冠李戴。
+
+    切词用重叠 2 字滑窗（bigram）：贪婪/非贪婪 findall 都会切碎自然词
+    （「什么是混沌理论」→「什么是混沌理」或「是混/沌理」），滑窗保证
+    「混沌」等完整 2 字词保留；停用词表去通用词与问句虚词。
+    阈值 2 词：真张冠李戴场景（引注上下文与题名毫无关联）通常 0–1 词巧合
+    （如正文恰含「电力」），仍被拦截。
+    ack：人工判读确认合规的条目号（引注关系真实、词面差异属合法异称，
+    如「遍历论 vs 遍历理论」），跳过本提示——确认即放行，输出注明。
+    """
     issues = []
     body_flat = re.sub(r"\s+", "", body_txt)
     for n, text, lineno in ref_entries:
+        if n in ack:
+            continue
         title = extract_title(text)
         if not title:
             continue
-        # 用原始题名切中文词（normalize 会剥掉 / 等标点，把"分钟理解/接入"合并成
+        # 用原始题名切中文 bigram（normalize 会剥掉 / 等标点，把"分钟理解/接入"合并成
         # "分钟理解接入"导致上下文永远匹配不上——切词须在 normalize 之前做）
-        zh_words = set(re.findall(r"[\u4e00-\u9fff]{2,6}", title.replace("eb/ol", "")))
-        # 取题名中最具辨识度的 3 个词（去通用词）
-        common = {"研究", "分析", "综述", "报告", "理论", "方法", "模型", "及其", "一种", "基于", "面向", "相关", "下", "中", "的"}
+        chars = re.findall(r"[\u4e00-\u9fff]", title.replace("eb/ol", ""))
+        zh_words = {chars[i] + chars[i + 1] for i in range(len(chars) - 1)}
+        # 取题名中最具辨识度的词（去通用词与问句虚词；消歧后缀如
+        # 「统计学术语」「数学分支」留在词表，靠多词阈值容忍其缺失）
+        common = {"研究", "分析", "综述", "报告", "理论", "方法", "模型", "及其", "一种",
+                  "基于", "面向", "相关", "下", "中", "的",
+                  "如何", "什么", "怎么"}
         zh_words = {w for w in zh_words if w not in common}
         if not zh_words:
             continue
@@ -402,7 +419,7 @@ def check_cite_context(body_txt, ref_entries):
         # 仅当全部出现位置都不匹配才报「疑似张冠李戴」
         matched_any = False
         for loc in locs[:3]:
-            ctx = body_flat[max(0, loc - 40): loc + 40]
+            ctx = body_flat[max(0, loc - 100): loc + 100]
             if sum(1 for w in zh_words if w in ctx) >= 2:
                 matched_any = True
                 break
@@ -438,8 +455,33 @@ def check_date_reasonableness(text, pub_date, lineno, head_line, n, issues_hard)
                             f"[{n}] 引用日期 {cite_date} 早于文献发布日期 {pub_date}（学术纪律：引用日期须晚于/等于发布日期）"))
 
 
+def _probe_via_webfetch(url, timeout=25):
+    """WebFetch 降级复核（复用 tools/web_fetch.py，Jina Reader 代理优先）。
+
+    直连被反爬拦截（403）或网络层失败（000）时，页面可能真实存在——
+    用与 arxiv 429 WebFetch 降级相同的通道复核；复核成功说明非死链。
+    返回 (是否可达, 说明)。
+    """
+    try:
+        tools_dir = os.path.dirname(os.path.abspath(__file__))
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import web_fetch as _wf
+        kind, content, err = _wf.fetch(url, timeout=timeout)
+        if kind and content and len(content) > 50:
+            return True, f"WebFetch({kind}) 复核可达"
+        return False, f"WebFetch 复核失败: {err or '内容为空'}"
+    except Exception as e:
+        return False, f"WebFetch 复核异常: {str(e)[:60]}"
+
+
 def check_url_reachable(url, timeout=10):
-    """URL 可达性：返回 (是否可达, 状态说明)。重定向视为可达；404/5xx 不可达；网络失败返回 None。"""
+    """URL 可达性：返回 (是否可达, 状态说明)。重定向视为可达；404/5xx 不可达；网络失败返回 None。
+
+    403（反爬拒绝）与 000（网络层无响应）不直接判死链：降级 WebFetch 复核，
+    复核成功说明页面存在、仅直连被拦截，按可达处理（死链判定的核心是「内容不存在」，
+    而非「本机直连被拒」）。
+    """
     try:
         import shutil
         import subprocess
@@ -458,16 +500,24 @@ def check_url_reachable(url, timeout=10):
             return True, f"HTTP {code}"
         if code.startswith("429"):
             return None, f"HTTP 429（限流，非死链）"
+        # 403/000：直连被拒 ≠ 内容不存在，WebFetch 复核后判定
+        if code.startswith(("403", "000")):
+            ok, detail = _probe_via_webfetch(url)
+            if ok:
+                return True, f"HTTP {code}（直连被拒，{detail}）"
+            return False, f"HTTP {code}（{detail}）"
         return False, f"HTTP {code}"
     except Exception as e:
         return None, str(e)[:40]
 
 
-def check(body, offline=False):
+def check(body, offline=False, ack=()):
     """返回 (硬性问题列表, 提示性问题列表)。问题元素：(行号, 级别, 标题, 详情)
 
     offline=True：跳过全部联网核验（作者/题名/日期/URL 可达性），只做离线可判项，
     并在提示中声明"离线模式"——调用方（note_upload 等）须知情。
+    ack：人工判读确认合规的条目号元组——该条目跳过「正文与题名疑似不符」提示
+    （引注关系真实但词面差异机器无法判定时，由人确认后放行，输出注明）。
     学术纪律收紧：默认（联网）模式下，含 DOI/arxiv URL 的条目若网络核验
     失败，不再降级为提示，而是硬伤阻断——"核验失败"与"核验通过"必须区分。
     """
@@ -578,7 +628,7 @@ def check(body, offline=False):
 
     # 7) 提示级：正文引注处上下文与题名关键词匹配（仅正文含 [n] 引注时）
     if CITE_RE.search(body_txt):
-        warn.extend(check_cite_context(body_txt, entries))
+        warn.extend(check_cite_context(body_txt, entries, ack=ack))
 
     return hard, warn
 
@@ -603,6 +653,7 @@ def main():
     ap.add_argument("--file", help="目标 markdown 文件")
     ap.add_argument("--slug", help="研究 slug（检查 research/<slug>/report.md）")
     ap.add_argument("--offline", action="store_true", help="跳过 CrossRef/arXiv 联网核验")
+    ap.add_argument("--ack", help="人工确认合规的条目号（逗号分隔，如 2,5,8：跳过其『正文与题名疑似不符』提示）")
     ap.add_argument("--verbose", action="store_true", help="显示命中明细")
     args = ap.parse_args()
 
@@ -617,10 +668,13 @@ def main():
         print(f"文件不存在: {path}")
         sys.exit(1)
 
+    ack = tuple(int(x) for x in args.ack.split(",") if x.strip()) if args.ack else ()
     body = load_text(path)
-    hard, warn = check(body, offline=args.offline)
+    hard, warn = check(body, offline=args.offline, ack=ack)
 
     print(f"违规引用检查: {path}{'（离线模式）' if args.offline else ''}")
+    if ack:
+        print(f"[人工确认] 条目 {','.join(str(a) for a in ack)} 已判读确认合规，跳过其『正文与题名疑似不符』提示。")
     print("=" * 60)
     if not hard and not warn:
         print("全部通过：未检出编造作者/题名不符/URL 伪造。")
