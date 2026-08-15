@@ -297,6 +297,22 @@ hard, warn = ccv.check("正文[1]。\n\n**参考文献**\n[1] miao yuchun. 题�
 expect("提示- 英文作者格式异常",
        any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
 
+# 机构/平台名责任者（ack 机制覆盖）：人工确认后跳过作者格式提示
+ORG_AUTHOR = """# 测试报告
+
+可视化学习平台以线性变换为出发点[1]。
+
+**参考文献**
+[1] Easy Linear Algebra. 线性代数学习平台[EB/OL]. (2024-01-10)[2026-08-16]. https://mathbase.cn/.
+"""
+hard, warn = ccv.check(ORG_AUTHOR, offline=True, ack=(1,))
+expect("ack- 机构名责任者跳过作者格式提示",
+       not any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
+
+hard, warn = ccv.check(ORG_AUTHOR, offline=True)
+expect("提示- 机构名责任者未确认仍报",
+       any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
+
 # ---- arxiv.org/html/ 链接核验（此前 /html/ 被当普通 URL 只查可达性，
 #      导致佚名/题名不符整体漏检）----
 expect("is_arxiv_url 识别 html 链接",

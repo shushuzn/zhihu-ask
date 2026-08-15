@@ -516,8 +516,9 @@ def check(body, offline=False, ack=()):
 
     offline=True：跳过全部联网核验（作者/题名/日期/URL 可达性），只做离线可判项，
     并在提示中声明"离线模式"——调用方（note_upload 等）须知情。
-    ack：人工判读确认合规的条目号元组——该条目跳过「正文与题名疑似不符」提示
-    （引注关系真实但词面差异机器无法判定时，由人确认后放行，输出注明）。
+    ack：人工判读确认合规的条目号元组——该条目跳过「正文与题名疑似不符」与
+    「作者格式疑似异常」（机构/平台名责任者）两类提示
+    （引注关系真实但词面差异、机构名不适用人名规范时由人确认后放行，输出注明）。
     学术纪律收紧：默认（联网）模式下，含 DOI/arxiv URL 的条目若网络核验
     失败，不再降级为提示，而是硬伤阻断——"核验失败"与"核验通过"必须区分。
     """
@@ -554,8 +555,10 @@ def check(body, offline=False, ack=()):
                              f"[{n}] arxiv URL 不含合法 id：{url}"))
                 continue
         # 5) 作者格式提示（离线可判；仅非 DOI/arxiv 条目，因 DOI/arxiv 有联网核验兜底）
+        # ack 条目跳过：机构/平台名责任者（如 "Easy Linear Algebra"）不适用
+        # "姓全大写 名首字母" 个人作者规范，属人工判读可放行的误报场景
         authors = extract_authors(text)
-        if authors and not (DOI_RE.search(url) or is_arxiv_url(url)):
+        if authors and n not in ack and not (DOI_RE.search(url) or is_arxiv_url(url)):
             if re.search(r"[A-Za-z]", authors) and not re.search(r"\b[A-Z]{2,}\b", authors):
                 warn.append((ref_head_line + lineno, "提示", "作者格式疑似异常",
                              f"[{n}] 英文作者「{authors}」未按 GB/T 规范（姓全大写 名首字母，如 'MIAO Y'）"))
@@ -653,7 +656,7 @@ def main():
     ap.add_argument("--file", help="目标 markdown 文件")
     ap.add_argument("--slug", help="研究 slug（检查 research/<slug>/report.md）")
     ap.add_argument("--offline", action="store_true", help="跳过 CrossRef/arXiv 联网核验")
-    ap.add_argument("--ack", help="人工确认合规的条目号（逗号分隔，如 2,5,8：跳过其『正文与题名疑似不符』提示）")
+    ap.add_argument("--ack", help="人工确认合规的条目号（逗号分隔，如 2,5,8：跳过其『正文与题名疑似不符』与『作者格式疑似异常』提示）")
     ap.add_argument("--verbose", action="store_true", help="显示命中明细")
     args = ap.parse_args()
 
