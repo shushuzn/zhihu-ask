@@ -85,8 +85,63 @@ def load(slug):
 
 
 def save(path, prog):
-    with open(path, "w", encoding="utf-8") as f:
+    """原子写：写临时文件后 os.replace 替换，避免写一半被读/被并发写叠加。
+
+    配合 file_lock 使用（mark 已包锁）；单独调用时不加锁，仅保证单次写原子。
+    """
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(prog, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
+
+
+class file_lock:
+    """跨进程互斥锁（锁文件 O_CREAT|O_EXCL 原子创建）。
+
+    保护 .progress.json 的「读-改-写」临界区：search_all 并行子进程与主代理
+    手动登记可能同时写同一进度文件（实测并发导致 JSON 叠加损坏——
+    omniscientist-ai-scientist 案例）。用法：
+
+        with file_lock(progress_path(slug)):
+            path, prog = load(slug)
+            ... 修改 ...
+            save(path, prog)
+
+    获取失败（锁已被占）时重试，超时后打印警告并继续（保守策略：
+    不阻塞调用方；并发极端场景下宁可最后写入者覆盖，也不无限等待）。
+    """
+
+    def __init__(self, path, timeout=15.0, retry=0.05):
+        self.lock_path = path + ".lock"
+        self.timeout = timeout
+        self.retry = retry
+        self.fd = None
+
+    def __enter__(self):
+        import time
+        deadline = time.time() + self.timeout
+        while True:
+            try:
+                self.fd = os.open(self.lock_path,
+                                  os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                return self
+            except FileExistsError:
+                if time.time() > deadline:
+                    print(f"[提示] 进度文件锁 {self.lock_path} 获取超时，继续执行（可能并发写）")
+                    return self
+                time.sleep(self.retry)
+
+    def __exit__(self, exc_type, exc, tb):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            try:
+                os.remove(self.lock_path)
+            except OSError:
+                pass
+        return False
 
 
 def derive_slug_from_out(out_path):
@@ -107,7 +162,11 @@ def derive_slug_from_out(out_path):
 
 
 def mark(slug, channel, status, note=None):
-    """登记单通道完成态。成功返回 True；.progress.json 不存在时返回 False（不创建）。"""
+    """登记单通道完成态。成功返回 True；.progress.json 不存在时返回 False（不创建）。
+
+    并发安全：整个读-改-写临界区由 file_lock 保护（search_all 并行子进程
+    与手动登记可能同时写；无锁时并发读-改-写会损坏 JSON，见 omniscientist 案例）。
+    """
     channel = channel.upper()
     if channel not in CHANNEL_ORDER:
         raise ValueError(f"非法通道 {channel!r}（仅允许 {','.join(CHANNEL_ORDER)}）")
@@ -118,16 +177,21 @@ def mark(slug, channel, status, note=None):
     if prog is None:
         return False
 
-    data = prog.get("data") or {}
-    cd = data.get("channels_done") or {}
-    if not isinstance(cd, dict):
-        cd = {}
-    existing = cd.get(channel) if isinstance(cd.get(channel), dict) else {}
-    new_note = note if note is not None else (existing.get("note", "") if isinstance(existing, dict) else "")
-    cd[channel] = {"status": status, "note": new_note}
-    data["channels_done"] = cd
-    prog["data"] = data
-    save(path, prog)
+    with file_lock(path):
+        # 锁内重读（等待期间其他进程可能已写入），再合并本次登记
+        _, prog = load(slug)
+        if prog is None:
+            return False
+        data = prog.get("data") or {}
+        cd = data.get("channels_done") or {}
+        if not isinstance(cd, dict):
+            cd = {}
+        existing = cd.get(channel) if isinstance(cd.get(channel), dict) else {}
+        new_note = note if note is not None else (existing.get("note", "") if isinstance(existing, dict) else "")
+        cd[channel] = {"status": status, "note": new_note}
+        data["channels_done"] = cd
+        prog["data"] = data
+        save(path, prog)
     return True
 
 

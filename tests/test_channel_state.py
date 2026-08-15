@@ -163,5 +163,41 @@ else:
 expect("env+ skip 条目 status", cs.env_skip_entry("E")["status"], "skip")
 expect("env+ skip 条目 note 含未配置", "未配置" in cs.env_skip_entry("C")["note"], True)
 
+# ---- 并发写安全（omniscientist 案例：search_all 并行子进程与手动登记
+#      同时 mark 同一 .progress.json 曾致 JSON 叠加损坏）----
+import subprocess as _sp
+
+def _worker_mark_cmd(slug, channel):
+    return [sys.executable, "-c",
+            ("import sys; sys.path.insert(0, 'tools'); "
+             "import channel_state as cs; "
+             f"ok = cs.mark({slug!r}, {channel!r}, 'done', note='并发{channel}'); "
+             "sys.exit(0 if ok else 1)")]
+
+d_c, s_c = make_slug({"stage": "phase1_done", "data": {}})
+procs = [_sp.Popen(_worker_mark_cmd(s_c, ch), cwd=ROOT,
+                   stdout=_sp.PIPE, stderr=_sp.PIPE) for ch in ("F", "A", "B", "P")]
+rcs = [p.wait(timeout=60) for p in procs]
+expect("conc+ 4 并发 mark 全成功", rcs, [0, 0, 0, 0])
+p_c, prog_c = cs.load(s_c)
+cd_c = (prog_c or {}).get("data", {}).get("channels_done", {})
+expect("conc+ 文件仍为合法 JSON 且 4 通道齐",
+       (prog_c is not None and all(ch in cd_c for ch in ("F", "A", "B", "P"))),
+       True)
+expect("conc- 无锁残留", not os.path.exists(p_c + ".lock"), True)
+cleanup(d_c)
+
+# 锁的互斥性：持锁期间第二次获取应等待（不破坏临界区）
+d_l, s_l = make_slug({"stage": "phase1_done", "data": {}})
+p_l, _ = cs.load(s_l)
+lock1 = cs.file_lock(p_l, timeout=1.0)
+lock1.__enter__()
+lock2 = cs.file_lock(p_l, timeout=0.3)
+lock2.__enter__()   # 超时应放行（保守策略）而非死锁
+lock2.__exit__(None, None, None)
+lock1.__exit__(None, None, None)
+expect("lock- 锁释放后无残留", not os.path.exists(p_l + ".lock"), True)
+cleanup(d_l)
+
 print(f"\n==== channel_state 回归测试：PASS={PASS} FAIL={FAIL} ====")
 sys.exit(1 if FAIL else 0)

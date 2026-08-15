@@ -83,32 +83,34 @@ def write_progress(slug, stage, data):
     与已有进度文件合并而非覆盖：init_research.py 已落盘 round=1 等字段，
     直接覆盖会丢失 round，导致 check_progress --require_round auto 读到 0
     而必然阻塞（标准流程走不通）。此处保留已有键，仅更新本次产出的字段。
+    并发安全：与 channel_state.mark 共用 file_lock（search_all 并行子进程
+    与启动流程可能同时写同一进度文件），写盘用原子替换。
     """
     p = os.path.join(ROOT, "research", slug, PROGRESS_FILE)
-    old = {}
-    if os.path.exists(p):
+    with cs.file_lock(p):
+        old = {}
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    old = json.load(f)
+            except (OSError, ValueError):
+                old = {}
+        merged = dict(old.get("data") or {})
+        merged.update(data)
+        merged.setdefault("round", 1)
+        # 环境级未配置连接器的通道（ima E / 领域连接器 C 默认未配置）自动登记 skip，
+        # 跨研究共享、无需逐篇手动检查；连接器接入后设 ZHIHU_ASK_UNCONFIGURED_CHANNELS 调整。
+        cd = merged.get("channels_done") or {}
+        if not isinstance(cd, dict):
+            cd = {}
+        for ch in cs.env_unconfigured_channels():
+            cd.setdefault(ch, cs.env_skip_entry(ch))
+        merged["channels_done"] = cd
+        d = {"stage": stage, "data": merged}
         try:
-            with open(p, "r", encoding="utf-8") as f:
-                old = json.load(f)
-        except (OSError, ValueError):
-            old = {}
-    merged = dict(old.get("data") or {})
-    merged.update(data)
-    merged.setdefault("round", 1)
-    # 环境级未配置连接器的通道（ima E / 领域连接器 C 默认未配置）自动登记 skip，
-    # 跨研究共享、无需逐篇手动检查；连接器接入后设 ZHIHU_ASK_UNCONFIGURED_CHANNELS 调整。
-    cd = merged.get("channels_done") or {}
-    if not isinstance(cd, dict):
-        cd = {}
-    for ch in cs.env_unconfigured_channels():
-        cd.setdefault(ch, cs.env_skip_entry(ch))
-    merged["channels_done"] = cd
-    d = {"stage": stage, "data": merged}
-    try:
-        with open(p, "w", encoding="utf-8") as f:
-            json.dump(d, f, ensure_ascii=False, indent=2)
-    except OSError as e:
-        print(f"WARN: 无法写进度文件 {p}: {e}")
+            cs.save(p, d)
+        except OSError as e:
+            print(f"WARN: 无法写进度文件 {p}: {e}")
 
 def get_ima_library_hints(domain):
     """按领域从 docs/IMA_LIBRARIES.md 匹配订阅库候选，供通道 E2 提示。
