@@ -415,12 +415,15 @@ def check_cite_context(body_txt, ref_entries, ack=()):
         locs = [m.start() for m in re.finditer(rf"\[{n}\]", body_flat)]
         if not locs:
             continue
-        # 任一出现位置与题名共享 ≥2 词即视为引用对应（重复引用处不必每次都复述题名词）；
+        # 阈值：多词题名要求 ≥2 词命中；单词题名（如「道教」只有 1 个 bigram）
+        # 要求 ≥1 词——2 词阈值对单词题名必然误报
+        need = 2 if len(zh_words) > 1 else 1
+        # 任一出现位置与题名共享 ≥need 词即视为引用对应（重复引用处不必每次都复述题名词）；
         # 仅当全部出现位置都不匹配才报「疑似张冠李戴」
         matched_any = False
         for loc in locs[:3]:
             ctx = body_flat[max(0, loc - 100): loc + 100]
-            if sum(1 for w in zh_words if w in ctx) >= 2:
+            if sum(1 for w in zh_words if w in ctx) >= need:
                 matched_any = True
                 break
         if not matched_any:

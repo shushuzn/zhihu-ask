@@ -260,6 +260,30 @@ hard, warn = ccv.check(SEVEN_CHAR, offline=True)
 expect("提示- 7 字题名切词不误报",
        not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
 
+# 单词题名（如「道教」仅 1 个 bigram）阈值降为 1，不再必然误报
+SINGLE_WORD_TITLE = """# 测试报告
+
+道教自东汉张道陵创教以来，教派兴衰与政治认可深度绑定[1]。
+
+**参考文献**
+[1] 百度百科. 道教[EB/OL]. [2026-08-16]. https://baike.baidu.com/item/%E9%81%93%E6%95%99/196718.
+"""
+hard, warn = ccv.check(SINGLE_WORD_TITLE, offline=True)
+expect("提示- 单词题名不误报",
+       not any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
+# 单词题名但 0 命中（真张冠李戴）仍拦截
+SINGLE_WORD_MISS = """# 测试报告
+
+香蕉种植与热带农业的气候条件分析[1]完全与宗教无关。
+
+**参考文献**
+[1] 百度百科. 道教[EB/OL]. [2026-08-16]. https://baike.baidu.com/item/%E9%81%93%E6%95%99/196718.
+"""
+hard, warn = ccv.check(SINGLE_WORD_MISS, offline=True)
+expect("提示- 单词题名 0 命中仍报",
+       any(w[2] == "正文与题名疑似不符" for w in warn), f"warn={warn}")
+
 LONG_GAP = """# 测试报告
 
 知乎问题「该如何理解随机过程中的遍历性？」同样把遍历性理论表述为从统计学角度研究系统长时间演化的数学分支[1]，其核心是时间平均与空间平均的关系。
