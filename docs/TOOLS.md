@@ -832,8 +832,4 @@ python tools/report_images.py --slug <slug> --url-base https://...       # 生�
 
 ## flomo 单条完整版上传（tools/flomo_upload_full.py，已弃用）
 
-- 用途：历史流程中把 `research/<slug>/flomo_full.md` 全文作为**单条 memo** 上传 flomo。
-- **报告与索引禁止上传 flomo**——本工具对常规研究已弃用（上传走 `note_upload.py` 模块化笔记逐条质检上传）；仅当用户明确要求回传某篇历史报告时才使用。
-- 背景：客户端工具调度层（DeferExecuteTool）对超长 content（>~2KB）间歇性假报 `toolName is required`（请求未到达代理层，elapsed 0ms 本地拦截）；flomo MCP 服务端本身支持长文（历史 4000-6500 字正常）。本脚本按 MCP streamable-http 协议直连 flomo 端点，绕过该拦截。
-- 用法：`python tools/flomo_upload_full.py --slug <slug>`；成功后自动把 `<!-- flomo id: ... -->` 注释写入 flomo_full.md 首行。
-- 注意：凭证优先从环境变量 `FLOMO_TOKEN` 读取（Windows 用户环境变量已持久化，`setx FLOMO_TOKEN <token>` 可更新；token 格式 `fmcp_...`），未设置时兜底读 `~/.workbuddy/mcp.json`；不落盘、不打日志。flomo MCP 参数速查：`memo_search` 用 `keywords`（非 query），`memo_batch_get` 用 `ids`。
+常规上传走 `note_upload.py`（模块化笔记逐条质检上传，报告/索引禁止上传）；本工具仅当用户明确要求回传某篇历史报告时使用：`python tools/flomo_upload_full.py --slug <slug>`（凭证环境变量 `FLOMO_TOKEN`，绕过客户端对超长 content 的调度层拦截）。

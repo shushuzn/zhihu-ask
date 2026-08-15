@@ -4,12 +4,7 @@
 
 ## 1. PowerShell 中文乱码（最高优先级）
 
-**现象**：本机 PowerShell（Windows）向任何命令行工具传递中文参数都会乱码，包括：
-
-- `git commit -m "中文消息"` → 报错或乱码
-- `gh repo create --description "中文"` → 仓库描述乱码
-- `python scripts/sogou_search.py "中文关键词"` → 乱码
-- `chcp 65001` 无法解决此问题
+**现象**：本机 PowerShell（Windows）向任何命令行工具传中文参数都会乱码（git commit / gh repo create / python 脚本参数均中招），`chcp 65001` 无效。
 
 **统一做法：中文参数一律通过 UTF-8 文件传入，不在命令行直接写中文。**
 
@@ -79,8 +74,8 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 
 ### 4.1 git 实操踩坑
 
-- **`git add` 混合被忽略路径会整体失败**：一次 `git add` 中只要显式列出被 `.gitignore` 忽略的内部文件（如 `docs/KEYWORDS.md`、`plan.md`），整条命令报错退出、**任何文件都不会暂存**（随后 commit 报 "nothing to commit, working tree clean"，极易误判）。正确做法：内部文件回填后本就不提交（KEYWORDS.md 是 SQLite 关键词库的导出物、plan.md 仅本地），`git add` 只列公开文件。
-- **commit 后必须核验实际提交内容**：commit 输出行数与 `git show --stat HEAD` 对照，剩余改动以 `git status --short` 复查，直到工作区干净才可结束；曾出现提交只含部分文件（docstring 1 行）而其余改动滞留工作区的情况。
+- **`git add` 显式列出被忽略文件会整体失败**（如 `docs/KEYWORDS.md`、`plan.md`）——内部文件本就不提交，`git add` 只列公开文件。
+- **commit 后核验实际内容**：`git show --stat HEAD` 与 commit 输出对照，`git status --short` 复查到工作区干净才结束（曾出现提交只含部分文件）。
 - **PowerShell 将 git stderr 进度当错误**：`git push` 进度（"To github.com:..."）走 stderr，PowerShell 合并 2>&1 后显示 NativeCommandError 并报 `[exit code: 1]`，但提交实际成功。判定以输出中的 `分支范围  main -> main` 行为准，勿因红色错误信息误判失败重推。
 
 ## 5. 提交规范
@@ -114,9 +109,9 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 - **编辑报告小节后立即质检**：编辑小节后立即跑 `python tools/quality_check.py --file research/<slug>/report.md`——小点须叙述化（bullet 单行会被拦截）、段落 ≤4-5 行，先查再继续，避免积压多处在收尾时集中修。
 - **结论先留余量**：结论按 ≤300 字上限写时先压到 280 左右再补充事实，避免反复删减。
 - **参考文献链接必须与条目一一对应**：写参考文献时禁止用论文自身链接占位代替背景文献（如把 König 的 M₂₃ 辫群轨道论文、ACT DR6 的 α-Starobinsky 论文、RLSVR 的背景文献全部写成 arXiv:2608.08538 / 2608.06071 / 2607.23802）。背景文献的真实链接须从 `gathered_arxiv.md` 的「标题→链接」映射表逐条取用（该表由 arxiv_search 落盘，标题与链接一一对应）；宁缺勿错——找不到对应链接的条目删掉，不写伪链接。
-- **AI 概念图合规复检**：每张 `ai_*.png` 封面/题图必须为**纯抽象视觉**——严禁任何语言文字、徽章与国徽、政府/司法/宗教建筑、货币与票据、真实人脸与肖像、国家/政治符号。`tools/report_images.py` 的 `call_agnes` 末尾自动追加 `_AI_IMAGE_NEGATIVE_GUARD` 通用禁词句（no text / no emblem / no banknote / no government building 等全套英文 negative）确保所有 `--ai-prompts` 默认遵守；**但工具层面的 prompt 防御不替代人工复检**——实测 Agnes 仍偶有不合规输出（如 lof-exit-mechanism 封面出现中国国徽+飘字票据），生成后必须肉眼逐图扫一遍（重点扫门楣/中央/边缘的圆形徽标与飘字票据）。发现违规立刻 `rm <path>` 删除原图、用更强 negative prompt 重生成，**不要为了凑数保留违规图**；`process_notes.md` 同步记录"封面图合规复检"结果。
-- **AI 概念图主题相关性**：封面/题图除合规外，**必须紧扣问题主题**——视觉应能映射问题的核心概念（如 LOF 退市→挤溢价泡沫+场内转场外；学术vs工业→书与机房的对话；半导体→晶圆/光刻意象）。**禁止使用与问题无关的纯装饰抽象图**（如"金色球体+棱柱"的通用科幻视觉，看似合规但读者看不出主题）。写 prompt 时必须先提炼 2-3 个核心视觉符号（如"溢价泡沫→发光气泡群/退市闸口→几何门框/按净值赎回→规整立方体阵列"），再围绕这些符号构造抽象叙事场景（左→中→右的视觉过渡即可直观映射问题逻辑）；如当前 slug 复用 DEFAULT_AI_PROMPTS（"斩杀线"等旧模板），必须替换为当前主题专用 prompt（`--ai-prompts` 自定义 JSON）。自检：①不看标题，读者能否从图中识别本报告主题？答否则必须重做；②`process_notes.md` 同步记录"封面图主题相关性复检"与 2-3 个核心视觉符号的映射说明。
-- **AI 概念图构图饱满**：封面/题图**禁止大面积空白/留白**——prompt 不得写"左下角留白适合叠加标题"等留白引导（标题由知乎发布时叠加，图内不留白）；画面构图必须饱满、平衡，视觉元素均匀铺满整个画布，边角不留白。`_AI_IMAGE_NEGATIVE_GUARD` 已含 "no large empty areas, no blank corners, no white space reserved for text overlay"；自定义 prompt 也不再写留白引导。复检时同步检查四角/边缘是否有大块均匀空白（可用 PIL 网格扫描辅助）。
+- **AI 概念图合规复检**：封面/题图必须为**纯抽象视觉**——严禁语言文字、徽章/国徽、政府/司法/宗教建筑、货币票据、真实人脸、国家/政治符号。`report_images.py` 的 `call_agnes` 自动追加 `_AI_IMAGE_NEGATIVE_GUARD` 禁词句，但**不替代人工复检**（实测偶有不合规输出，如国徽+飘字票据）；生成后肉眼逐图扫（重点：圆形徽标/飘字票据），违规即删图重生成，不保留凑数图；`process_notes.md` 记录"封面图合规复检"。
+- **AI 概念图主题相关性**：封面**必须紧扣问题主题**，禁止与问题无关的纯装饰抽象图（如"金色球体+棱柱"通用科幻视觉）。写 prompt 先提炼 2-3 个核心视觉符号（如 LOF 退市→挤溢价泡沫+退市闸口+按净值赎回），围绕符号构造抽象叙事场景；不复用通用 DEFAULT_AI_PROMPTS，用 `--ai-prompts` 自定义当前主题专用 prompt。自检：不看标题能否识别主题？答否则重做；`process_notes.md` 记录"封面图主题相关性复检"与符号映射。
+- **AI 概念图构图饱满**：封面**禁止大面积留白**——prompt 不得写"左下角留白适合叠加标题"等引导；构图饱满平衡、元素铺满画布、边角不留白（`_AI_IMAGE_NEGATIVE_GUARD` 已含禁留白句）。复检时同步检查四角/边缘是否大块空白。
 
 ## 参考文献学术纪律
 
