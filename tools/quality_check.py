@@ -113,6 +113,13 @@ def check_words(body, word_list, label):
                 # 的客观转述，不是作者本人立场，不应命中"证明这"立场词。
                 if w == "证明这" and re.search(r"(论文|文章|该文|作者)证明这", line):
                     continue
+                # 术语豁免：图论/组合数学术语「完美图/完美可除/完美权可除/
+                # 完美划分/完美横贯」中"完美"是标准技术名词（perfect graph /
+                # perfect divisibility），非评价性形容——gromov 系列与
+                # fork-free 系列命中案例（完美图核心概念无法回避）。
+                # 允许词间含 LaTeX（如"完美 $\Omega_{G^h}$-横贯"）。
+                if w == "完美" and re.search(r"完美.{0,30}?(图|权可除|可除|划分|横贯)", line):
+                    continue
                 issues.append((i, label, w, line.strip()[:60]))
     return issues
 
