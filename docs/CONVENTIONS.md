@@ -51,6 +51,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 
 **统一做法**：
 - 需要外网抓取时，**优先用 Python 工具**（`tools/arxiv_search.py` 等），不要用 curl/shell 脚本。
+- **反爬 403 ≠ 死链**：百度百科/知乎等站点对 urllib/curl 非浏览器 UA 常返回 403（甚至浏览器 UA 也拒），页面本身存在。引用核验（`check_citation_validity.py`）已实现 403/000 自动 WebFetch 降级复核；正文抓取优先 `tools/web_fetch.py`（Jina Reader 代理，实测可绕过百度/知乎反爬）。
 - **ArXiv 检索**：本机 urllib 有出口，但 ArXiv API 对代理 IP 频繁 429 限流，直连常失败。`tools/arxiv_search.py` 直连失败会自动打印 WebFetch prompt 并退出码 2——**实践中直接走 WebFetch 降级更稳**：`tools/arxiv_search.py --query "<q>" --print-web-prompt` → 用 WebFetch 抓取并保存为 `research/<slug>/arxiv_raw.txt` → `tools/arxiv_search.py --raw research/<slug>/arxiv_raw.txt --out research/<slug>/gathered_arxiv.md`。（WebFetch 走 WorkBuddy 后端代理，不受本机限流影响。）
 - 外网动作前用 `tools/net_check.py` 探测出口，缺失时打印清晰提示、避免静默失败（已实现于 `report_to_docx.py` 的图片下载分支）。
 - `report_images.py --url-base` 的图床部署、`report_to_docx.py` 的远程图片下载等 urllib 动作在本机可联网；但换机若无代理会失败，须以 net_check 兜底。

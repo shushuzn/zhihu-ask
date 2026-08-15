@@ -80,14 +80,14 @@ zhihu-ask/
 ## 使用流程
 
 1. **初始化研究**：写 `tools/start.json`（question/domain/slug/priority/keywords/days），执行 `python tools/research_start.py --config tools/start.json`——自动创建 `research/<slug>/`（plan.md/report.md/process_notes.md/notes/ + .progress.json）、判定领域档位（学术科研/科技产业/财经时政 → 通道优先级）、公众号初检；也可用 `python tools/run_pipeline.py --config tools/start.json` 一并打印 agent 待办清单。
-2. **六通道检索**（顺序 F→E→A→B→C→P，优先级按领域矩阵，`docs/SOP.md`）：
+2. **六通道检索**（顺序 F→E→A→B→C→P，优先级按领域矩阵，`docs/SOP.md`）：**统一并行入口 `python tools/search_all.py --config tools/start.json`** 一次执行 B/A/P 三通道（B 多查询并行、通道级并行，各自落盘自动登记）；F 查重结论由主代理人工判读后 `mark_channel.py` 登记。
    - F flomo 查重（最先）：`flomo_search.py`；≥0.9 复用/更新、0.5~0.9 参考（须 GB/T 合规，`check_flomo_note_refs.py`）、<0.5 正常检索；旧笔记过时信息原地更新
    - E ima（P1，未配置记 skip）· A 公众号（`wechat_search.py`，分档）· B Web（`web_search.py` 多引擎 + `web_fetch.py` 三级降级，P0 通用）· C 领域连接器（通达信/企查查/智慧芽，分档）· P 学术预印本（`preprint_search.py --platform all` 四平台，分档）
-   - 素材落盘 `gathered_*.md`；通道完成态登记（A/P 落盘自动，F/E/B/C 用 `mark_channel.py`）；门禁 `check_progress.py --require report_channels`
+   - 素材落盘 `gathered_*.md`；通道完成态登记（A/B/P 落盘自动，F/E/B/C 用 `mark_channel.py`；E/C 未配置环境级自动 skip）；门禁 `check_progress.py --require report_channels`
 3. **模块化笔记**：检索完成后撰写 `notes/*.md`（扁平目录、首行标签：`#维度1 #维度2 #主题/slug`；索引笔记 `00_index.md` 用 `#索引`；每篇含标签行+标题+正文+来源 GB/T+来源类型）；`00_index.md` 以 `## 问题/历史/证明/结论/缺口` 串联；`note_assemble.py --slug` 按索引组装 `report_draft.md` 骨架。
 4. **产出 report.md**：默认一轮成稿；结论 ≤300 字符、首行无"结论"字样；公式一律 LaTeX；正文 [n] 引注；概念主体、独立组织、无过程字样；存在无法核实的内容或数据口径缺口时追加轮次（`iter_research.py`）。
 5. **算式按需但必验**：有计算价值的内容算式必须写、融入小节叙述；数学/证明类给完整论证链（定理-引理-证明）；每条算式经 `verify_calcs.py` Python 实际验证，验证脚本留存研究目录；禁止凑数硬造也禁止该写不写。
-6. **收尾门禁**：`python tools/run_pipeline.py --slug <slug>` 自动编排八件套——check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity（作者/题名联网核验）→ check_consistency → check_progress（轮次+落报告），随后生成 `report.docx`（report_to_docx.py）与 `flomo_full.md` 本地存档（report_to_flomo.py，不上传），并跑 `check_all.py` 全库体检。
+6. **收尾门禁**：`python tools/run_pipeline.py --slug <slug>` 自动编排八件套——check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity（作者/题名联网核验；403/000 反爬自动 WebFetch 降级复核；词面差异误报可 `--ack <n1,n2,...>` 人工确认放行，判读理由留痕）→ check_consistency → check_progress（轮次+落报告），随后生成 `report.docx`（report_to_docx.py）与 `flomo_full.md` 本地存档（report_to_flomo.py，不上传），并跑 `check_all.py` 全库体检。
 7. **产出与沉淀**：`note_upload.py research/<slug>/notes/` 逐条质检后上传 flomo（索引/报告禁止上传）；`report_images.py` 生成 AI 概念图封面 `ai_cover.png`（纯抽象视觉、合规/主题/构图三重复检）；按需 `wechat_publish.py` 推送公众号草稿；有效关键词写入 SQLite 关键词库（`tools/keywords_db.py --add`）并 `--export docs/KEYWORDS.md` 同步、写 `process_notes.md`、更新 `plan.md` 索引为已完成。
 8. **收尾提交**：git 提交并推送（仅公开文件；research/ 与 plan.md 不入库；pre-commit hook 拦截内部文件）。
 

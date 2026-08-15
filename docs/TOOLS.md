@@ -6,14 +6,14 @@
 
 | 分组 | 工具 |
 |---|---|
-| 研究生命周期 | `init_research.py` · `research_start.py` · `iter_research.py` · `run_pipeline.py` |
-| 通道检索 | `wechat_search.py`（A）· `preprint_search.py`（P：arxiv/bioRxiv/浪淘沙/PSSXiv）· `flomo_search.py`（F 查重） |
+| 研究生命周期 | `init_research.py` · `research_start.py` · `iter_research.py` · `run_pipeline.py` · `note_assemble.py` |
+| 通道检索 | `web_search.py`（B）· `web_fetch.py`（三级降级抓取）· `arxiv_search.py`（P）· `preprint_search.py`（P：arxiv/bioRxiv/浪淘沙/PSSXiv）· `wechat_search.py`（A）· `flomo_search.py`（F 查重） |
 | 素材引用校验 | `check_flomo_note_refs.py`（flomo 笔记须有参考文献；无→联网找→找不到不可用） |
-| 数据落库 / 转换 | `report_to_docx.py` · `report_to_flomo.py` · `report_images.py` |
-| 质检门禁 | `quality_check.py` · `check_report_structure.py` · `check_ai_voice.py` · `check_gbt_refs.py` · `check_citation_validity.py` · `check_progress.py` · `check_all.py` |
+| 数据落库 / 转换 | `report_to_docx.py` · `report_to_flomo.py` · `report_images.py` · `latex_unicode.py` |
+| 质检门禁 | `quality_check.py` · `check_report_structure.py` · `check_ai_voice.py` · `check_gbt_refs.py` · `check_citation_validity.py` · `check_consistency.py` · `check_progress.py` · `check_all.py` |
 | 通道登记 | `mark_channel.py` · `channel_state.py`（共用核心） |
 | 知识库 | `rag_build.py` · `rag_search.py` · `knowledge_store.py` · `keywords_db.py` |
-| 环境与提交 | `health_check.py` · `net_check.py` · `git_protect.py` · `install_git_hooks.py` · `internal_files.py` |
+| 环境与提交 | `health_check.py` · `net_check.py` · `git_protect.py` · `install_git_hooks.py` · `internal_files.py` · `clean_workspace.py` · `maintain.py` · `env_loader.py` |
 | 验证（实验性） | `syllogism_check.py` |
 
 > 连接器类通道（ima E / 企查查·通达信·智慧芽 C）由主代理直执 MCP 工具，非脚本，见下方对应小节。
@@ -29,12 +29,12 @@
 | test_channel_state (43) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (23) | 收尾门禁顺序 / plan 回填 / mark_plan_done |
 | test_wechat_norm (31) | 消费端防御 / 自动登记 A / 路径归一化 | test_syllogism_check (22) | 三段论纯逻辑 |
 | test_arxiv_automark (5) | 落盘自动登记 P | test_report_images (19) | 锚点插入 / 图表冒烟 |
-| test_arxiv_query (23) | OR 语义提示 / curl 兜底四态 | test_ai_voice (12) | 两级检出 + 负例 |
+| test_arxiv_query (23) | OR 语义提示 / curl 兜底四态 | test_ai_voice (18) | 两级检出 + 负例 + 参考文献区豁免 |
 | test_report_structure (21) | 五类结构规则 | test_latex_unicode (13) | LaTeX→Unicode |
 | test_report_to_flomo (26) | convert_text / pick_tags | test_note_upload (21) | 上传质检链 / 拦截 |
-| test_git_protect (15) | 提交保护分流逻辑 | test_web_search (58) | 解析纯函数 + B 自动登记 + 多查询并行 |
+| test_git_protect (15) | 提交保护分流逻辑 | test_web_search (52) | 解析纯函数 + B 自动登记 + 多查询并行 |
 | test_internal_files (31) | 内部文件红线单一真相源 | test_check_flomo_note_refs (29) | 笔记参考文献判定 |
-| test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_citation_validity (34) | 违规引用核验 |
+| test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_citation_validity (44) | 违规引用核验（含 WebFetch 降级 / bigram 切词 / --ack） |
 | test_check_all (25) | 体检工具纯函数 | test_consistency (28) | 项目矛盾/废话检查 |
 | test_rag_build (23) | is_indexable / chunks | test_clean_workspace (8) | 清理路径收集 |
 | test_rag_search (29) | tokenize / bm25 / highlight | test_env_loader (16) | .env 加载 |
@@ -150,9 +150,12 @@ python tools/run_pipeline.py --config tools/start.json --slug <slug>
 
 # 无外网环境：违规引用检查改用离线模式（跳过 CrossRef/arXiv 联网核验）
 python tools/run_pipeline.py --slug <slug> --offline
+
+# 违规引用检查人工确认放行：--ack 指定已判读合规的条目号（词面差异机器无法判定时）
+python tools/run_pipeline.py --slug <slug> --ack 2,5,8
 ```
 
-**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；F 查重执行但结论由主代理人工判读后 mark_channel 登记，重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
+**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；F 查重执行但结论由主代理人工判读后 mark_channel 登记，重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。`--ack <n1,n2,...>` 透传 `check_citation_validity.py --ack`——人工判读确认合规的条目跳过其「正文与题名疑似不符」提示（门禁输出注明人工确认，判读理由须逐条说明，见 `docs/CONVENTIONS.md` §8）。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
 
 ## search_all.py — 统一并行检索入口（B/A/P 三通道）
 
@@ -201,7 +204,7 @@ python tools/check_ai_voice.py --slug <slug>            # 等价写法；默认�
 python tools/check_ai_voice.py --slug <slug> --verbose
 ```
 
-**接入**：`run_pipeline.py finish()` 收尾门禁（在 quality_check 之后，硬伤与提示级均阻断）；`check_all.py` 全库体检新增「AI腔」列（硬伤与提示级均判 X）。**回归测试**：`tests/test_run_pipeline.py` 断言收尾门禁顺序含本工具；`tests/test_health_check.py` 断言已登记 REQUIRED_FILES。检出项为启发式，默认同样阻断；如「但」多为真实转折、「关键」可能是合法术语语境、引号若为非字面义/术语首现属合规，需修正或说明。
+**接入**：`run_pipeline.py finish()` 收尾门禁（在 quality_check 之后，硬伤与提示级均阻断）；`check_all.py` 全库体检新增「AI腔」列（硬伤与提示级均判 X）。**参考文献区豁免**：破折号/引号/标题检查在 `## 参考文献` 处截断——著录题名可含合法标点（如《系统论 (十二)——混沌中的系统》），不适用正文叙述行规则（误报案例见 probabilistic-deterministic-systems）。**回归测试**：`tests/test_run_pipeline.py` 断言收尾门禁顺序含本工具；`tests/test_health_check.py` 断言已登记 REQUIRED_FILES；`tests/test_ai_voice.py` 含参考文献区豁免正/负例。检出项为启发式，默认同样阻断；如「但」多为真实转折、「关键」可能是合法术语语境、引号若为非字面义/术语首现属合规，需修正或说明。
 
 ## check_gbt_refs.py — 参考文献国标（GB/T 7714-2015）合规检查
 
@@ -250,9 +253,9 @@ python tools/check_consistency.py --slug <slug>          # 默认严格阻断，
   4. **题名与文献不符**（联网核验）：DOI 条目经 CrossRef、arxiv 条目经 arXiv API 核验题名，规范化后不一致（连字符/破折号变体已归一化）
   5. **作者误用（佚名）**：著录"佚名"但 CrossRef/arXiv 注册库有作者 → 硬伤（GB/T：无作者才写佚名）
   6. **引用日期早于发布日期**：著录引用日期 < 注册库发布日期 → 硬伤
-  7. **普通 URL 死链**：非 DOI/arxiv 的 URL 返回 404/5xx → 硬伤（引用须可溯源）
+  7. **普通 URL 死链**：非 DOI/arxiv 的 URL 返回 404/5xx → 硬伤（引用须可溯源）；**403/000（反爬拒绝/网络层无响应）不直接判死链**——降级用 `web_fetch.py`（Jina Reader 代理）复核内容存在性，复核成功说明页面存在、仅直连被反爬拦截，按可达处理（误报案例：百度百科/知乎对 urllib UA 返回 403）
   8. **联网核验失败**：含 DOI/arxiv 条目但 CrossRef/arXiv 核验网络失败 → 硬伤（默认模式；`--offline` 显式声明后跳过）
-- **[提示]**（默认同样阻断）：英文作者未按 GB/T 规范（姓全大写 名首字母）；正文 [n] 引注处上下文与题名关键词不匹配（启发式）；普通 URL 可达性无法验证
+- **[提示]**（默认同样阻断）：英文作者未按 GB/T 规范（姓全大写 名首字母）；正文 [n] 引注处上下文与题名关键词不匹配（启发式——**bigram 滑窗切词** + 100 字窗口 + 2 词阈值，词面差异如「遍历论 vs 遍历理论」仍可能命中，用 `--ack` 人工确认放行）；普通 URL 可达性无法验证
 
 **用法**：
 
@@ -261,9 +264,10 @@ python tools/check_citation_validity.py --file research/<slug>/report.md
 python tools/check_citation_validity.py --slug <slug>            # 检查 research/<slug>/report.md
 python tools/check_citation_validity.py --file x.md --offline    # 显式声明放弃联网核验（输出注明"离线模式"）
 python tools/check_citation_validity.py --file x.md --verbose    # 默认严格阻断，提示级命中同样失败
+python tools/check_citation_validity.py --slug <slug> --ack 2,5,8  # 人工确认合规的条目号（跳过其"正文与题名疑似不符"提示，输出注明）
 ```
 
-**接入**：`check_all.py` 全库体检新增「违规引」列（硬伤判 X，联网核验）；`note_upload.py` 上传前以 `--offline` 模式拦截 URL 伪造/占位符/arxiv 非法 id/作者格式（上传链不阻塞；报告质检阶段执行完整联网核验）。**回归测试**：`tests/test_citation_validity.py`（26 条正/负/mock 联网用例）；已登记 REQUIRED_FILES。注意：作者比对忽略大小写与顺序、比对前 3 位；`--offline` 是显式纪律声明而非默认降级；DOI 含括号（Elsevier 格式）与引用日期紧邻 URL 均已正确处理。
+**接入**：`check_all.py` 全库体检新增「违规引」列（硬伤判 X，联网核验）；`note_upload.py` 上传前以 `--offline` 模式拦截 URL 伪造/占位符/arxiv 非法 id/作者格式（上传链不阻塞；报告质检阶段执行完整联网核验）；`run_pipeline.py --ack` 透传人工确认条目（判读纪律见 `docs/CONVENTIONS.md` §8）。**回归测试**：`tests/test_citation_validity.py`（44 条正/负/mock 联网用例，含 403 降级复核、bigram 切词、--ack 机制）；已登记 REQUIRED_FILES。注意：作者比对忽略大小写与顺序、比对前 3 位；`--offline` 是显式纪律声明而非默认降级；DOI 含括号（Elsevier 格式）与引用日期紧邻 URL 均已正确处理。
 
 ## check_progress.py — 阶段进度校验
 
