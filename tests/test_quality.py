@@ -100,6 +100,8 @@ expect("int- 公开来源", qc.check_internal_refs("公开来源显示"), False)
 expect("int+ 智慧芽", qc.check_internal_refs("智慧芽论文检索无直接相关"), True)
 expect("int+ 产业无对应", qc.check_internal_refs("产业侧无对应物（企查查与通达信无适用主体）"), True)
 expect("int+ 无适用主体", qc.check_internal_refs("通达信与企查查无适用主体"), True)
+expect("int+ verify 脚本名", qc.check_internal_refs("数值验证（测算 1，脚本 verify_calcs.py）"), True)
+expect("int- verify 正常语境", qc.check_internal_refs("数值验证（测算 1）结果如下"), False)
 
 # ---- 分级词括注 ----
 expect("grade+ 一手括注", qc.check_grade_paren("（一手数据）"), True)

@@ -386,21 +386,26 @@ def check_meta_discourse(body):
 def check_internal_refs(body):
     """检测内部工具标识泄漏（成品禁"flomo/内部笔记/信号笔记"等来源标识）。
 
-    匹配：flomo / 内部笔记 / 信号笔记 / gathered_ 出现在正文或参考文献；
+    匹配：flomo / 内部笔记 / 信号笔记 / gathered_ / verify_*.py 出现在正文或参考文献；
     以及六通道检索过程痕迹词：智慧芽 / 企查查 / 通达信 /
     产业无对应 / 无适用主体 / 无约定主题布局——C 通道"无命中"是内部研究记录，
     落 process_notes 与进度文件，禁止写进正文（对读者无信息量）。
-    说明：成品报告引用须为公开来源；内部素材（flomo 笔记/检索记录）不入成品，
-    改为引用其对应的公开出处或删除。
+    说明：成品报告引用须为公开来源；内部素材（flomo 笔记/检索记录/验证脚本）不入成品，
+    改为引用其对应的公开出处或删除（验证脚本只留存研究目录，正文提"数值验证（测算 N）"即可）。
     """
     issues = []
     internal_words = ["flomo", "内部笔记", "信号笔记", "gathered_",
                       "智慧芽", "企查查", "通达信", "产业无对应", "无适用主体", "无约定主题布局"]
+    internal_re = re.compile(r"verify_[\w-]+\.py", re.I)
     for i, line in enumerate(body.splitlines(), 1):
         for w in internal_words:
             if w.lower() in line.lower():
                 issues.append((i, "内部标识", w, line.strip()[:60]))
                 break
+        else:
+            m = internal_re.search(line)
+            if m:
+                issues.append((i, "内部标识", m.group(0), line.strip()[:60]))
     return issues
 
 def check_grade_paren(body):
