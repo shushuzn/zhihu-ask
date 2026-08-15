@@ -20,79 +20,42 @@
 
 ## 测试套件（回归守护）
 
-`tests/` 下为工具回归测试套件，由 `tests/run_all.py` 统一运行（逐模块子进程执行、聚合 PASS/FAIL、任一失败退出码 1）：
+`tests/run_all.py` 逐模块子进程运行全部测试、聚合 PASS/FAIL，任一失败退出码 1；`check_all.py` 体检前自动先跑。
 
-```bash
-python tests/run_all.py                 # 全量回归（质量/门禁/登记/自动登记）
-python tools/check_all.py              # 全库体检（体检前自动先跑 tests/run_all.py）
-```
+| 模块（项数） | 覆盖 | 模块（项数） | 覆盖 |
+|---|---|---|---|
+| test_quality (125) | quality_check 全部规则正/负断言 | test_research_start (27) | config 校验 / 进度合并 / ima 提示 |
+| test_check_progress (14) | report_channels 双向交叉门禁 | test_install_git_hooks (10) | hook 装/卸行为 |
+| test_channel_state (43) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (15) | 收尾门禁顺序 |
+| test_wechat_norm (31) | 消费端防御 / 自动登记 A / 路径归一化 | test_syllogism_check (22) | 三段论纯逻辑 |
+| test_arxiv_automark (5) | 落盘自动登记 P | test_report_images (19) | 锚点插入 / 图表冒烟 |
+| test_arxiv_query (23) | OR 语义提示 / curl 兜底四态 | test_ai_voice (12) | 两级检出 + 负例 |
+| test_report_structure (21) | 五类结构规则 | test_latex_unicode (13) | LaTeX→Unicode |
+| test_report_to_flomo (26) | convert_text / pick_tags | test_note_upload (21) | 上传质检链 / 拦截 |
+| test_git_protect (15) | 提交保护分流逻辑 | test_web_search (52) | 解析纯函数 + B 自动登记 |
+| test_internal_files (31) | 内部文件红线单一真相源 | test_check_flomo_note_refs (29) | 笔记参考文献判定 |
+| test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_citation_validity (34) | 违规引用核验 |
+| test_check_all (25) | 体检工具纯函数 | test_consistency (28) | 项目矛盾/废话检查 |
+| test_rag_build (23) | is_indexable / chunks | test_clean_workspace (8) | 清理路径收集 |
+| test_rag_search (29) | tokenize / bm25 / highlight | test_env_loader (16) | .env 加载 |
+| test_knowledge_store (17) | 关键词库 roundtrip | test_gbt_refs (23) | 国标著录 |
+| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (10) | token 环境变量 / F 自动登记 |
+| test_report_to_docx (41) | md→docx 转换契约 | test_web_fetch (20) | 抓取降级 |
+| test_iter_research (27) | 轮次推进 / 归档 | test_preprint_search (31) | 四平台聚合 |
+| test_net_check (9) | 外网出口探测 | | |
 
-| 测试模块 | 覆盖 |
-|---|---|
-| `tests/test_quality.py` | `quality_check.py` 全部规则的「必命中 / 必不命中」断言（125 项） |
-| `tests/test_check_progress.py` | `report_channels` 双向交叉门禁：文件启发式回退 + 结构化正向/反向/完整性/report 承接（13 项） |
-| `tests/test_channel_state.py` | `channel_state.py` 登记的纯函数：slug 反推 / load-save / mark 校验与 note 语义（37 项） |
-| `tests/test_wechat_norm.py` | `wechat_search.py` 消费端防御 + 解析漂移检测 + 落盘自动登记通道 A + `_normalize_skill_path`（Git Bash `/c/` 路径归一化，实测踩坑：`/c/` 风格 Windows Python 不识别导致 sogou 找不到）（31 项） |
-| `tests/test_arxiv_automark.py` | `arxiv_search.py` 落盘自动登记通道 P（5 项；arxiv 归入 P） |
-| `tests/test_arxiv_query.py` | `arxiv_search.py` 的 `query_semantics_hint`：多词裸查询（空格+无引号+无 AND）触发 OR 语义提示，引号短语/显式 AND（含大小写变体）/单词/空查询不触发；curl 兜底四态（成功/无curl/空响应/异常）（23 项） |
-| `tests/test_report_structure.py` | `check_report_structure.py` 五类结构规则的正向/负向断言：编号连续、参考文献合法条目（链接/编号/无序/纯文本标题）、占位符、测算融入（21 项） |
-| `tests/test_report_to_flomo.py` | `report_to_flomo.py` 的 `convert_text`（标题/引用/表格/链接/图片/反引号机械转换 + 内容完整性）与 `pick_tags`（最长键优先匹配、兜底、大小写不敏感）（26 项） |
-| `tests/test_git_protect.py` | `git_protect.py` 的 `_touches_tested` 分流与 `maybe_run_test_suite` 拦截逻辑（纯决策，不触发真实 git）（15 项） |
-| `tests/test_internal_files.py` | `internal_files.is_internal` 隐私红线单一真相源：直配内部模式（plan.md/research//docs 归档/.codebuddy//.workbuddy//.tmp）、临时 config 双重限定（前缀+`.json` 后缀）、PUBLIC_EXCEPTIONS 豁免、核心脚本不得被前缀误伤、Windows 反斜杠归一化（31 项） |
-| `tests/test_init_research.py` | `init_research.py` 的 `slug_ok`（短横线校验）、`parse_args`（CLI 解析/缺值/默认值）、`apply_replacements`+`fill_template`（占位符替换，plan 专属占位符仅 plan 模板替换）、`insert_index_row`（索引表插入：命中/缺 topic_slug 表头/缺分隔行/不污染后续小节）、`write_initial_progress`（落盘 stage/round/domain）（44 项） |
-| `tests/test_check_all.py` | `check_all.py` 的 `classify_quality_hits`（软命中豁免：无来源数字/立场词不算硬失败）、`extract_conclusion`（结论段截至首个标题行/文末，含 `###` 平铺结构、空结论/无标题边界）、`conclusion_ok`（≤300 字/非 bullet）、`find_reports`（临时目录扫描）（25 项） |
-| `tests/test_rag_build.py` | `rag_build.py` 的 `is_indexable`（research/ 仅收 process_notes.md 排除报告/素材噪音）、`parse_args`（--dir 多目录/缺值回退/默认）、`split_chunks`（##/### 切分、无标题内容归首片回退 path、短正文 <30 过滤、空节不产出、一级标题不切分）（23 项） |
-| `tests/test_rag_search.py` | `rag_search.py` 的 `tokenize`（中文 bigram/单字/英文≥2 小写/数字/下划线连词/停用词过滤/英文数字在前中文在后的输出序）、`bm25`（tf 词频排序、df/idf 稀有词加分、file_filter 限定、空分片/无命中/空查询词）、`highlight`（命中标记+括号开销、上下文窗口、省略号前缀、无命中截断）（29 项） |
-| `tests/test_knowledge_store.py` | `knowledge_store.py` 的 `parse_keywords_md`（前导/分节/kind 识别）、`import_keywords_md`/`export_keywords_md` roundtrip、`add_keyword`/`list_keywords`/`search_keywords`、`replace_chunks`/`load_chunks`（17 项） |
-| `tests/test_health_check.py` | `health_check.py` 的 `find_missing`/`git_synced` 纯函数 + REQUIRED_FILES 一致性守护不变量：无重复、全量真实存在、全覆盖 tools/*.py 与 docs/*.md 与 templates/*.md（新增/改名工具漏登记即漂移）、含 tests/run_all.py、清单内无内部文件（否则 git_protect 永久阻止提交关键文件本身）、git_protect.KEY_FILES 为超集且技能文件存在（27 项） |
-| `tests/test_report_to_docx.py` | `report_to_docx.py` 的 `split_rich`（**加粗** 标记解析：单段/混合/多段/单星号与裸双星不误判）、`parse_table_rows`（分隔行过滤、对齐分隔行、不等宽保留）、`normalize_img_ext`（查询串/白名单/未知与无扩展回退/大写归一）+ `convert_md_to_docx` 端到端（python-docx：标题层级、加粗 run、bullet/有序/引用、表格单元格、无 md 语法残留的一字不改契约）（41 项） |
-| `tests/test_iter_research.py` | `iter_research.py` 的 `parse_args`、`round_status`（已达/还需 N 轮文案）、`get_current_round`（缺失/无 round/损坏 JSON 兜底 1）、`update_round`（新建默认 stage、保留 domain/channels_done 既有字段、覆写 round+round_updated）、`write_template`（生成问题清单模板、cur≥2 推进时归档 round_notes_r<N>.md、cur=1 不归档）（27 项） |
-| `tests/test_net_check.py` | `net_check.py` 的 `has_egress`（mock urllib：非空响应/空响应/urlopen 异常/read 异常）与 `require_egress`（有出口无提示、无出口提示含 purpose 与 WebFetch 建议）（9 项） |
-| `tests/test_research_start.py` | `research_start.py` 的 `validate_config`（question/slug 必填、slug 短横线格式、大写自动降级、keywords 缺失/不足下限警告非阻塞）、`write_progress`（合并保 round——覆盖丢 round 的历史 bug、新字段合并、损坏文件回退、setdefault 1）、`get_ima_library_hints`（词元双向包含匹配、≤2 组上限、空 domain/无文件/无匹配）（25 项） |
-| `tests/test_install_git_hooks.py` | `install_git_hooks.py` 的 HOOK_TEMPLATE 内容（调用 git_protect.py/exit 0/勿手动编辑标记——模板回归会静默禁用提交保护）与装/卸行为（HOOK_PATH 打补丁：安装内容一致、移除、未装移除不报错、hooks 目录缺失退出码 1）（10 项） |
-| `tests/test_run_pipeline.py` | `run_pipeline.py` 的 `agent_checklist`（slug/query 替换、六通道步骤齐全、无占位符残留）、`finish` 收尾门禁执行顺序（结构→质量→轮次→落报告→docx→flomo，Mock 替换子进程）、`bootstrap`（WECHAT 环境变量预警 + research_start 调用）、`main` 无参数退出码 1（15 项） |
-| `tests/test_syllogism_check.py` | `syllogism_check.py` 的纯逻辑（不依赖 lean 二进制）：`find_candidates`（大前提/结论/因果链三类候选提取+去重）、`completeness`（三件套齐备性四分支+非三段论）、`diagnose`（中项共享/中项缺失四名词谬误风险/大前提非全称/小前提含 ∀）、`gen_skeleton_lean`（骨架注释与占位证明）；**移除死代码 `verify_triple`**（无任何调用、首段 code 赋值被覆盖、含 `sorry` 占位证明——误用会产出误导性"形式有效"判定）（22 项） |
-| `tests/test_report_images.py` | `report_images.py` 的 `hex_to_rgb`（色值解析）、`insert_block_into_content`（本轮抽取的锚点插入纯函数：命中插到首段后不紧跟标题/加粗标题命中/未命中回退首个 ### 前/AI 概念图未命中跳过/无小节可回退）、图表冒烟（PIL 可用时 bar_group 1440×840 / bar_single / scatter 1440×960 生成 PNG）（19 项） |
-| `tests/test_ai_voice.py` | `check_ai_voice.py` 两级检出：硬伤（空转过渡/需要强调/立靶子句式/标题禁词）与提示（装饰词/长插入语/引号日常词）+ 负例（正常语句/术语引号不误报）（12 项） |
-| `tests/test_latex_unicode.py` | `latex_unicode.py` LaTeX→Unicode 转换：分数/根号/上下标/希腊字母/运算符/箭头/文本命令/组合/纯文本；**测试抓出并修复 \in 吞噬 \infty 的真实 bug**（按 key 长度降序替换）；嵌套分数/美元符为已知限制（13 项） |
-| `tests/test_note_upload.py` | `note_upload.py` 上传质检链与拦截规则（索引/报告禁传、--update 原地更新）（21 项） |
-| `tests/test_web_search.py` | `web_search.py` 解析纯函数（域名提取/结果过滤/region 自适应/查询变体/openalex/crossref/hn 解析）+ curl 兜底（urllib 失败接管、双通道失败抛异常）（43 项，含 curl 兜底） |
-| `tests/test_check_flomo_note_refs.py` | `check_flomo_note_refs.py` 笔记参考文献合规判定：has_reference（来源:/参考文献/类型标识/URL/编号）、extract_title（tag 行/转义下划线/加粗清理）、URL 缺引用日期判不合规等（29 项） |
-| `tests/test_citation_validity.py` | `check_citation_validity.py` 违规引用核验：URL/DOI 提取（括号 DOI、引用日期不吞）、作者匹配（真/假/空）、题名归一化（破折号/LaTeX）、离线四类硬伤、CrossRef mock 联网核验（作者/题名/佚名误用/引用日期早于发布）、网络失败硬伤阻断、显式 offline 放行、死链拦截、正文题名上下文提示、arxiv html/abs/pdf 识别与注册库核验（34 项） |
-
-**纪律**：修改任一被测工具后，先跑 `python tests/run_all.py` 确认无回归再提交——规则静默回退会连累每一篇报告或污染通道 ledger。
-
-**运行器注意**：`tests/run_all.py` 取子进程输出中**最后一个** `TOTAL: PASS=.. FAIL=..` 作为模块权威结果（避免被模块内部嵌套调用的子进程回显干扰而误报 / 掩盖失败）。
-
-
+**纪律**：修改任一被测工具后先跑 `python tests/run_all.py` 确认无回归再提交；运行器取子进程输出**最后一个** `TOTAL: PASS=.. FAIL=..` 为权威结果（防嵌套输出干扰）。
 ## init_research.py — 研究目录初始化
 
-**作用**：一键创建新研究，避免手动复制模板。自动完成：创建 `research/<slug>/` 目录 → 从模板生成 plan/report/process_notes 三个文件 → 填入问题标题/日期/领域/slug（元信息行的领域与 slug 会实填，`report_to_flomo.py` 依赖该行解析 flomo 标签）→ 落盘 `.progress.json`（`stage=phase1_done`、`round=1`、`domain`，供 `check_progress.py` 校验）→ 在 `plan.md` 问题索引表登记一行。
+**作用**：一键创建新研究——生成 plan/report/process_notes（从模板填充问题/日期/领域/slug，元信息行供 report_to_flomo 解析标签）、落盘 `.progress.json`（stage/round/domain，含环境级 E/C skip 预登记）、创建 `notes/` 目录及模板、在 plan.md 索引表登记一行。
 
-**用法**（本机 PowerShell 下中文必须走 `--config` 文件）：
-
+**用法**（PowerShell 中文走 --config）：
 ```bash
-# 1. 准备 config 文件（UTF-8，参考 tools/init.example.json）
-{
-  "question": "示例问题标题",
-  "domain": "示例领域",
-  "slug": "example-slug",
-  "priority": "高"
-}
-
-# 2. 执行
-python tools/init_research.py --config tools/init.json
+python tools/init_research.py --config tools/init.json   # config 参考 tools/init.example.json（question/domain/slug/priority）
+# 或直接传参：--question "标题" --domain "领域" --slug <slug> --priority <级别>
 ```
 
-**参数**：`--config <json>` 或直接 `--question "标题" --domain "领域" --slug <slug> --priority <级别>`。
-
-**注意**：
-- slug 必须为英文小写短横线（如 `example-slug`）；目录已存在时会报错退出。
-- config 文件用完即删；已通过 `.gitignore` 忽略 `tools/init.*.json` 模式。
-- 生成文件保留未填占位符（主概念/关键词等），按 SOP 阶段 0–1 在 `plan.md` 中补齐；但元信息行（第 3 行）的领域与 slug 已实填，不要改回占位符，否则 flomo 标签会兜底为 `#{{...}} #综合`。
-- 单独用本工具起研究时 `.progress.json` 已自动落盘，无需手工补造；走 `research_start.py` 时该文件会被合并更新（保留 `round`）。
-- **模块化笔记目录**：初始化后自动创建 `notes/` 目录及统一模板，笔记扁平存放，靠标签区分类型。
-
+**注意**：slug 须英文小写短横线；config 用完即删（gitignore 已忽略）；元信息行领域/slug 已实填勿改回占位符（否则 flomo 标签兜底错误）；走 `research_start.py` 时 .progress.json 合并更新（保留 round）。
 ## note_assemble.py — 模块化笔记组装工具
 
 **作用**：从 `notes/` 目录读取索引笔记和普通笔记，自动组装成报告骨架。
@@ -115,32 +78,19 @@ python tools/note_assemble.py --slug <slug> --output custom.md  # 指定输出�
 
 ## flomo_search.py — flomo 笔记搜索
 
-**作用**：通过 flomo MCP 搜索笔记，支持关键词搜索和标签筛选。用于阶段0查重、阶段1补充已有笔记、阶段4写索引前盘点。
+**作用**：flomo MCP 搜索笔记（关键词/标签），用于阶段 0 查重、阶段 1 补充、阶段 4 写索引前盘点。
 
 **用法**：
-
 ```bash
-python tools/flomo_search.py --keywords "AI 编程"        # 关键词搜索
-python tools/flomo_search.py --tag "AI编程"              # 按标签搜
-python tools/flomo_search.py --tag "AI编程" --keywords "定价"  # 组合搜
-python tools/flomo_search.py --keywords "定价" --limit 5  # 限制条数
-python tools/flomo_search.py --keywords "定价" --full     # 输出完整笔记正文（memo_batch_get 拉全文）
-python tools/flomo_search.py --keywords "主题词" --slug <slug>  # 查重后自动登记通道 F（done，note 含 memo_search 证据）
+python tools/flomo_search.py --keywords "AI 编程"                  # 关键词搜索
+python tools/flomo_search.py --tag "AI编程" --keywords "定价"       # 组合搜
+python tools/flomo_search.py --keywords "定价" --full              # 拉完整正文（memo_batch_get）
+python tools/flomo_search.py --keywords "主题词" --slug <slug>     # 查重后自动登记通道 F（done，note 含 memo_search 证据）
 ```
 
-**凭证**：MCP Token **只从环境变量** `FLOMO_MCP_TOKEN` 读取（不读 `.env`，见 docs/CONVENTIONS.md）；此前硬编码在代码并进入公开仓库，**请先在 flomo 后台撤销旧 token 重建**，再设环境变量。未配置时查重调用报错并提示配置方式。
-
-**F 通道自动登记**：带 `--slug` 执行即把通道 F 登记为 done（note 含 memo_search 证据，供 report_channels 门禁）；命中≥0.9 复用/更新、0.5~0.9 参考等结论由主代理阅读结果后用 `mark_channel.py` 补充/覆盖 note。
-
-**工作流位置**：
-- 阶段0：搜已有相关笔记，避免重复研究
-- 阶段1：每收到新链接，先搜 flomo 看有没有相关笔记
-- 阶段4：写索引前，盘点所有相关笔记
-
-**上传规则**：
-- 索引笔记(00_index.md)和报告禁止上传 flomo
-- 笔记上传前必须跑质检: `python tools/quality_check.py --file notes/xx.md`
-
+**要点**：
+- **凭证**：Token 只从环境变量 `FLOMO_MCP_TOKEN` 读取（不读 .env，见 docs/CONVENTIONS.md）；此前硬编码进公开仓库，**须在 flomo 后台撤销旧 token 重建**。
+- **F 自动登记**：带 `--slug` 即登记 done（note 含 memo_search 证据）；≥0.9 复用/更新、0.5~0.9 参考等结论由主代理阅读结果后用 `mark_channel.py` 补充/覆盖 note。
 ## research_start.py — 一键研究启动器
 
 **作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 素材库非空校验 → 记录阶段进度 `.progress.json`（含 `domain` 字段，供 `check_progress --require_round auto` 按领域判定最低轮次）→ 打印后续步骤（阶段 2-4 上下文，其中通道 E 提示按领域从 `docs/IMA_LIBRARIES.md` 列出候选订阅库）。
@@ -399,49 +349,25 @@ python tools/note_upload.py research/<slug>/notes/ --max-retries 3   # 调整重
 - **`--update` 原地更新**：上传成功把 `{笔记文件名: memo id}` 持久化到 `research/<slug>/.flomo_ids.json`；`--update` 按记录用 `memo_update` 原地更新（id 不变，对应"禁止新建多版本"纪律），无记录的文件回退 `memo_create` 并补记。ids 文件为内部文件（不入 git、不上云）。
 - 质检与上传共用 quality_check 的笔记模式；`--force` 跳过质检（慎用）。
 
-## wechat_search.py — 微信公众号检索包装
+## wechat_search.py — 微信公众号检索包装（通道 A）
 
-**问题背景**：`wechat-article-search` skill 的 `sogou_search.py` 通过命令行接收中文关键词，但在本机 PowerShell 环境下中文参数会乱码（`chcp 65001` 也无法解决），导致通道 A 无法使用。
+**背景**：wechat-article-search 技能脚本经命令行传中文会乱码——本包装从 UTF-8 关键词文件读取检索词，进程内直调，绕开命令行。
 
-**解决方案**：包装脚本从 UTF-8 关键词文件读取检索词，直接在 Python 进程内调用 `sogou_search.py` 的函数，完全绕开命令行传参。
-
-**降级模式**：`sogou_search.py` 缺失时（如本机未装 wechat-article-search 技能）**自动降级**为 ddgs 检索 `site:mp.weixin.qq.com <关键词>`（走 web_search.py 的后端容错链，无需安装），命中后用 urllib 抓取文章页补真实标题与公众号名（微信 PC 页 `h1#activity-name` / `a#js_name`）；原词无命中自动去虚词重试。输出格式与搜狗模式一致（标题/公众号/链接），降级模式下时间字段为空、相关性依赖搜索引擎索引。
-
-**降级模式加速**：
-- 多关键词并行检索：默认 4 个关键词同时跑（`--parallel N` 调整，仅降级模式生效），结果仍按关键词原顺序输出、落盘格式不变。
-- 命中文章元数据抓取并行化（每关键词内部 6 线程），单页超时 15s → 8s。
-- 实测：7 关键词串行约 10+ 分钟 → 4 关键词并行约 27-40 秒（瓶颈为 ddgs 反爬空转，单后端失败约 11s）。
-- 顶层自动设置 `SSL_CERT_FILE`（certifi CA bundle），消除 Windows ssl 证书存储加载失败的 C 层 stderr 噪音（该噪音不走 warnings 系统，filterwarnings 无效）。
+**降级**：`sogou_search.py` 缺失时自动降级为 ddgs 检索 `site:mp.weixin.qq.com <关键词>`（多关键词并行 `--parallel N`、命中后抓页面补真实标题/公众号名、去虚词重试）；实测 7 词串行 10+ 分钟 → 并行 27–40 秒。
 
 **用法**：
-
 ```bash
-# 1. 准备关键词文件 tools/keywords.json（UTF-8，参考 keywords.example.json）
-{
-  "queries": ["<主题词> 突破", "<主题词> 产业化"],
-  "count": 10
-}
-
-# 2. 检索最近 N 天
-python tools/wechat_search.py --keywords tools/keywords.json --days 30
-
-# 3. 落盘为素材库（推荐）
+# 1. 准备关键词文件 tools/keywords.json（UTF-8，参考 keywords.example.json）：{"queries": ["<主题词> 突破", ...], "count": 10}
+# 2. 检索最近 N 天并落盘素材库（推荐）：
 python tools/wechat_search.py --keywords tools/keywords.json --days 30 --output research/<slug>/gathered_wechat.md
 ```
 
-**自动登记通道 A**：当 `--output` 写到标准路径 `research/<slug>/gathered_wechat.md` 时，脚本在写盘后自动把通道 A 登记进 `.progress.json`（`done`/`empty` 按命中条数判定），无需再手动 `mark_channel --channel A`。可用 `--slug` 显式指定 slug（否则从输出路径反推）。
-
-**输出**：每个关键词的结果清单（标题/公众号/时间/摘要/链接），UTF-8 编码。
+**自动登记通道 A**：`--output` 写到标准路径 `research/<slug>/gathered_wechat.md` 即自动登记 A（done/empty 按命中数；`--slug` 可显式指定，否则从路径反推）。
 
 **注意**：
-- 关键词文件必须 UTF-8 编码（用 write_to_file 创建即可保证）。
-- **必须设置环境变量 `WECHAT_ARTICLE_SEARCH_SCRIPTS`** 指向 `wechat-article-search` 技能的 `scripts` 目录，否则脚本报「未找到 sogou_search.py」退出（`run_pipeline.py` 启动时会预警）。**路径归一化**：Git Bash 的 `/c/...` 风格路径会被自动转为 `c:/...`（实测 `/c/` 风格 Windows Python 不识别导致误报未找到）；Windows 原生路径原样使用。
-- 冷门关键词搜狗可能补充旧文章，需按返回的 time 字段自行过滤。
-- 触发验证码时返回 "触发验证码，请稍后重试"，稍后再试即可。
-- 检索词的有效组合可写入 SQLite 关键词库（`python tools/keywords_db.py --add ...`，再 `--export docs/KEYWORDS.md` 同步），临时关键词文件用完即删。
-
-**消费端防御**：上游 `sogou_search.py` 用正则 / HTML 结构提取，搜狗站内改版极易失效。本脚本在消费端加 `_normalize_results` 防御层：① 非字典记录直接丢弃并记录原因；② 标题 / 公众号 / 摘要字段剥离 HTML 标签与实体；③ 标题与公众号均空的记录视为噪声丢弃；④ 关键改进——**原始有内容但归一化后 0 条有效记录时，判定为「解析结构漂移」并合成 error**（而非静默当作「真无结果」），避免坏解析污染通道 ledger。13 场景单元测试覆盖正常 / 畸形 / 漂移 / 空结果等路径。
-
+- 关键词文件必须 UTF-8；必须设置环境变量 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 指向技能 scripts 目录（`/c/...` 风格路径自动归一化；`run_pipeline.py` 启动时会预警）。
+- 冷门词搜狗可能补旧文章，按 time 字段过滤；验证码提示稍后重试。
+- **消费端防御**：`_normalize_results` 剥离 HTML 标签/实体、丢弃噪声记录；原始有内容但归一化后 0 条 → 判「解析结构漂移」并报错，避免坏解析污染通道 ledger（13 场景测试覆盖）。
 ## git_protect.py — 提交前检查
 
 **作用**：提交前双检查——①阻止 `plan.md`、`research/`、`.codebuddy/`、`docs/PLAN__ARCHIVE.md`、临时 config 等内部文件被误提交；②**关键文件完整性校验**：docs/ 等核心规范文件缺失时阻止提交（曾因 docs/ 整体丢失后固化，防止"带着缺失状态继续提交"）。
@@ -548,46 +474,17 @@ python tools/keywords_db.py --path                          # 打印数据库路
 
 ## ima 连接器 — 通道 E（ima 知识内容检索）
 
-**作用**：接入腾讯 ima 知识库（ima.qq.com），在阶段 1 检索历史经验沉淀（跨问题语义召回），与本地 `rag_search.py`（SQLite BM25，词面匹配）互补。ima 为 RAG 语义检索，可召回措辞不同但语义相关的内容。
+**两级检索**（主代理直执连接器工具，无 CLI）：
+- **E1 经验检索**：`search_knowledge_base` 定位库 → 个人库/项目沉淀 `search_knowledge`，与本地 `rag_search.py`（SQLite BM25）互补。
+- **E2 内容素材检索（核心）**：按领域从 `docs/IMA_LIBRARIES.md` 取候选订阅库（取全），逐库 `search_knowledge` 检索（每库 ≥2 个不同关键词），命中落盘 `research/<slug>/gathered_ima.md`（条目含 库名/标题/类型/media_id），与 A/B/C 并列计入有效通道；阶段 3 需原文时 `fetch_media_content(media_id)` 读取。全部候选库+全部关键词无命中才可记"通道 E 无有效素材"。
 
-**使用方式**：非脚本，由主代理直执连接器工具（已授权连接，侧边栏「更多 → ima知识库」）：
-
-| 工具 | 用途 | 关键参数 |
-|---|---|---|
-| `search_knowledge_base` | 按关键词搜索知识库（名称/描述） | query, limit |
-| `search_knowledge` | 在指定库内语义检索内容 | knowledge_base_id, query |
-| `get_knowledge_base_list` | 列出个人/共享/订阅知识库 | params[{type, limit}]（type 必填，如 KBT_MINE_KB） |
-| `get_knowledge_list` | 列出库内文件 | knowledge_base_id, limit |
-| `fetch_media_content` | 读取文件正文 | media_id |
-| `import_urls` | 批量导入网页链接（≤10 个/次） | knowledge_base_id, urls |
-| `create_media` + `add_knowledge` | 上传本地文件入库（先建 media 取 COS 凭证再上传再入库） | knowledge_base_id, file_* |
-
-**检索流程**（对应 SOP 阶段 1 通道 E；**通道 E 为阶段 1 执行顺序第一的检索**，先于 A/B/C/P 通道，为关键词与检索起点定基调），两级执行：
-
-1. **E1 经验检索**（检索项目历史沉淀）：`search_knowledge_base "主概念"` 定位相关库 → 对个人库/项目沉淀库 `search_knowledge "主概念 关键实体"` → 命中片段纳入检索起点；无命中记录"E1 无有效素材"。
-2. **E2 内容素材检索**（核心，把订阅库变成素材通道）：按问题领域从 `docs/IMA_LIBRARIES.md` 选取候选订阅库（金融/电子行业研究/科技公司财报/法律/AI/学术等分组，已列库名+ID+内容量）→ **对该领域全部候选库逐个**执行 `search_knowledge (knowledge_base_id, query)` → 命中内容落盘素材库。**执行纪律**：候选库取全（如数码/消费电子 → 电子行业研究库+明星科技公司财报库，不只查"最全研报库"）；每库 ≥2 个关键词重试（主概念+视角词）；全部库+全部词无命中才记录"通道 E 无有效素材"。
-
-**gathered_ima.md 落盘格式**（每条命中的一个条目）：
-
-```markdown
-- **[标题]**（库名 · 类型 · 时间）
-  摘要/简介首段（截断至 ~200 字）
-  命中片段：`<highlight_content>`
-  media_id: <media_id> ｜ knowledge_base_id: <id>
-```
-
-**正文读取**：阶段 3 交叉验证需要原文时，`fetch_media_content(media_id)` 获取全文（PDF/MD/网页均支持，can_fetch_content=true 条目可读）。
-
-**注意**：
-- E2 候选库按领域取 2–5 个即可；命中过多（单库返回超限）时收窄库范围或换更精确关键词（见 SOP 异常表）。
-- 订阅库为只读（can_add_knowledge=false），仅检索引用；写入（import_urls / add_knowledge）仅限自己的库。
-- 无「新建知识库」接口；建库需在 ima 网页/客户端操作。
-- **写入仅限公开级内容**：docs/、templates/、脱敏经验与词库；report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入（见 `docs/IMA_INTEGRATION.md` 隐私分级矩阵）。
-- 脚本化（OpenAPI，`tools/ima_*.py`）为可选增强：需在 https://ima.qq.com/agent-interface 生成 Client ID + API Key（存 `~/.config/ima/`，凭证不入项目），当前未实施。
-
+**纪律**：
+- 连接器未配置 → 环境级自动 skip（见 `docs/SOP.md` 阶段 1），无需逐篇检查；接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 恢复手动登记。
+- 隐私：读取无限制；写入仅限公开级内容（docs/、templates/、脱敏经验与词库；定稿 report.md 须用户确认）；gathered 素材、plan.md、问题原文禁止写入。
+- 凭证：连接器方案无需凭证；脚本化（OpenAPI）才需 Client ID + API Key（agent-interface 生成，仅显示一次），存 `~/.config/ima/` 或环境变量。
 ## 领域连接器 — 通道 C 数据源（通达信 / 企查查 / 智慧芽）
 
-**作用**：金融/企业/技术类研究的一手数据源，主代理直执连接器工具（已授权连接）。覆盖：行情/K线/F10 财务（通达信）、企业工商/股东/实控人穿透/财务/上市信息（企查查）、专利/学术论文检索与全文（智慧芽）；**通达信、企查查、智慧芽为通道 C 对应领域必做项（按领域优先级：科技产业/财经时政 P0、学术科研 P1；通达信查行情·财务、企查查锁定企业实体、智慧芽专利+论文各一次调用），finance 插件按需**。
+**作用**：通道 C 一手数据源（主代理直执连接器）：行情/K线/F10（通达信）、企业工商/股东/实控人/财务（企查查）、专利/论文（智慧芽）。三者为通道 C 对应领域必做项（科技产业/财经时政 P0、学术科研 P1）；finance 插件按需。
 
 ### 通达信 tdx-connector（金融行情与数据）
 
@@ -628,7 +525,8 @@ python tools/keywords_db.py --path                          # 打印数据库路
 - 接口返回空结果时**如实报告"该数据暂无"**，禁止用训练知识填充数字（金融场景虚假数据会严重误导）。
 - 企查查 `get_company_by_query` 返回多候选时**必须将候选列表完整展示、等待用户确认**后再调下游工具；自动选第一候选属于错误操作。
 - 企查查穿透类结果（实控人持股比例、受益股份、财务比率）为服务端精算终值，**逐字引用，禁止自行乘法重算或臆测中间层**（模型多位小数乘法不可靠，已实测算错案例）。
-- 智慧芽 `patsnap_search` 的 search_strategy 与参数**严格绑定**：含 "semantic" 才传 semantic_query（自然语言技术问题，不是关键词列表）、含 "keyword" 才传 keywords（原子术语 3-8 个，禁句子/公司名）、含 "filter" 才传 filters（申请人/发明人/IPC/日期/法律状态/被引，仅填用户明确字段）；**专利与论文是两个独立调用**（source=patent/paper）；取全文用 `patsnap_fetch`（公开号或 URL，一次 ≤100 条）。**智慧芽为通道 C 对应领域必做项（科技产业/财经时政 P0、学术科研 P1），专利+论文各一次调用，无命中记录"通道 C 智慧芽无有效素材"。**通达信、企查查同为通道 C 对应领域必做项（通达信 code 先 `tdx_lookup_stock`、企查查先 `get_company_by_query` 锁定实体），无命中记录"通道 C [数据源]无有效素材"。
+- 智慧芽 `patsnap_search` 的 search_strategy 与参数**严格绑定**：含 "semantic" 才传 semantic_query（技术问题描述）、含 "keyword" 才传 keywords（原子术语 3-8 个）、含 "filter" 才传 filters（申请人/IPC/日期/法律状态等）；**专利与论文两个独立调用**（source=patent/paper）；全文用 `patsnap_fetch`（一次 ≤100 条）。无命中记录"通道 C 智慧芽无有效素材"。
+- 通达信/企查查同为必做（先 lookup 查码 / 先 by_query 锁定实体），无命中记录"通道 C [数据源]无有效素材"；各数据源只读，不执行交易、不写回。
 - 各数据源均为只读：只做查询引用，不执行交易、不写回任何数据。
 - 连接器未连接/返回空时跳过该数据源，改用 Web 或其他插件补位，不阻塞流程（见 SOP 异常表）。
 
@@ -681,38 +579,23 @@ python tools/keywords_db.py --path                          # 打印数据库路
 - 无 `--out` 时打印到 stdout；退出码 0 成功 / 1 全部路径失败（stderr 打印各路径错误摘要）
 - 测试：`tests/test_web_fetch.py`（html_to_text 提取 + 降级顺序 monkeypatch + 参数解析，20 项）
 
-## arxiv-watcher + tools/arxiv_search.py — arxiv 平台（归入学术预印本聚合通道 P）
+## arxiv-watcher + tools/arxiv_search.py — arxiv 平台（归入通道 P）
 
-**作用**：arxiv 预印本检索工具（属学术预印本聚合通道 P）——经 ArXiv API 检索最新论文与预印本（未正式发表的 preprint），学术主题与智慧芽（已发表期刊论文）互补；日常推荐用统一入口 `tools/preprint_search.py --platform all`（arxiv + bioRxiv + 浪淘沙 + PSSXiv 一次完成），本工具用于单独检索 arxiv 或 WebFetch 降级路径。
-
-**工具说明：`tools/arxiv_search.py`**（替代 arxiv-watcher 的 shell 脚本）。`arxiv-watcher` 的 `scripts/search_arxiv.sh`（`curl` 实现）在本环境命令行无外网出口下**永远空返回**，不要依赖它；`tools/arxiv_search.py` 用 `urllib` 经 `HTTPS_PROXY` 可联网，但 ArXiv API 对代理 IP 频繁限流（HTTP 429），`--query` 直连不稳定，无命中时优先走 WebFetch 降级（WebFetch 走 WorkBuddy 后端代理，稳定可用）。**curl 自动兜底**：urllib 直连/代理均失败（报"无外网出口"）时，工具自动依次尝试「系统 curl 直连 → curl 经代理」后才降级 WebFetch——curl 独立 SSL 栈在本机实测可用，多数情况无需 agent 手动 WebFetch；降级链完整验证：urllib→代理→curl 直连→curl 代理→WebFetch 提示。**查询语义**：`build_url` 现按相关性排序（`sortBy=relevance`）并把多词查询自动转 AND（`all:w1 AND all:w2`，修复 ArXiv API 空格=OR 导致返回最新无关论文的陷阱）；精确短语用引号。改用 `tools/arxiv_search.py`：
-
-```bash
-# 有外网出口的环境：直连
-python tools/arxiv_search.py --query "constrained decoding JSON" --count 5 \
-    --out research/<slug>/gathered_arxiv.md
-
-# 本环境（无外网出口）：WebFetch 降级路径
-python tools/arxiv_search.py --query "constrained decoding JSON" --print-web-prompt
-# → 用 agent 的 WebFetch 工具抓取打印出的 URL，把响应保存为 arxiv_raw.txt
-python tools/arxiv_search.py --raw arxiv_raw.txt --out research/<slug>/gathered_arxiv.md
-```
-
-`--raw` 同时支持 ArXiv 原生 Atom XML 与 WebFetch 用约定 prompt 产出的分隔符文本，解析后落盘 `gathered_arxiv.md`（标题/作者/日期/摘要/链接/PDF）。
-
-**自动登记通道 P**：当 `--out` 写到标准路径 `research/<slug>/gathered_arxiv.md` 时，脚本在写盘后自动把通道 P 登记进 `.progress.json`（`done`/`empty` 按命中条数判定），无需再手动 `mark_channel`。可用 `--slug` 显式指定 slug（否则从输出路径反推）。
+**作用**：arxiv 预印本检索（学术主题与智慧芽已发表论文互补）。日常用统一入口 `tools/preprint_search.py --platform all`；本工具用于单独检索 arxiv 或 WebFetch 降级。`arxiv-watcher` 的 shell 脚本（curl 实现）在本环境**永远空返回**，不要依赖。
 
 **用法**：
-- `arxiv-watcher` 技能：`scripts/search_arxiv.sh "<query>"` → 返回 XML（`<entry>/<title>/<summary>/<link title="pdf">`），解析后按 标题/作者/日期/摘要/arxiv 链接/PDF 落盘 `research/<slug>/gathered_arxiv.md`。
-- **查询语法（实测）**：ArXiv API 中空格与 `+` 均为 OR 语义（`all:a OR all:b`），精确短语用引号（`search_query=all:%22exact+phrase%22`），多词 AND 用 `all:x+AND+all:y`；脚本传参可直接写引号短语（如 `"formal proof"`）或按上述语法手工构造 URL 用 curl 调用（脚本失败时）。**脚本内建 OR 语义提示**：`--query` 含空格、无引号、无 AND 的多词裸查询会在直连/`--print-web-prompt` 前打印提示（实测 `Riemann zeta zeros critical line proportion` 裸查询返回自动驾驶等无关结果），建议用引号短语或显式 AND。
-- 检索词用英文（ArXiv 元数据为英文），2-3 组主题词；零结果换词重试 1 次，仍无记录"通道 P 无有效素材（arxiv）"。
-- 需全文时 `web_fetch` PDF 链接提取；`arxiv.org/abs/<id>` 为摘要页、`arxiv.org/pdf/<id>` 为 PDF。
+```bash
+python tools/arxiv_search.py --query "constrained decoding JSON" --count 5 --out research/<slug>/gathered_arxiv.md   # 直连
+python tools/arxiv_search.py --query "..." --print-web-prompt   # 429 限流时：打印 URL 与 prompt → agent 用 WebFetch 抓取存 arxiv_raw.txt
+python tools/arxiv_search.py --raw arxiv_raw.txt --out research/<slug>/gathered_arxiv.md   # 解析落盘（Atom XML / 分隔符文本均可）
+```
 
-**纪律**：
-- 按领域优先级执行（学术科研 P0 / 科技产业 P1 / 财经时政 P2，属通道 P）：学术主题与智慧芽互补；无命中记"通道 P 无有效素材（arxiv）"。
-- 与通道 C 智慧芽互补：arxiv 拿最新预印本，智慧芽拿已发表论文+被引；两者交叉验证。
-- 讨论/总结过的论文须追加到 `memory/RESEARCH_LOG.md`（arxiv-watcher 技能自带规范，项目内改记 process_notes/gathered 素材即可）。
-
+**要点**：
+- urllib 直连/代理失败自动 curl 兜底（curl 独立 SSL 栈本机实测可用），仍失败才走 WebFetch。
+- 多词裸查询自动 AND（空格=OR 是 ArXiv API 陷阱，`sortBy=relevance`）；精确短语用引号。
+- **自动登记通道 P**：`--out` 写到标准 `research/<slug>/gathered_arxiv.md` 即自动登记（done/empty 按命中数；`--slug` 可显式指定）。
+- 检索词用英文（元数据为英文），2-3 组主题词；零结果换词重试 1 次，仍无记录"通道 P 无有效素材（arxiv）"。
+- 需全文时 `web_fetch` PDF 链接提取（`arxiv.org/pdf/<id>`）。
 ## preprint_search.py — 学术预印本聚合（通道 P：arxiv + bioRxiv + 浪淘沙 + PSSXiv）
 
 **作用**：预印本检索统一入口，聚合四个来源——**arxiv**（复用 arxiv_search 逻辑）、生物医学 **bioRxiv**、跨学科中文预印本 **浪淘沙**（LangTaoSha，OJS 3.5）、哲学社会科学预印本平台 **PSSXiv**（中国人民大学复印报刊资料运营，zsyyb.cn）。四平台接入方式：
@@ -775,57 +658,25 @@ python tools/mark_channel.py --slug <slug> --list
 - 三段论层：只对报告 2-3 条**关键断言**做（全量成本高）；补不出大前提的推理标记为"待补全"。
 - 本机 lean 在 `~/.elan/bin` 或 `~/.local/bin`（已探测 4.31）；工具用 `lean --version` 探测，未装则报错提示。
 
-## report_images.py — 报告配图（图文并茂，新增）
+## report_images.py — 报告配图（AI 封面 + 数据图表）
 
-**作用**：生成 AI 概念图封面——**正文禁止图表**，量化数据一律用 Markdown 表格承载；AI 概念图**仅作封面 `ai_cover.png` 独立存放、不插入正文**，供发布时作文章封面：
-
-1. **AI 概念图**（Agnes Image 2.1 Flash API，文生图，当前 $0/张）：**仅作封面主视觉**（`ai_cover.png`，不插入正文小节）。端点 `POST https://apihub.agnes-ai.com/v1/images/generations`，模型 `agnes-image-2.1-flash`，size 用 `2K` + ratio（`16:9` 等），`extra_body.response_format: "url"` 返回 `data[0].url`。**注意**：`response_format` 不能放顶层；图生图需 `extra_body.image`。
-2. **数据图表**（PIL/Pillow，`--chart-defs` 锚点插入）：**已弃用**——量化数据一律以表格代替，工具保留但不得向新报告插入 chart_*.png。
+**作用**：AI 概念图**仅作封面** `ai_cover.png`（不插入正文）；量化数据一律用 Markdown 表格承载，数据图表（PIL 绘制）已弃用（工具保留但不向新报告插入 chart_*.png）。
 
 **用法**：
 ```bash
-AGNES_API_KEY=<key> python tools/report_images.py --slug <slug>          # 全量（AI图+图表）
-python tools/report_images.py --slug <slug> --skip-ai                    # 仅数据图表
-python tools/report_images.py --slug <slug> --skip-charts                # 仅 AI 概念图
-python tools/report_images.py --slug <slug> --chart-defs charts.json     # 自定义图表
-python tools/report_images.py --slug <slug> --embed-base64               # 生成图片内嵌单文件 report_embedded.md
-python tools/report_images.py --slug <slug> --url-base https://...       # 生成图片 URL 引用版 report_url.md
+AGNES_API_KEY=<key> python tools/report_images.py --slug <slug>          # 生成 AI 概念图封面
+python tools/report_images.py --slug <slug> --skip-ai                    # 仅数据图表（旧报告用）
+python tools/report_images.py --slug <slug> --embed-base64               # 图片内嵌单文件 report_embedded.md
+python tools/report_images.py --slug <slug> --url-base https://...       # 图片 URL 引用版 report_url.md（在线发布首选）
 ```
 
-**三种引用模式（按发布场景选择）**：
-| 模式 | 生成文件 | 适用场景 | 说明 |
-|---|---|---|---|
-| 相对路径（默认） | report.md | 本地 Typora/Obsidian | 图片与 md 同目录，仅本地可显示 |
-| base64 内嵌 | report_embedded.md | 支持 data URI 的渲染器 | 单文件自包含，代价体积 +33%（图片大时文件可达 10+MB） |
-| 公网 URL | report_url.md | **知乎/公众号/在线笔记** | 图片先部署公网静态托管（如 CloudStudio `workbuddy_cloudstudio_deploy`），引用为 https URL；文件仅几十 KB、加载快——**在线应用发布首选** |
+**引用模式**：默认相对路径（report.md，本地 Typora/Obsidian）；base64 内嵌（自包含，体积 +33%）；公网 URL（`report_url.md`，知乎/公众号发布首选——图片先部署静态托管）。
 
-**输出与纪律**：
-- 图片落盘 `research/<slug>/` **与 report.md 同级**（用户要求图片不放子文件夹，`ai_*.png` + `chart_*.png` 与报告同目录）；report.md 按内容锚点自动插入（不再集中「配图」节，而是插到对应小节标题后、内容前——如斩杀线概念图→2.1 节、单价对比图→测算 1），图片定义带 `anchor` 字段（匹配小节标题关键词）；空行自动规范化；锚点插入幂等（已存在图片跳过，防重复运行重复插入，）。
-- **凭证**：API key 用环境变量 `AGNES_API_KEY` 传入，**不写入脚本/项目文件/日志**（同 ima 凭证纪律）。
-- **前置**：数据图表用 PIL（Pillow），Python 标准库环境即可，**无需 matplotlib/venv**（用户要求弃用 matplotlib，减少环境依赖）；中文字体自动探测微软雅黑/SimHei/Noto CJK。
-- **flomo 上传**为文本版（当前 MCP 无图片参数；flomo 平台本身支持图片——官方 URL Scheme `image_urls` 最多 9 张、需 PRO，未来可走 webhook 带图），图片 URL 以 alt（url）形式保留在文本中供可追溯。
-- 中文字体：自动选 Noto Sans CJK / 微软雅黑 / SimHei，图表无乱码。
-
-**AI 概念图硬性禁元素**：封面/题图必须为纯抽象视觉，严禁出现以下任何具象元素——
-1. 任何语言文字（汉字/英文/数字/字符/符号/logo/水印）
-2. 任何徽章与国徽（国徽/国旗/警徽/军徽/校徽/企业徽/盾牌纹章/奖章/勋章/带图案的圆形或盾形徽标）
-3. 任何政府/司法/宗教建筑（人民大会堂/政府大楼/法院/议会/教堂/寺庙/可识别地标建筑）
-4. 任何货币与票据（钞票/硬币/债券/纸币/票据/发票/彩票/价格标签/收据）
-5. 任何真实人脸与肖像
-6. 任何特定国家/政治符号（国旗/政党标志/政治标语）
-
-**实测踩坑**：原封面出现中国国徽（门楣）+飘字票据（"325"/"50"等数字+纸张），用户严令禁止。修复方式——
-- **`call_agnes` 末尾自动追加 `_AI_IMAGE_NEGATIVE_GUARD` 通用禁词句**（含 "no text, no characters, no letters, no numbers, no logo, no national emblem, no banknote..." 全套英文 negative），确保所有 `--ai-prompts` 默认遵守。具体 prompt 不必重复写 negative，工具会自动附加。
-- **生成后必须肉眼复检**（重点扫门楣/中央/边缘的圆形徽标与飘字票据）。工具层面的 prompt 防御不替代人工复检——实测 Agnes 仍偶有不合规输出，发现违规立刻 `rm <path>` 删除原图、用更强 negative prompt 重生成，**不要为了凑数保留违规图**。
-- `process_notes.md` 同步记录"封面图合规复检"结果。完整检查清单见 `docs/CHECKLIST.md` AI 概念图合规复检项。
-
-**AI 概念图主题相关性**：封面/题图除合规外，**必须紧扣问题主题**——视觉应能映射问题的核心概念。**禁止使用与问题无关的纯装饰抽象图**（如"金色球体+棱柱"的通用科幻视觉，看似合规但读者看不出主题）。
-- **写 prompt 流程**：①提炼 2-3 个核心视觉符号（如 LOF 退市→"溢价泡沫=发光气泡群/退市闸口=几何门框/按净值赎回=规整立方体阵列"）；②围绕这些符号构造抽象叙事场景（左→中→右的视觉过渡即可直观映射问题逻辑）；③用 `--ai-prompts` 自定义 JSON 文件传入。
-- **DEFAULT_AI_PROMPTS 旧模板弃用**：默认模板（"斩杀线"/"双档定价"等）是历史 slug 留下的固化提示，对新主题往往无关——新研究一律用 `--ai-prompts` 自定义 prompt 覆盖，不要复用默认模板。
-- **自检**：不看标题，读者能否从图中识别本报告主题？答否则必须重做；`process_notes.md` 同步记录"封面图主题相关性复检"与核心视觉符号的映射说明。
-
-**AI 概念图构图饱满**：封面/题图**禁止大面积空白/留白**——prompt 不得写"左下角留白适合叠加标题"等留白引导（标题由知乎发布时叠加，图内不留白）；画面构图必须饱满、平衡，视觉元素均匀铺满整个画布，边角不留白。`_AI_IMAGE_NEGATIVE_GUARD` 已含 "no large empty areas, no blank corners, no white space reserved for text overlay"；自定义 prompt 也不再写留白引导。复检时同步检查四角/边缘是否有大块均匀空白（可用 PIL 网格扫描：16×9 块，avg>200 且 stdev<6 即留白嫌疑）。
-
+**纪律**：
+- 图片落盘 `research/<slug>/` 与 report.md 同级；按内容锚点自动插入对应小节（幂等，防重复插入）。
+- 凭证 `AGNES_API_KEY` 环境变量传入，不入库。
+- 数据图表用 PIL（Pillow），无需 matplotlib/venv；中文字体自动探测。
+- **AI 概念图合规/主题/构图规则见 `docs/CONVENTIONS.md` §8**（纯抽象禁元素、紧扣主题、无留白；`call_agnes` 自动追加 `_AI_IMAGE_NEGATIVE_GUARD` 禁词句，生成后必须肉眼复检，违规删图重生成，`process_notes.md` 记录复检）。
 ## 降级方案
 
 `research_subagent` 配置的模型不可用（"Model not found"），**主代理直执是当前默认方式**（非降级）：web_search / web_fetch 均由主代理调用，公众号检索走上述包装工具。已实测可行（两份研究均以此完成）。若子代理配置修复，可升级回并行分派。
