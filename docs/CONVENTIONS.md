@@ -93,7 +93,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 - **连接状态**：ima 连接器（ima-mcp）经 WorkBuddy 侧边栏「更多 → ima知识库」OAuth 授权；连接器管理页显示 connected 即可用。未连接时通道 E 由初始化**环境级自动登记 skip**（跨研究共享，无需逐篇手动检查）；连接器接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS`（如 `"C"`）或置空（全部已配置）恢复手动登记。
 - **检索**：主代理直执连接器工具（`search_knowledge_base` 搜库 / `search_knowledge` 库内检索），与本地 `rag_search.py`（SQLite BM25）互补；ima 无 CLI，不涉及乱码问题。
 - **凭证**：连接器方案无需凭证。脚本化（OpenAPI）才需 Client ID + API Key（https://ima.qq.com/agent-interface 生成，仅显示一次），存 `~/.config/ima/` 或环境变量；**凭证不入项目文件、不入日志**，泄露后引导在 agent-interface 撤销重建。
-- **flomo MCP Token**：`FLOMO_MCP_TOKEN` 从**环境变量**读取（优先真实环境变量，其次项目根 `.env` 兜底——沙箱下 `setx` 被拒的既有做法，见 `tools/env_loader.py`；tools/flomo_search.py 与 note_upload.py 启动时加载）。曾硬编码在 flomo_search.py 并进入公开仓库——**须在 flomo 后台撤销旧 token 重建**，新 token 只放环境变量/`.env`，绝不写入代码/文档/日志。
+- **flomo MCP Token**：`FLOMO_MCP_TOKEN` **只从环境变量读取**（tools/flomo_search.py 与 note_upload.py 读 `os.environ`，不读 `.env`）。曾硬编码在 flomo_search.py 并进入公开仓库——**须在 flomo 后台撤销旧 token 重建**，新 token 只放环境变量，绝不写入代码/文档/日志。
 - **隐私边界（写入硬性管控）**：读取无限制；写入（import_urls / add_knowledge）仅限公开级内容——docs/、templates/、脱敏经验与词库；已定稿 report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入。ima 为云服务，与「research/ 仅存本地」红线冲突的内容一律不上云。
 - **参考**：能力盘点与分级矩阵见 `docs/IMA_INTEGRATION.md`。
 

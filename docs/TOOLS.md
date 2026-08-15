@@ -128,7 +128,7 @@ python tools/flomo_search.py --keywords "定价" --full     # 输出完整笔记
 python tools/flomo_search.py --keywords "主题词" --slug <slug>  # 查重后自动登记通道 F（done，note 含 memo_search 证据）
 ```
 
-**凭证**：MCP Token 从**环境变量** `FLOMO_MCP_TOKEN` 读取（优先真实环境变量，其次项目根 `.env` 兜底，见 docs/CONVENTIONS.md）；此前硬编码在代码并进入公开仓库，**请先在 flomo 后台撤销旧 token 重建**，再设环境变量（或 `.env` 兜底）。未配置时查重调用报错并提示配置方式。
+**凭证**：MCP Token **只从环境变量** `FLOMO_MCP_TOKEN` 读取（不读 `.env`，见 docs/CONVENTIONS.md）；此前硬编码在代码并进入公开仓库，**请先在 flomo 后台撤销旧 token 重建**，再设环境变量。未配置时查重调用报错并提示配置方式。
 
 **F 通道自动登记**：带 `--slug` 执行即把通道 F 登记为 done（note 含 memo_search 证据，供 report_channels 门禁）；命中≥0.9 复用/更新、0.5~0.9 参考等结论由主代理阅读结果后用 `mark_channel.py` 补充/覆盖 note。
 
