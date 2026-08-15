@@ -784,12 +784,14 @@ def main():
         all_issues += check_cover_ban(body)
         all_issues += check_image_continuity(body)
         all_issues += check_fact_section_budget(body)
+        # 段落长度限制（每段 ≤4-5 行 / 单段 ≤300 字符建议分点）是报告发布规则
+        # （知乎扫读友好），笔记为内部研究素材、文末有整篇来源区，不适用——仅在报告模式检查。
+        all_issues += check_paragraph_len(body)
+        all_issues += check_para_points_eligible(body)
     all_issues += check_unsourced_numbers(body, full)
     all_issues += check_placeholders(body)
     all_issues += check_turn_pattern(body)
     all_issues += check_ai_phrases(body)
-    all_issues += check_paragraph_len(body)
-    all_issues += check_para_points_eligible(body)
     all_issues += check_judgment_hints(body)
     all_issues += check_internal_refs(body)
     all_issues += check_grade_paren(body)

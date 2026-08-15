@@ -387,20 +387,28 @@ def check_cite_context(body_txt, ref_entries):
         title = extract_title(text)
         if not title:
             continue
-        zh_words = set(re.findall(r"[\u4e00-\u9fff]{2,6}", normalize(title).replace("eb/ol", "")))
+        # 用原始题名切中文词（normalize 会剥掉 / 等标点，把"分钟理解/接入"合并成
+        # "分钟理解接入"导致上下文永远匹配不上——切词须在 normalize 之前做）
+        zh_words = set(re.findall(r"[\u4e00-\u9fff]{2,6}", title.replace("eb/ol", "")))
         # 取题名中最具辨识度的 3 个词（去通用词）
         common = {"研究", "分析", "综述", "报告", "理论", "方法", "模型", "及其", "一种", "基于", "面向", "相关", "下", "中", "的"}
         zh_words = {w for w in zh_words if w not in common}
         if not zh_words:
             continue
         locs = [m.start() for m in re.finditer(rf"\[{n}\]", body_flat)]
+        if not locs:
+            continue
+        # 任一出现位置与题名共享 ≥2 词即视为引用对应（重复引用处不必每次都复述题名词）；
+        # 仅当全部出现位置都不匹配才报「疑似张冠李戴」
+        matched_any = False
         for loc in locs[:3]:
             ctx = body_flat[max(0, loc - 40): loc + 40]
-            shared = sum(1 for w in zh_words if w in ctx)
-            if shared < 2:
-                issues.append((0, "提示", "正文与题名疑似不符",
-                               f"文献[{n}] 题名《{title[:30]}》在正文引用处上下文未见关键词（启发式，需人工确认）"))
+            if sum(1 for w in zh_words if w in ctx) >= 2:
+                matched_any = True
                 break
+        if not matched_any:
+            issues.append((0, "提示", "正文与题名疑似不符",
+                           f"文献[{n}] 题名《{title[:30]}》在正文引用处上下文未见关键词（启发式，需人工确认）"))
     return issues
 
 
