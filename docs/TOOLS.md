@@ -26,23 +26,23 @@
 |---|---|---|---|
 | test_quality (125) | quality_check 全部规则正/负断言 | test_research_start (27) | config 校验 / 进度合并 / ima 提示 |
 | test_check_progress (14) | report_channels 双向交叉门禁 | test_install_git_hooks (10) | hook 装/卸行为 |
-| test_channel_state (43) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (15) | 收尾门禁顺序 |
+| test_channel_state (43) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (23) | 收尾门禁顺序 / plan 回填 / mark_plan_done |
 | test_wechat_norm (31) | 消费端防御 / 自动登记 A / 路径归一化 | test_syllogism_check (22) | 三段论纯逻辑 |
 | test_arxiv_automark (5) | 落盘自动登记 P | test_report_images (19) | 锚点插入 / 图表冒烟 |
 | test_arxiv_query (23) | OR 语义提示 / curl 兜底四态 | test_ai_voice (12) | 两级检出 + 负例 |
 | test_report_structure (21) | 五类结构规则 | test_latex_unicode (13) | LaTeX→Unicode |
 | test_report_to_flomo (26) | convert_text / pick_tags | test_note_upload (21) | 上传质检链 / 拦截 |
-| test_git_protect (15) | 提交保护分流逻辑 | test_web_search (52) | 解析纯函数 + B 自动登记 |
+| test_git_protect (15) | 提交保护分流逻辑 | test_web_search (58) | 解析纯函数 + B 自动登记 + 多查询并行 |
 | test_internal_files (31) | 内部文件红线单一真相源 | test_check_flomo_note_refs (29) | 笔记参考文献判定 |
 | test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_citation_validity (34) | 违规引用核验 |
 | test_check_all (25) | 体检工具纯函数 | test_consistency (28) | 项目矛盾/废话检查 |
 | test_rag_build (23) | is_indexable / chunks | test_clean_workspace (8) | 清理路径收集 |
 | test_rag_search (29) | tokenize / bm25 / highlight | test_env_loader (16) | .env 加载 |
 | test_knowledge_store (17) | 关键词库 roundtrip | test_gbt_refs (23) | 国标著录 |
-| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (6) | token 只从环境变量读取 |
+| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (4) | token 只从环境变量读取 |
 | test_report_to_docx (41) | md→docx 转换契约 | test_web_fetch (20) | 抓取降级 |
 | test_iter_research (27) | 轮次推进 / 归档 | test_preprint_search (31) | 四平台聚合 |
-| test_net_check (9) | 外网出口探测 | | |
+| test_net_check (9) | 外网出口探测 | test_search_all (13) | search_all 命令构造 / slug 校验 |
 
 **纪律**：修改任一被测工具后先跑 `python tests/run_all.py` 确认无回归再提交；运行器取子进程输出**最后一个** `TOTAL: PASS=.. FAIL=..` 为权威结果（防嵌套输出干扰）。
 ## init_research.py — 研究目录初始化

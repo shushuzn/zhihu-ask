@@ -93,6 +93,7 @@ research/<slug>/
 **flomo 笔记引用规则**: flomo 检索命中的笔记若用作素材, 必须有**符合 GB/T 7714-2015 的参考文献**; 参考文献不合规或没有 → 联网找对应来源; 找不到 → 该笔记不可用。检测: `python tools/check_flomo_note_refs.py --keywords "<主题词>"`。
 
 **检索通道（优先级按主题领域分档——替代一刀切 P0）:**
+- **统一入口**: 启动后跑 `python tools/search_all.py --config tools/start.json`——并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工
 - F (flomo 查重, P0 通用): `memo_search` 查是否已有本主题笔记
 - B (Web, P0 通用): `web_search` / `tools/web_search.py`
 - P (arxiv 平台单独检索): `tools/arxiv_search.py`(落盘 gathered_arxiv.md 登记通道 P)

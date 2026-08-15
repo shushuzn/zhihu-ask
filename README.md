@@ -26,7 +26,7 @@ zhihu-ask/
 │   ├── architecture.md            # 流水线架构图（mermaid 源码 + 渲染 PNG）
 │   ├── architecture_render.html   # 架构图 SVG 渲染源（render_svg.py 生成 PNG）
 │   └── render_svg.py              # 架构图渲染脚本（playwright）
-├── tools/                         # 43 个工具（详见 docs/TOOLS.md 测试登记表）
+├── tools/                         # 44 个工具（详见 docs/TOOLS.md 测试登记表）
 │   ├── research_start.py          # 研究启动器（初始化 + 领域判定 + 公众号初检）
 │   ├── run_pipeline.py            # 一键流水线（启动 + 收尾八件套门禁编排）
 │   ├── init_research.py           # 研究目录初始化（plan/report/process_notes/notes/.progress.json）

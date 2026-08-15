@@ -26,14 +26,18 @@
 
 用法：
   python tools/web_search.py "关键词" [--max 10] [--news] [--engine auto] [--timelimit year] [--out 文件.md] [--json]
-    --max       结果条数（默认 10）
-    --news      新闻搜索模式（仅 ddgs 支持，默认 text 网页搜索）
-    --engine    auto/ddgs/openalex/crossref/hn（默认 auto 聚合）
-    --timelimit day/week/month/year 时间过滤（仅 ddgs，默认不过滤）
-    --timeout   单引擎超时秒数（默认 30，仅 auto 并行模式生效）
+  python tools/web_search.py --queries-file q.json --parallel 4 --out 文件.md   # 多查询并行
+    --max          结果条数（默认 10）
+    --news         新闻搜索模式（仅 ddgs 支持，默认 text 网页搜索）
+    --engine       auto/ddgs/openalex/crossref/hn（默认 auto 聚合）
+    --timelimit    day/week/month/year 时间过滤（仅 ddgs，默认不过滤）
+    --timeout      单引擎超时秒数（默认 30，仅 auto 并行模式生效）
+    --queries-file 多查询 JSON（{"queries": ["q1", ...]} 或纯列表），并行搜索
+    --parallel     多查询并行数（默认 4；1=串行），结果按原顺序落盘、通道 B 一次性登记
+    --slug         落盘时自动登记通道 B 的 slug（默认从 --out 路径反推）
 
 依赖：pip install ddgs（可选，openalex/crossref/hn 引擎用标准库 urllib 即可）
-退出码：0 成功；1 搜索失败；2 参数错误。
+退出码：0 成功；1 全部查询失败；2 参数错误。
 """
 import argparse
 import html as htmllib
