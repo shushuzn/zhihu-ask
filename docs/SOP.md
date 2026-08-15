@@ -36,7 +36,7 @@
 | A 公众号 | P2 | P1 | P0 | `wechat_search.py --output gathered_wechat.md` 落盘自动登记 |
 | E ima | P1 | P1 | P1 | 未配置：环境级自动 skip；已配置手动登记 |
 
-**F 查重（第一步，阻断）**：`memo_search` 查本主题已有**笔记**；relevance ≥0.9 复用/更新（只补新信息）、0.5–0.9 参考（须合规 GB/T 来源）、<0.5 正常检索；命中旧笔记过时信息须原地更新。flomo 命中笔记作素材须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测），不合规/没有 → 联网找对应来源 → 找不到则不可用。
+**F 查重（第一步，阻断）**：`memo_search` 查本主题已有**笔记**；relevance ≥0.9 复用/更新（只补新信息）、0.5–0.9 参考（须合规 GB/T 来源）、<0.5 正常检索。**过时笔记原地更新（三步）**：① `flomo_search.py --keywords "<主题词>" --limit 50 --full` 或 `memo_batch_get` 拉取命中旧笔记全文；② 在本地修改文件中补结局/改写过时句子（不新建多版本）；③ `python tools/note_upload.py research/<slug>/notes/<NN>_*.md --update` 按 `.flomo_ids.json` 记录用 `memo_update` 原地更新原 id（无记录则回退新建并记录；纪律：更新一律 memo_update 原 id，禁止新建多版本）。flomo 命中笔记作素材须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测），不合规/没有 → 联网找对应来源 → 找不到则不可用。
 
 **统一检索入口**：`python tools/search_all.py --config tools/start.json` 并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
 
