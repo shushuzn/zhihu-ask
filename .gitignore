@@ -41,3 +41,6 @@ Thumbs.db
 
 # 旧 git 历史备份（含已移除凭证，仅本地，勿入库）
 /.git.bak
+
+# j-space 控制器状态（不入库）
+.jspace/
