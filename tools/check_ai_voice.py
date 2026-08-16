@@ -11,7 +11,11 @@
 
 与 quality_check.py 互补：该工具已覆盖的立场词/框架词/评价词/AI 因果句式不在此重复。
 
-用法: python tools/check_ai_voice.py (--file <文件> | --slug <slug>) [--verbose]
+用法: python tools/check_ai_voice.py (--file <文件> | --slug <slug>) [--verbose] [--skip-source-voice]
+
+--skip-source-voice: 原文应用类报告（访谈转述/文章整理/翻译稿）专用——
+  跳过提示级表述检查（装饰词/转折词/对称排比/破折号/引号包裹日常词），
+  因这类表述多忠实来自原文，启发式会大量误伤；硬伤检查（固定禁用表达/标题禁词）始终保留。
 """
 import os
 import re
@@ -195,7 +199,9 @@ def check_quotes(body):
 def main():
     argv = sys.argv[1:]
     verbose = "--verbose" in argv
-    filepath = resolve_target(argv, "check_ai_voice.py", " [--verbose]")
+    skip_source_voice = "--skip-source-voice" in argv
+    filepath = resolve_target(argv, "check_ai_voice.py",
+                              " [--verbose] [--skip-source-voice]")
 
     body = read_file(filepath)
     if not body.strip():
@@ -203,7 +209,12 @@ def main():
         sys.exit(0)
 
     hard = check_hard(body) + check_title_words(body)
-    warn = check_warn(body) + check_dashes(body) + check_quotes(body)
+    if skip_source_voice:
+        # 原文应用类报告：表述来自原文，跳过提示级表述检查，仅保留硬伤。
+        warn = []
+        print("[提示] --skip-source-voice 已启用：跳过装饰词/转折词/破折号/引号表述检查（硬伤检查保留）。")
+    else:
+        warn = check_warn(body) + check_dashes(body) + check_quotes(body)
 
     print("=" * 60)
     print(f"去 AI 腔自动检查: {filepath}")

@@ -119,7 +119,7 @@ def agent_todos(slug, query):
 """.replace("<slug>", slug).replace("<query>", query or ""))
 
 
-def finish(slug, offline=False, ack=None):
+def finish(slug, offline=False, ack=None, skip_source_voice=False):
     banner(f"阶段 4 收尾 · slug={slug}")
     # 收尾前自动清理工作区缓存/临时文件
     run([os.path.join(TOOLS, "clean_workspace.py")],
@@ -130,8 +130,11 @@ def finish(slug, offline=False, ack=None):
     run([os.path.join(TOOLS, "quality_check.py"), "--slug", slug],
         label="quality_check")
     # 去 AI 腔门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
-    run([os.path.join(TOOLS, "check_ai_voice.py"), "--slug", slug],
-        label="check_ai_voice")
+    # --skip-source-voice：原文应用类报告（访谈转述/文章整理）跳过提示级表述检查，硬伤保留。
+    av_cmd = [os.path.join(TOOLS, "check_ai_voice.py"), "--slug", slug]
+    if skip_source_voice:
+        av_cmd.append("--skip-source-voice")
+    run(av_cmd, label="check_ai_voice")
     # 参考文献国标门禁：GB/T 7714-2015 著录合规，
     # 硬伤与提示级命中均阻断（工具默认严格阻断）。正文无 [n] 引注时自动按参考来源清单模式跳过引注对应检查。
     run([os.path.join(TOOLS, "check_gbt_refs.py"), "--slug", slug],
@@ -226,6 +229,8 @@ def main():
     ap.add_argument("--ack", help="违规引用检查人工确认条目号（逗号分隔，透传 check_citation_validity --ack）")
     ap.add_argument("--backfill", action="store_true",
                     help="用户验收通过后回填 plan.md 索引状态（进行中 → 已完成），需 --slug")
+    ap.add_argument("--skip-source-voice", action="store_true",
+                    help="原文应用类报告（访谈转述/文章整理）：check_ai_voice 跳过提示级表述检查，硬伤保留")
     args = ap.parse_args()
 
     if not args.config and not args.slug:
@@ -263,11 +268,13 @@ def main():
             print("[提示] 未解析到 slug，无法打印 agent 步骤清单；请手动按 SOP 继续。")
         # 若已同时给了 --slug，直接收尾
         if args.slug:
-            finish(args.slug, offline=args.offline, ack=args.ack)
+            finish(args.slug, offline=args.offline, ack=args.ack,
+                   skip_source_voice=args.skip_source_voice)
         return
 
     # 仅收尾
-    finish(args.slug, offline=args.offline, ack=args.ack)
+    finish(args.slug, offline=args.offline, ack=args.ack,
+           skip_source_voice=args.skip_source_voice)
 
 
 if __name__ == "__main__":
