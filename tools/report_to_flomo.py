@@ -155,7 +155,7 @@ def convert_text(text):
     纯函数，便于单元测试；convert_full_report 读取文件后委托此函数。
     """
     out = []
-    for line in text.splitlines():
+    for idx, line in enumerate(text.splitlines()):
         s = line.rstrip()
 
         if re.match(r"^\s*\|[\s:\-|]+\|\s*$", s):
@@ -180,7 +180,14 @@ def convert_text(text):
 
         m = re.match(r"^(#{1,6})\s+(.+)$", s)
         if m:
-            out.append(f"**{m.group(2).strip()}**")
+            # 标签行：首行含多个被空格分隔的 #tag（如 "#AI大Model #价格策略"）
+            # 标题行：### 开头的连续 #（如 "### 2.1 口径说明"）→ 正常转加粗
+            # 判断：首行且有 "空格+ #" 模式（多个独立 tag）
+            is_tag_line = (idx == 0 and re.match(r"^#\S", s) and re.search(r"\s+#\S", s))
+            if is_tag_line:
+                out.append(s)
+            else:
+                out.append(f"**{m.group(2).strip()}**")
             continue
 
         if s.startswith(">"):

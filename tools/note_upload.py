@@ -187,6 +187,7 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
     """上传单个文件, 返回 (success, memo_id, reason)。
 
     update=True 且 ids 记录中有该文件名 → memo_update 原地更新；否则 memo_create。
+    **即使 force=True，也必须检查已有 ID 防止重复上传。**
     上传成功且传入 ids 容器时把 {文件名: memo_id} 写入并落盘。
     """
     basename = os.path.basename(filepath)
@@ -195,18 +196,30 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
     if is_blocked(filepath):
         return False, None, f"禁止上传: {basename} (索引/报告文件)"
 
-    # 检查2: 质检
+    # 检查2: 质检（force 跳过）
     if not force:
         passed, output = run_quality_check(filepath)
         if not passed:
             return False, None, f"质检未通过: {basename}\n{output[:200]}"
 
-    # 上传
+    # 读取内容
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
 
+    # 修复标签格式：flomo 把 "# 文字" 渲染为标题（去掉 #），标签应为 "#文字"（无空格）
+    # 仅处理首行（标签行），不影响正文中的 # 标题
+    lines = content.split("\n", 1)
+    if lines and re.match(r"^#\s+\S", lines[0]):
+        lines[0] = re.sub(r"#(\s+)", r"#", lines[0])
+        content = "\n".join(lines)
+
+    # 检查3: 防止重复上传——已有 ID 时强制走 update，不走 create
     existing = (ids or {}).get(basename)
-    if update and existing:
+    if existing and not update:
+        # 已有记录但未指定 --update：自动走 update（防重复）
+        memo_id = update_to_flomo(content, existing, max_retries=max_retries)
+        action = "更新成功（防重复）" if memo_id else None
+    elif update and existing:
         memo_id = update_to_flomo(content, existing, max_retries=max_retries)
         action = "更新成功" if memo_id else None
     else:
