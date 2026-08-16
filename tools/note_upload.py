@@ -18,6 +18,7 @@ import json
 import subprocess
 import argparse
 import urllib.request
+import re
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -215,11 +216,8 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
 
     # 检查3: 防止重复上传——已有 ID 时强制走 update，不走 create
     existing = (ids or {}).get(basename)
-    if existing and not update:
-        # 已有记录但未指定 --update：自动走 update（防重复）
-        memo_id = update_to_flomo(content, existing, max_retries=max_retries)
-        action = "更新成功（防重复）" if memo_id else None
-    elif update and existing:
+    if existing:
+        # 已有记录：无论是否 --force/--update，都走 update（绝不 create 重复）
         memo_id = update_to_flomo(content, existing, max_retries=max_retries)
         action = "更新成功" if memo_id else None
     else:
