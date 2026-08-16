@@ -7,7 +7,7 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 ## Overview
 
-研究流水线: 问题接收 → flomo 查重(命中已有笔记→过时检查: 过时→三步原地更新 / 未过时→复用还原) → 多通道检索 → 写笔记 → 写索引 → 组装报告 → 质检八件套 → 上传/更新笔记。
+研究流水线: 问题接收 → flomo 查重(命中已有笔记→复用还原, 不做标记不更新) → 多通道检索 → 写笔记 → 写索引 → 组装报告(前须过时终核 3.4) → 质检八件套 → 上传/更新笔记(4.4.3 按终核结论同步)。
 
 报告为**纯事实陈述、零立场**，正文按 GB/T 7714-2015 顺序编码制在引用处标注 [n]。
 
@@ -88,13 +88,13 @@ research/<slug>/
 2. 处理内容, 写入 notes/01_xxx.md
 ```
 
-**旧笔记过时信息更新(命中时必做)**: 命中已有笔记且新信息推翻了旧笔记中的表述时, 旧笔记中已过时的句子必须原地更新(如"尚无定论""待观察""未发布"被新事实证实/证伪后, 在该句补结局或改写), 不得只新增笔记而让旧笔记与新笔记自相矛盾; 更新后的旧笔记与新增笔记一并质检上传。
+**旧笔记过时信息更新(命中时必做)**: 命中已有笔记且新信息推翻了旧笔记中的表述时, 旧笔记中已过时的句子必须原地更新(如"尚无定论""待观察""未发布"被新事实证实/证伪后, 在该句补结局或改写), 不得只新增笔记而让旧笔记与新笔记自相矛盾。**时机**: 过时终核在阶段 3 末(材料齐备后、写报告前, 结论写入 process_notes, SOP 3.4); 更新动作在阶段 4 沉淀(4.4.3: 本地改写后 `note_upload.py <文件>.md --update` 按 .flomo_ids.json memo_update 覆盖原 id, 禁止新建多版本)。更新后的旧笔记与新增笔记一并质检上传。
 
 **flomo 笔记引用规则**: flomo 检索命中的笔记若用作素材, 必须有**符合 GB/T 7714-2015 的参考文献**; 参考文献不合规或没有 → 联网找对应来源; 找不到 → 该笔记不可用。检测: `python tools/check_flomo_note_refs.py --keywords "<主题词>"`。
 
 **检索通道（优先级按主题领域分档——替代一刀切 P0）:**
 - **统一入口**: 启动后跑 `python tools/search_all.py --config tools/start.json`——并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工
-- F (flomo 查重, P0 通用): `memo_search` 查是否已有本主题笔记——判读 relevance: ≥0.9 已有笔记→**过时检查必做**(① `flomo_search --full` 拉全文; ② 逐条核对新版本/新信息是否推翻表述; ③ 过时→本地改写+`note_upload --update` memo_update 原地更新原 id / 未过时→本地缺失则按全文还原复用, 不新建不更新); 0.5–0.9 参考(须 GB/T 合规来源); <0.5 正常检索。结论与过时检查证据记 plan.md + F 通道 note
+- F (flomo 查重, P0 通用): `memo_search` 查是否已有本主题笔记——判读 relevance: ≥0.9 已有笔记→**复用**(`flomo_search --full` 拉全文 → 忠实还原本地, 权威源=flomo, 不做标记不更新; 过时终核在 3.4、更新在 4.4.3); 0.5–0.9 参考(须 GB/T 合规来源, 引用前核对时效); <0.5 正常检索。结论记 plan.md + F 通道 note
 - B (Web, P0 通用): `web_search` / `tools/web_search.py`
 - P (arxiv 平台单独检索): `tools/arxiv_search.py`(落盘 gathered_arxiv.md 登记通道 P)
 - P (预印本聚合, 含 arxiv, 学术科研 P0 / 科技产业·财经时政 P2): `tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 --count 5 --out research/<slug> --slug <slug>`——arxiv→gathered_arxiv.md + bioRxiv（生物医学）/ 浪淘沙（中文跨学科）/ PSSXiv（哲学社会科学）→gathered_preprints.md; 两文件同属通道 P, 一次性登记

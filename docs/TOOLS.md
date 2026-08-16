@@ -90,7 +90,7 @@ python tools/flomo_search.py --keywords "主题词"                  # 查重（
 
 **要点**：
 - **凭证**：Token 只从环境变量 `FLOMO_MCP_TOKEN` 读取（不读 .env，见 docs/CONVENTIONS.md）；此前硬编码进公开仓库，**须在 flomo 后台撤销旧 token 重建**。
-- **F 查重为人工判读门禁**：工具只执行 memo_search 并输出结果，不做自动登记（自动登记会把「已执行查重」与「查重结论」混为一谈，假阳性会漏判）；结论由主代理判读（≥0.9 复用/更新、0.5~0.9 参考、<0.5 正常检索，命中但判定不相关按 <0.5 处理）后用 `mark_channel --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"` 登记。nnel.py` 补充/覆盖 note。
+- **F 查重为人工判读门禁**：工具只执行 memo_search 并输出结果，不做自动登记（自动登记会把「已执行查重」与「查重结论」混为一谈，假阳性会漏判）；结论由主代理判读（≥0.9 复用——过时终核在 SOP 3.4、更新同步在 4.4.3、0.5~0.9 参考、<0.5 正常检索，命中但判定不相关按 <0.5 处理）后用 `mark_channel --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"` 登记。nnel.py` 补充/覆盖 note。
 ## research_start.py — 一键研究启动器
 
 **作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 素材库非空校验 → 记录阶段进度 `.progress.json`（含 `domain` 字段，供 `check_progress --require_round auto` 按领域判定最低轮次）→ 打印后续步骤（阶段 2-4 上下文，其中通道 E 提示按领域从 `docs/IMA_LIBRARIES.md` 列出候选订阅库）。

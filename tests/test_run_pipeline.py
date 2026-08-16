@@ -110,7 +110,7 @@ try:
 finally:
     rp.ROOT = old_root
 
-# ---- finish 收尾自动回填 plan.md ----
+# ---- finish 收尾不再自动回填（验收通过后 --backfill 显式回填）----
 plan_dir2 = testutil.mktestdir(prefix="tplan2_")
 plan_file2 = os.path.join(plan_dir2, "plan.md")
 with open(plan_file2, "w", encoding="utf-8") as f:
@@ -124,9 +124,19 @@ try:
          mock.patch("run_pipeline.subprocess.run", return_value=mock.Mock(returncode=0)):
         rp.finish("demo-slug")
     txt2 = open(plan_file2, encoding="utf-8").read()
-    expect("fin+ 门禁通过后自动回填 plan.md", "| demo-slug | 已完成 |" in txt2, True)
+    expect("fin+ 门禁后不自动回填（验收后 --backfill）", "| demo-slug | 已完成 |" in txt2, False)
 finally:
     rp.ROOT = old_root2
+
+# ---- --backfill：验收通过后显式回填 ----
+buf3 = io.StringIO()
+with contextlib.redirect_stdout(buf3):
+    with mock.patch("sys.argv", ["run_pipeline.py", "--slug", "demo-slug", "--backfill"]):
+        rp.main()
+out3 = buf3.getvalue()
+txt3 = open(plan_file2, encoding="utf-8").read()
+expect("bf+ 输出回填信息", "[回填] plan.md 索引：demo-slug → 已完成" in out3, True)
+expect("bf+ 状态已回填", "| demo-slug | 已完成 |" in txt3, True)
 
 # ---- main：无参数报错退出 ----
 with mock.patch("sys.argv", ["run_pipeline.py"]):

@@ -87,8 +87,8 @@ zhihu-ask/
 4. **产出 report.md**：默认一轮成稿；结论 ≤300 字符、首行无"结论"字样；公式一律 LaTeX；正文 [n] 引注；概念主体、独立组织、无过程字样；存在无法核实的内容或数据口径缺口时追加轮次（`iter_research.py`）。
 5. **算式按需但必写**：有计算价值的内容算式必须写、融入小节叙述；数学/证明类给完整论证链（定理-引理-证明）；禁止凑数硬造也禁止该写不写。
 6. **收尾门禁**：`python tools/run_pipeline.py --slug <slug>` 自动编排八件套——check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity（作者/题名联网核验；403/000 反爬自动 WebFetch 降级复核；词面差异误报可 `--ack <n1,n2,...>` 人工确认放行，判读理由留痕）→ check_consistency → check_progress（轮次+落报告），随后生成 `report.docx`（report_to_docx.py）与 `flomo_full.md` 本地存档（report_to_flomo.py，不上传），并跑 `check_all.py` 全库体检。
-7. **产出与沉淀**：`note_upload.py research/<slug>/notes/` 逐条质检后上传 flomo（索引/报告禁止上传）；`report_images.py` 生成 AI 概念图封面 `ai_cover.png`（纯抽象视觉、合规/主题/构图三重复检）；按需 `wechat_publish.py` 推送公众号草稿；有效关键词写入 SQLite 关键词库（`tools/keywords_db.py --add`）并 `--export docs/KEYWORDS.md` 同步、写 `process_notes.md`、更新 `plan.md` 索引为已完成。
-8. **收尾提交**：git 提交并推送（仅公开文件；research/ 与 plan.md 不入库；pre-commit hook 拦截内部文件）。
+7. **产出与沉淀**：按 SOP 4.4.3 分流同步笔记——新建笔记逐条 `note_upload.py <文件>.md` 上传（memo_create，索引/报告禁止上传），复用笔记按 3.4 终核结论 `--update` memo_update 覆盖原 id（禁止对含已记录文件的目录跑无 `--update` 整目录上传，避免重复创建）；`report_images.py` 生成 AI 概念图封面 `ai_cover.png`（纯抽象视觉、合规/主题/构图三重复检）；按需 `wechat_publish.py` 推送公众号草稿；有效关键词写入 SQLite 关键词库（`tools/keywords_db.py --add`）并 `--export docs/KEYWORDS.md` 同步、写 `process_notes.md`。
+8. **验收与收尾**：用户验收通过后 `python tools/run_pipeline.py --slug <slug> --backfill` 回填 `plan.md` 索引为已完成；git 提交并推送（仅公开文件；research/ 与 plan.md 不入库；pre-commit hook 拦截内部文件）。
 
 ## 环境与配置
 

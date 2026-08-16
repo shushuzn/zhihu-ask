@@ -171,17 +171,12 @@ def finish(slug, offline=False, ack=None):
     except Exception as e:
         print(f"[提示] check_all 运行异常：{e}")
 
-    # 沉淀自动化：门禁全过后回填本地 plan.md 索引状态「进行中 → 已完成」（幂等）
-    try:
-        if mark_plan_done(slug):
-            print(f"[回填] plan.md 索引：{slug} → 已完成")
-    except Exception as e:
-        print(f"[提示] plan.md 回填失败（不影响交付）: {e}")
-
     banner("agent 待办（收尾人工步骤）")
     print(f"""
-- flomo 笔记上传：python tools/note_upload.py research/{slug}/notes/ 逐条质检后上传（索引/报告禁止上传）；
-  report_to_flomo.py 已生成本地存档 research/{slug}/flomo_full.md（仅存档，不上传）。
+- flomo 笔记上传/同步（按 .flomo_ids.json 分流，SOP 4.4.3）：新建逐条上传；复用笔记按 3.4 终核结论，
+  过时 → python tools/note_upload.py research/{slug}/notes/<文件名>.md --update（memo_update 覆盖原 id）。
+- plan.md 索引回填（用户验收通过后执行，SOP 4.6.1）：
+  python tools/run_pipeline.py --slug {slug} --backfill
 - AI 封面图：配置 AGNES_API_KEY 后
   python tools/report_images.py --slug {slug}
   （当前缺 key 可加 --skip-ai 仅生成数据图表）
@@ -229,11 +224,26 @@ def main():
     ap.add_argument("--offline", action="store_true",
                     help="违规引用检查使用离线模式（跳过 CrossRef/arXiv 联网核验）")
     ap.add_argument("--ack", help="违规引用检查人工确认条目号（逗号分隔，透传 check_citation_validity --ack）")
+    ap.add_argument("--backfill", action="store_true",
+                    help="用户验收通过后回填 plan.md 索引状态（进行中 → 已完成），需 --slug")
     args = ap.parse_args()
 
     if not args.config and not args.slug:
         print("ERROR: 需 --config（启动）或 --slug（收尾）至少其一")
         sys.exit(1)
+
+    if args.backfill:
+        if not args.slug:
+            print("ERROR: --backfill 需 --slug")
+            sys.exit(1)
+        try:
+            if mark_plan_done(args.slug):
+                print(f"[回填] plan.md 索引：{args.slug} → 已完成")
+            else:
+                print(f"[回填] {args.slug} 无变化（已回填或索引行缺失）")
+        except Exception as e:
+            print(f"[提示] plan.md 回填失败: {e}")
+        sys.exit(0)
 
     if args.config:
         bootstrap(args.config)
