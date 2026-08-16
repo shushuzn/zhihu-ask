@@ -1,7 +1,7 @@
 """run_pipeline.py 回归测试：流水线门禁顺序与清单（9 项）。
 
 覆盖：
-- agent_checklist：slug/query 替换、六通道步骤齐全、无占位符残留、
+- agent_todos：slug/query 替换、六通道步骤齐全、无占位符残留、
   query=None 时替换为空
 - finish：收尾门禁执行顺序（结构→质量→轮次→落报告→docx→flomo）——
   顺序/缺步回归会静默跳过 SOP 硬门禁
@@ -37,10 +37,10 @@ def expect(label, got, must_be):
         print(f"  FAIL {label}: got {got!r}, expected {must_be!r}")
 
 
-# ---- agent_checklist：占位符替换与步骤覆盖 ----
+# ---- agent_todos：占位符替换与步骤覆盖 ----
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
-    rp.agent_checklist("my-slug", "formal proof")
+    rp.agent_todos("my-slug", "formal proof")
 out = buf.getvalue()
 expect("acl+ slug 替换", "my-slug" in out, True)
 expect("acl+ query 替换", "formal proof" in out, True)
@@ -50,7 +50,7 @@ for step in ("通道 F", "通道 E", "通道 B", "通道 C", "通道 P", "prepri
 
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
-    rp.agent_checklist("s2", None)
+    rp.agent_todos("s2", None)
 out2 = buf.getvalue()
 expect("acl+ query=None 替换为空", "<query>" not in out2, True)
 

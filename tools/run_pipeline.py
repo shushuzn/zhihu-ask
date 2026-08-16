@@ -90,7 +90,7 @@ def bootstrap(config):
         label="research_start.py")
 
 
-def agent_checklist(slug, query):
+def agent_todos(slug, query):
     banner("需 agent 介入的检索与写作步骤（脚本无法自动化）")
     print("请逐项完成，再运行收尾：python tools/run_pipeline.py --slug " + slug)
     print("""
@@ -248,7 +248,7 @@ def main():
             except Exception:
                 pass
         if slug:
-            agent_checklist(slug, query)
+            agent_todos(slug, query)
         else:
             print("[提示] 未解析到 slug，无法打印 agent 步骤清单；请手动按 SOP 继续。")
         # 若已同时给了 --slug，直接收尾

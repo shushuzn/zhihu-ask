@@ -21,12 +21,12 @@
 
 | 模板 | 内置质量约束 |
 |---|---|
-| `research_plan_TEMPLATE.md` | 步骤 0 flomo 查重（最先执行；命中已有笔记→过时检查：过时则三步原地更新 memo_update / 未过时则复用还原）；执行顺序 F→E→A→B→C→P；素材库命名 gathered_ima/wechat/web/arxiv/preprints；迭代轮次默认 1 轮（有内容无法一轮解决才追加）；五视角主代理直执（阶段 2 现状）；交付物含必做收尾（CHECKLIST 逐项自检留痕 + flomo 上传/更新 + git 推送） |
+| `research_plan_TEMPLATE.md` | 步骤 0 flomo 查重（最先执行；命中已有笔记→过时检查：过时则三步原地更新 memo_update / 未过时则复用还原）；执行顺序 F→E→A→B→C→P；素材库命名 gathered_ima/wechat/web/arxiv/preprints；迭代轮次默认 1 轮（有内容无法一轮解决才追加）；五视角主代理直执（阶段 2 现状）；交付物含必做收尾（flomo 上传/更新 + git 推送） |
 | `research_report_TEMPLATE.md` | 过程字样零容忍（quality_check 拦截）；**报告形态**：H1 标题 → 结论段 → `###` 无编号小节（按主题切分，数量由内容自然决定，不设上限）→ `## 参考文献`（无顶层内容章节，check_report_structure 校验）；**组织按内容选型**：并列多条同类信息用 `1. 2. 3.` 有序列表（点数由内容自然决定、禁止凑数），多实体对照用表格，因果/演化逻辑链用连贯叙述段，正文无无序 bullet；**算式按需但必写**：有计算价值的内容算式必须写、在句中（如"时滞为 1948 − 1648 = 300 年"），禁止凑数硬造也禁止该写不写；**论证完整**：数学/证明/机制类内容给完整论证链（定理-引理-证明或步骤归约），禁止只给方法名概述、禁止省略证明步骤，来源论文论证以全文为准；**未来预测必做多情景+历史周期检验+可迁移兜底+不确定性标注**（预测类报告硬性要求）；概念主体（来源材料不当主语；句首禁裸"这篇/该篇/本篇/此篇"）；独立组织（不照搬单一来源）；公式一律 LaTeX；正文 [n] 引注；结论 ≤300 字符、事实归并；文风对照 `docs/STYLE_GUIDE.md` |
 | `note_TEMPLATE.md` | 首行标签 `#维度1 #维度2 #主题/<slug>`；每篇自含出处（GB/T 7714 来源段 + 来源类型）；独立可读四要求（不依赖其他笔记/不依赖来源内部编号/指代明确） |
 | `process_notes_TEMPLATE.md` | 追加式迭代记录；质量校验（结构/quality_check/去AI腔/国标/违规引用/矛盾/轮次）；必做收尾证据记录 |
 
-**交付前必跑命令**（与 CHECKLIST 一致）：
+**交付前必跑命令**：
 ```bash
 python tools/check_report_structure.py --file research/<slug>/report.md
 python tools/quality_check.py --file research/<slug>/report.md

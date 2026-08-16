@@ -16,7 +16,6 @@ zhihu-ask/
 ├── docs/
 │   ├── SOP.md                     # 阶段化可执行流程（核心标准）
 │   ├── TOOLS.md                   # 项目内工具说明
-│   ├── CHECKLIST.md               # 发布前质量检查清单
 │   ├── STYLE_GUIDE.md             # 知乎文风与排版指南
 │   ├── TEMPLATE_INDEX.md          # 模板说明与使用规则
 │   ├── CONVENTIONS.md             # 环境约定（乱码处理/git/领域连接器/参考文献学术纪律）

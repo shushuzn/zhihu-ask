@@ -103,7 +103,7 @@ flowchart TB
     end
 
     subgraph DOCS["📚 规则与支撑"]
-        D1["docs/：SOP · TOOLS · CHECKLIST<br/>STYLE_GUIDE · CONVENTIONS<br/>KEYWORDS · TEMPLATE_INDEX"]
+        D1["docs/：SOP · TOOLS<br/>STYLE_GUIDE · CONVENTIONS<br/>KEYWORDS · TEMPLATE_INDEX"]
         D2["templates/：research_report_TEMPLATE<br/>research_plan_TEMPLATE · note_TEMPLATE<br/>process_notes_TEMPLATE"]
         D3["channel_state.py 通道单一真相源<br/>F/E/A/B/C/P · 素材文件映射"]
     end

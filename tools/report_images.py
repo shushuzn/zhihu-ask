@@ -29,7 +29,7 @@
 国家/政治符号。`call_agnes` 末尾自动追加 `_AI_IMAGE_NEGATIVE_GUARD` 通用禁词句
 确保所有 prompt 默认遵守；生成后必须肉眼复检（重点扫门楣/中央/边缘的圆形徽标
 与飘字票据），发现违规立刻删除原图重生成——不要为了凑数保留违规图。完整检查
-清单见 `docs/CHECKLIST.md` AI 概念图合规复检项。
+清单与合规复检要求见 `templates/research_report_TEMPLATE.md` 配图条。
 
 图表定义（--chart-defs JSON，可选；缺省用内置默认模板）：
     {
@@ -65,7 +65,7 @@ AGNES_MODEL = "agnes-image-2.1-flash"
 # 真实人脸/国旗/政治符号——实测 lof-exit-mechanism 封面曾出现中国国徽+飘字票据。
 # 自动追加到每个 prompt 末尾，确保所有 AI 概念图（封面/题图/自定义 --ai-prompts）
 # 默认遵守硬约束；具体 prompt 不必重复写 negative，工具会自动附加。
-# 检查清单见 docs/CHECKLIST.md 「AI 概念图合规复检」项。
+# 合规复检要求见 templates/research_report_TEMPLATE.md 配图条。
 _AI_IMAGE_NEGATIVE_GUARD = (
     "\n\nNegative prompt (must obey): no text, no characters, no letters, no "
     "numbers, no digits, no Chinese characters, no Cyrillic, no Arabic script, "

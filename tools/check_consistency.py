@@ -114,7 +114,7 @@ def scan_files(target):
 LEGACY_PHRASE_PATTERNS = {
     "flomo 笔记可作素材但须国标来源": {
         "old": ["不作参考资料", "一律不作为参考", "仅作查重判断"],
-        "files": ["SOP.md", "CHECKLIST.md", "research_plan_TEMPLATE.md"],
+        "files": ["SOP.md", "research_plan_TEMPLATE.md"],
     },
     "报告参考文献区禁止 LaTeX": {
         "old": [r"参考文献.*\$[^$]*\$"],
@@ -122,7 +122,7 @@ LEGACY_PHRASE_PATTERNS = {
     },
     "arxiv 归入预印本聚合 P": {
         "old": [r"通道\s*D(?![（(]*(arxiv|已|于))"],
-        "files": ["SOP.md", "TOOLS.md", "CHECKLIST.md", "SKILL.md", "research_plan_TEMPLATE.md", "research_report_TEMPLATE.md"],
+        "files": ["SOP.md", "TOOLS.md", "SKILL.md", "research_plan_TEMPLATE.md", "research_report_TEMPLATE.md"],
     },
 }
 

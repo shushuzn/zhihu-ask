@@ -33,7 +33,6 @@ REQUIRED_FILES = [
     "README.md",
     "LICENSE",
     ".gitignore",
-    "docs/CHECKLIST.md",
     "docs/CONVENTIONS.md",
     "docs/KEYWORDS.md",
     "docs/SOP.md",
