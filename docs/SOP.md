@@ -8,7 +8,7 @@
 | 角色 | 职责 | 不可替代动作 |
 |---|---|---|
 | 用户 | 提供问题；审批关键决策点；验收交付物 | 问题来源、发布决定 |
-| 主代理 | 全流程执行：检索、核查、测算、写作 | 所有研究与写作 |
+| 主代理 | 全流程执行：检索、核查、写作 | 所有研究与写作 |
 | 工具链（tools/） | 初始化 / 登记 / 门禁 / 质检自动化 | 门禁强制 |
 
 **边界**：研究执行与写作由主代理负责；「是否发布 / 删除 / 强推 / 改可见性」必须用户审批。
@@ -54,13 +54,12 @@
 ## 阶段 3 · 交叉验证与量化
 
 - 关键数字标注数据级别（一手/二手/推断）；多源冲突以「最新 + 一手优先 + 口径一致」取舍；媒体转述数字尽量回溯一手，无法取得标"仅媒体口径"。
-- **量化测算（按需但必验）**：有计算价值的算式必须写、融入叙述；每条算式经 Python 实际验证，验证脚本留存研究目录（如 `verify_calcs.py`）；禁止凑数硬造也禁止该写不写。
 - 数学/证明/机制类给完整论证链（定理-引理-证明或步骤归约），来源论文论证以全文（arXiv HTML 版）为准。
 - **决策点（用户审批）**：关键数字缺失导致结论悬空且无法推断时，暂停询问用户。
 
 ## 阶段 4 · 报告生成与沉淀
 
-- 按 `templates/research_report_TEMPLATE.md` 产出 report.md：结论（≤300 字）→ 关键事实与数据（事实叙述+测算融入+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。
+- 按 `templates/research_report_TEMPLATE.md` 产出 report.md：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。
 - **脚本收尾**：`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity → check_consistency → check_progress 轮次 → check_progress 落报告；硬伤与提示级均阻断）→ `report_to_docx.py` → `report_to_flomo.py`（本地存档）→ `check_all.py` 全库体检。**人工确认放行**：违规引用检查的「正文与题名疑似不符」为启发式提示，词面差异（如题名「遍历论」vs 正文「遍历理论」）机器无法判定时，由主代理逐条判读——真引用则 `python tools/run_pipeline.py --slug <slug> --ack <n1,n2,...>` 放行（门禁输出注明人工确认，判读理由须逐条说明并留痕，见 `docs/CONVENTIONS.md` §8）；真张冠李戴则修正正文。
 - **配图**：`tools/report_images.py --slug <slug>` —— AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `docs/CHECKLIST.md`）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
 - **沉淀（必做）**：有效关键词写 SQLite 关键词库（`keywords_db.py --add` + `--export docs/KEYWORDS.md`）；写 `process_notes.md`；`note_upload.py research/<slug>/notes/` 逐条质检后上传（索引/报告自动拦截；flomo 未配置则跳过并记录）；回填 `plan.md` 状态为"已完成"（`run_pipeline.py` 收尾门禁全过后自动回填）。
@@ -111,7 +110,7 @@ F 查重最先且阻断；E/C 未配置 → 环境级自动 skip（无需逐篇�
 子问题无视角覆盖 → 补检索（P0）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
 
 ## A.4 阶段 3 执行逻辑
-关键数字无来源 → 标"未证实"并回溯一手；多源冲突 → 并列各方口径与来源、给取舍理由；结论悬空且不可推断 → 暂停询问用户（决策点）；测算按需但必验（算式+Python 验证）。
+关键数字无来源 → 标"未证实"并回溯一手；多源冲突 → 并列各方口径与来源、给取舍理由；结论悬空且不可推断 → 暂停询问用户（决策点）。
 
 ## A.5 阶段 4 执行逻辑
 报告 → CHECKLIST 逐项自检（任一不过返回修正）→ 用户验收 → 沉淀（词库 / process_notes / 笔记上传 / 索引回填）。用户 24h 未验收 → 再次提醒，交付物保留待查看。

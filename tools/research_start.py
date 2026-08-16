@@ -269,7 +269,7 @@ def main():
     print("     禁止只做部分通道即产出 report.md。通道执行清单（各通道命中数/状态）须写入 plan.md。")
     print("\n==> [阶段2-4] 后续步骤")
     print("  a. 阶段2 多视角收集：主代理按五视角（A公众号/B Web事实/C领域分析/D差异化/E反方）覆盖 plan.md 界定子问题")
-    print("  b. 阶段3 交叉验证与量化：来源类型标注（笔记内）+ 约 3 项量化测算（2–4 项，融入小节叙述）；小点叙述化不单行、小节数量不设上限")
+    print("  b. 阶段3 交叉验证：来源类型标注（笔记内）；小点叙述化不单行、小节数量不设上限")
     print("  c. 阶段4 产出 report.md（过 CHECKLIST 数据可靠性自查；适用通道全部完成后再写）")
     print("  d. 沉淀（必做）：有效关键词写入 SQLite 关键词库（tools/keywords_db.py --add），再 --export 同步 docs/KEYWORDS.md；写 process_notes.md；回填 plan.md 索引为已完成")
     print("  e. 笔记上传 flomo（必做，不询问）：python tools/note_upload.py research/<slug>/notes/ 逐条质检后上传；索引笔记与报告禁止上传（工具自动拦截）")

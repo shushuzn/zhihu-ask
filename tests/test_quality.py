@@ -48,7 +48,7 @@ expect("excl- 块级公式阶乘", qc.check_exclamation("块级 $$\\sum_{k=0}^{n
 
 # ---- 无来源数字 ----
 expect("num+ 约X元无来源", qc.check_unsourced_numbers("约 3000 亿元规模", "无来源区"), True)
-expect("num- 带来源词", qc.check_unsourced_numbers("据测算约 3000 亿元", "无参考文献区"), False)
+expect("num- 带来源词", qc.check_unsourced_numbers("据披露约 3000 亿元", "无参考文献区"), False)
 expect("num- 表格行跳过", qc.check_unsourced_numbers("| 约 3000 | 单位 |", "无参考文献区"), False)
 expect("num- 有参考文献区则免检", qc.check_unsourced_numbers("约 3000 亿元", "正文\n## 参考文献\n[标题](url)"), False)
 
@@ -100,8 +100,8 @@ expect("int- 公开来源", qc.check_internal_refs("公开来源显示"), False)
 expect("int+ 智慧芽", qc.check_internal_refs("智慧芽论文检索无直接相关"), True)
 expect("int+ 产业无对应", qc.check_internal_refs("产业侧无对应物（企查查与通达信无适用主体）"), True)
 expect("int+ 无适用主体", qc.check_internal_refs("通达信与企查查无适用主体"), True)
-expect("int+ verify 脚本名", qc.check_internal_refs("数值验证（测算 1，脚本 verify_calcs.py）"), True)
-expect("int- verify 正常语境", qc.check_internal_refs("数值验证（测算 1）结果如下"), False)
+expect("int+ verify 脚本名", qc.check_internal_refs("结果见验证脚本 verify_check.py"), True)
+expect("int- verify 正常语境", qc.check_internal_refs("数值结果如下"), False)
 
 # ---- 分级词括注 ----
 expect("grade+ 一手括注", qc.check_grade_paren("（一手数据）"), True)

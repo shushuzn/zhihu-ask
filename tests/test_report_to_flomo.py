@@ -31,7 +31,7 @@ def expect_true(label, cond):
 # ---------- convert_text：markdown -> flomo ----------
 # 1) 标题转加粗
 expect("h1->bold", fl.convert_text("# 结论"), "**结论**")
-expect("h3->bold", fl.convert_text("### 2.1 测算说明"), "**2.1 测算说明**")
+expect("h3->bold", fl.convert_text("### 2.1 口径说明"), "**2.1 口径说明**")
 
 # 2) 引用去前缀
 expect("blockquote", fl.convert_text("> 据工信部公告"), "据工信部公告")

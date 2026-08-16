@@ -186,13 +186,13 @@ def check_ref_latex_ban(full, note_mode=False):
 def check_unsourced_numbers(body, full=None):
     """启发式：行内出现"约 X 元/万亿/亿/万"等数字表述但同行无来源字样。
     跳过表格行（| 开头）与列表项（- 开头且带来源括注），因表格/列表数字通常在行内或表前已说明来源。
-    来源特征词含来源/口径/媒体/测算等，与项目"每个数字可溯源"约定配套。
+    来源特征词含来源/口径/媒体等，与项目"每个数字可溯源"约定配套。
 正文按 GB/T 7714-2015 顺序编码制标注 [n] 引注，来源归文末「参考文献」区——报告含参考文献
     节（必需结构）即跳过本检查，正文无来源数字属合规。"""
     if full and "参考文献" in full:
         return []
     source_words = (
-        r"(来源|据|数据|报道|测算|推算|口径|官方|媒体|实测|参考|定价|备查|"
+        r"(来源|据|数据|报道|推算|口径|官方|媒体|实测|参考|定价|备查|"
         r"一手|二手|计算|估算|预算|决算|公布|披露|统计)"
     )
     issues = []
@@ -278,7 +278,7 @@ def check_ai_phrases(body):
 def check_paragraph_len(body):
     """：叙述性段落超长检查（STYLE_GUIDE：每段 ≤4-5 行，知乎扫读友好）。
 
-    按空行分段；跳过列表块/表格/标题/图片/测算块（非叙述段）；参考文献区之后不计。
+    按空行分段；跳过列表块/表格/标题/图片块（非叙述段）；参考文献区之后不计。
     """
     head = strip_display_math(body.split("## 参考文献")[0])
     paras, cur = [], []
@@ -294,8 +294,8 @@ def check_paragraph_len(body):
         paras.append(cur)
     issues = []
     for idx, p in enumerate(paras, 1):
-        # 列表/表格/标题/测算/图片行所在段落跳过；有序列表（1. / 1、）同样跳过（不报段落过长）
-        if any(l.lstrip().startswith(("-", "*", "|", "#", "**测算", "!["))
+        # 列表/表格/标题/图片行所在段落跳过；有序列表（1. / 1、）同样跳过（不报段落过长）
+        if any(l.lstrip().startswith(("-", "*", "|", "#", "!["))
                or re.match(r"^\s*\d+[.、]", l) for l in p):
             continue
         if len(p) > 5:
@@ -326,8 +326,8 @@ def check_para_points_eligible(body):
         paras.append(cur)
     issues = []
     for idx, p in enumerate(paras, 1):
-        # 非叙述段跳过：表格/标题/图片/列表/有序列表/测算块/代码块
-        if any(l.lstrip().startswith(("-", "*", "|", "#", "**测算", "![", "```"))
+        # 非叙述段跳过：表格/标题/图片/列表/有序列表/代码块
+        if any(l.lstrip().startswith(("-", "*", "|", "#", "![", "```"))
                or re.match(r"^\s*\d+[.、]", l) for l in p):
             continue
         n_chars = sum(len(l) for l in p)
@@ -398,7 +398,7 @@ def check_internal_refs(body):
     产业无对应 / 无适用主体 / 无约定主题布局——C 通道"无命中"是内部研究记录，
     落 process_notes 与进度文件，禁止写进正文（对读者无信息量）。
     说明：成品报告引用须为公开来源；内部素材（flomo 笔记/检索记录/验证脚本）不入成品，
-    改为引用其对应的公开出处或删除（验证脚本只留存研究目录，正文提"数值验证（测算 N）"即可）。
+    改为引用其对应的公开出处或删除（验证脚本只留存研究目录，不写入正文）。
     """
     issues = []
     internal_words = ["flomo", "内部笔记", "信号笔记", "gathered_",

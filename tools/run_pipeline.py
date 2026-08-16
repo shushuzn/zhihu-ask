@@ -109,7 +109,7 @@ def agent_checklist(slug, query):
    （arxiv → gathered_arxiv.md、bioRxiv/浪淘沙/PSSXiv → gathered_preprints.md，
      检索完成后一次性自动登记通道 P；若 arxiv 直连被 429 限流需 WebFetch 降级，
      单独走 tools/arxiv_search.py --query "<query>" --print-web-prompt 路径，落盘后同样登记通道 P）
-6) 阶段 2-3：五视角收集 + 约 3 项量化测算，写入 report.md
+6) 阶段 2-3：五视角收集，写入 report.md
 7) 登记各通道完成态（落报告纪律条目级）：
      通道 A（--output 落盘 gathered_wechat.md）与通道 P（--out 落盘 gathered_arxiv.md /
      gathered_preprints.md）写盘时**自动登记**，无需手动；

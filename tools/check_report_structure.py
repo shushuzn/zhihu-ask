@@ -9,8 +9,6 @@
      ## 参考文献为唯一顶层章节）
   3. ## 参考文献 存在且含 GB/T 7714 编号条目（兼容 [标题](url) / 纯文本标题旧格式）
   4. 无模板占位符 {{...}} 残留
-  5. 测算已融入正文：量化测算按主题融入对应小节叙述（禁止"**测算 N：**"
-     或"假设前提/计算口径"等独立行——用户要求彻底融入，不单开一行）
 
 用法：
     python tools/check_report_structure.py --file research/<slug>/report.md
@@ -105,10 +103,6 @@ def check_structure(lines):
     for i, line in enumerate(lines, 1):
         for m in re.finditer(r"\{\{[^{}]*\}\}", line):
             issues.append((i, f"模板占位符残留: {m.group(0)}"))
-
-    for i, line in enumerate(lines, 1):
-        if re.match(r"^\*\*\s*测算\s*\d+", line) or re.match(r"^\s*-\s*\*\*(假设前提|计算口径|结果|口径说明)", line):
-            issues.append((i, "测算未融入正文", "量化测算须彻底融入对应小节叙述（禁止'**测算 N：**'或'假设前提/计算口径'等单开一行）", line.strip()[:50]))
 
     return issues
 
@@ -287,7 +281,7 @@ def main():
     print("=" * 60)
 
     if not issues:
-        print("全部通过：小节编号连续、顶层章节完整、参考文献合规、无占位符残留、测算已融入正文。")
+        print("全部通过：小节编号连续、顶层章节完整、参考文献合规、无占位符残留。")
         sys.exit(0)
 
     # 分离硬伤和提示

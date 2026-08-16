@@ -391,7 +391,7 @@ def insert_block_into_content(content, anchor, block_lines, ai_only=False):
     block_lines: 已编号的图片块行（如 ["![alt](rel)", "", "图 1｜说明"]）。
     返回 (new_content, status)：status ∈ inserted / fallback / missing_ai / missing。
     - inserted：锚点小节命中，插到第一段正文后
-    - fallback：锚点缺失，插到首个 ### 小节前（旧"测算 N"结构已取消的回退）
+    - fallback：锚点缺失，插到首个 ### 小节前（旧式锚点结构已取消的回退）
     - missing_ai：锚点缺失且为 AI 概念图（仅作封面，不插入正文）
     - missing：锚点缺失且无 ### 小节可回退
     """
@@ -412,7 +412,7 @@ def insert_block_into_content(content, anchor, block_lines, ai_only=False):
         # 段落末尾补换行后再插图片块（block 自带末尾 \n\n）
         new_content = content[:insert_at] + "\n\n" + block + content[insert_at:].lstrip("\n")
         return new_content, "inserted"
-    # 回退：锚点小节不存在（如旧"测算 N"结构已取消）时，插到第一个 ### 小节前。
+    # 回退：锚点小节不存在（如旧式锚点结构已取消）时，插到第一个 ### 小节前。
     # AI 概念图（ai_*.png）仅作封面、不插入正文（规范），锚点未命中直接跳过。
     if ai_only:
         return content, "missing_ai"

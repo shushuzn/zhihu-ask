@@ -238,7 +238,7 @@ def main():
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(report)
         print(f"\n已生成报告骨架: {os.path.relpath(output_path, ROOT)}")
-        print("下一步: 补充过渡段落, 完成量化测算, 跑质检八件套。")
+        print("下一步: 补充过渡段落, 跑质检八件套。")
 
 
 if __name__ == "__main__":
