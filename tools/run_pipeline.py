@@ -119,7 +119,7 @@ def agent_todos(slug, query):
 """.replace("<slug>", slug).replace("<query>", query or ""))
 
 
-def finish(slug, offline=False, ack=None, skip_source_voice=False):
+def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_match=False):
     banner(f"阶段 4 收尾 · slug={slug}")
     # 收尾前自动清理工作区缓存/临时文件
     run([os.path.join(TOOLS, "clean_workspace.py")],
@@ -147,6 +147,8 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False):
         citation_cmd.append("--offline")
     if ack:
         citation_cmd += ["--ack", ack]
+    if skip_title_match:
+        citation_cmd.append("--skip-title-match")
     run(citation_cmd, label="check_citation_validity" + (" (offline)" if offline else ""))
     # 矛盾与废话门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
     # check_consistency 是项目级检查，不接受 --slug。
@@ -227,6 +229,8 @@ def main():
     ap.add_argument("--offline", action="store_true",
                     help="违规引用检查使用离线模式（跳过 CrossRef/arXiv 联网核验）")
     ap.add_argument("--ack", help="违规引用检查人工确认条目号（逗号分隔，透传 check_citation_validity --ack）")
+    ap.add_argument("--skip-title-match", action="store_true",
+                    help="违规引用检查跳过题名一致性核验（注册题名拼写笔误/术语译法差异场景，透传 check_citation_validity --skip-title-match）")
     ap.add_argument("--backfill", action="store_true",
                     help="用户验收通过后回填 plan.md 索引状态（进行中 → 已完成），需 --slug")
     ap.add_argument("--skip-source-voice", action="store_true",
@@ -269,12 +273,14 @@ def main():
         # 若已同时给了 --slug，直接收尾
         if args.slug:
             finish(args.slug, offline=args.offline, ack=args.ack,
-                   skip_source_voice=args.skip_source_voice)
+                   skip_source_voice=args.skip_source_voice,
+                   skip_title_match=args.skip_title_match)
         return
 
     # 仅收尾
     finish(args.slug, offline=args.offline, ack=args.ack,
-           skip_source_voice=args.skip_source_voice)
+           skip_source_voice=args.skip_source_voice,
+           skip_title_match=args.skip_title_match)
 
 
 if __name__ == "__main__":

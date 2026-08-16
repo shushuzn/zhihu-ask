@@ -514,7 +514,7 @@ def check_url_reachable(url, timeout=10):
         return None, str(e)[:40]
 
 
-def check(body, offline=False, ack=()):
+def check(body, offline=False, ack=(), skip_title_match=False):
     """返回 (硬性问题列表, 提示性问题列表)。问题元素：(行号, 级别, 标题, 详情)
 
     offline=True：跳过全部联网核验（作者/题名/日期/URL 可达性），只做离线可判项，
@@ -522,6 +522,9 @@ def check(body, offline=False, ack=()):
     ack：人工判读确认合规的条目号元组——该条目跳过「正文与题名疑似不符」与
     「作者格式疑似异常」（机构/平台名责任者）两类提示
     （引注关系真实但词面差异、机构名不适用人名规范时由人确认后放行，输出注明）。
+    skip_title_match=True：跳过题名一致性核验（硬伤「题名与文献不符」不报）。
+    适用场景：注册库题名本身拼写笔误（如 arXiv 元数据 "Divosor" vs 正确 "Divisor"）
+    或术语译法差异导致的一字之差误报——作者/日期/URL 等其余核验保留。
     学术纪律收紧：默认（联网）模式下，含 DOI/arxiv URL 的条目若网络核验
     失败，不再降级为提示，而是硬伤阻断——"核验失败"与"核验通过"必须区分。
     """
@@ -586,7 +589,7 @@ def check(body, offline=False, ack=()):
             if auth_ok is False:
                 hard.append((ref_head_line + lineno, "硬伤", "疑似编造作者",
                              f"[{n}] 作者「{authors}」与 CrossRef 注册作者不一致（核验 doi: {doi}）"))
-            if title_ok is False:
+            if title_ok is False and not skip_title_match:
                 hard.append((ref_head_line + lineno, "硬伤", "题名与文献不符",
                              f"[{n}] 著录题名《{title}》与 CrossRef 注册题名《{reg_title}》不一致"))
             check_date_reasonableness(text, pub_date, lineno, ref_head_line, n, hard)
@@ -599,7 +602,7 @@ def check(body, offline=False, ack=()):
             if net_fail:
                 net_down = True
                 continue
-            if title_ok is False:
+            if title_ok is False and not skip_title_match:
                 hard.append((ref_head_line + lineno, "硬伤", "题名与文献不符",
                              f"[{n}] 著录题名《{title}》与 arXiv 注册题名《{reg_title}》不一致（{url}）"))
             # arXiv 作者比对（佚名判定与 DOI 相同）
@@ -660,6 +663,8 @@ def main():
     ap.add_argument("--slug", help="研究 slug（检查 research/<slug>/report.md）")
     ap.add_argument("--offline", action="store_true", help="跳过 CrossRef/arXiv 联网核验")
     ap.add_argument("--ack", help="人工确认合规的条目号（逗号分隔，如 2,5,8：跳过其『正文与题名疑似不符』与『作者格式疑似异常』提示）")
+    ap.add_argument("--skip-title-match", action="store_true",
+                    help="跳过题名一致性核验（注册题名拼写笔误/术语译法差异导致的误报场景；作者/日期/URL 核验保留）")
     ap.add_argument("--verbose", action="store_true", help="显示命中明细")
     args = ap.parse_args()
 
@@ -676,9 +681,11 @@ def main():
 
     ack = tuple(int(x) for x in args.ack.split(",") if x.strip()) if args.ack else ()
     body = load_text(path)
-    hard, warn = check(body, offline=args.offline, ack=ack)
+    hard, warn = check(body, offline=args.offline, ack=ack, skip_title_match=args.skip_title_match)
 
     print(f"违规引用检查: {path}{'（离线模式）' if args.offline else ''}")
+    if args.skip_title_match:
+        print("[跳过] 题名一致性核验已跳过（--skip-title-match：注册题名拼写笔误/术语译法差异场景；作者/日期/URL 核验保留）。")
     if ack:
         print(f"[人工确认] 条目 {','.join(str(a) for a in ack)} 已判读确认合规，跳过其『正文与题名疑似不符』提示。")
     print("=" * 60)
