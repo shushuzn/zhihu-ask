@@ -5,9 +5,9 @@
 实测 r.jina.ai（Jina Reader）+ 代理对上述站点稳定返回完整 Markdown 正文。
 
 策略（按序尝试，首个成功即返回）：
-  1. Jina Reader（r.jina.ai/<url>）经代理 → Markdown 全文（优先）
+  1. Jina Reader（r.jina.ai/<url>）经代理 → Markdown 全文（优先；识别反爬验证页自动跳过）
   2. Jina Reader 直连
-  3. 直连抓原始 HTML（urllib + certifi SSL）
+  3. 直连抓原始 HTML（urllib + certifi SSL，按响应声明字符集解码，缺省 UTF-8/GBK 兜底）
   4. 经代理抓原始 HTML
 
 用法：
@@ -36,6 +36,48 @@ except Exception:  # certifi 不可用时退回系统默认
 DEFAULT_PROXY = "http://127.0.0.1:7897"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
+# 反爬/验证页特征（Jina 与 HTML 抓取结果命中即视为失败，继续降级）。
+# 踩坑：mp.weixin.qq.com 经 Jina 返回"环境异常，完成验证后即可继续访问"的
+# 非空验证页，原实现把该页当作成功正文返回。
+CAPTCHA_MARKERS = (
+    "环境异常",
+    "完成验证后即可继续访问",
+    "去验证",
+    "requiring captcha",
+    "verify you are human",
+)
+
+
+def _is_captcha_page(text):
+    """命中反爬验证页特征 → True。"""
+    if not text:
+        return False
+    low = text.lower()
+    return any(m in low for m in CAPTCHA_MARKERS)
+
+
+def _decode_bytes(data, headers=None):
+    """按响应头 Content-Type 声明字符集解码；缺省嗅探 <meta charset>；
+    均无则 UTF-8 → GBK → GB18030 依次尝试，最后 UTF-8 ignore 兜底。
+    """
+    charset = None
+    ct = (headers or {}).get("Content-Type") or ""
+    m = re.search(r"charset=([\w\-]+)", ct, re.I)
+    if m:
+        charset = m.group(1)
+    if not charset:
+        head = data[:4096].decode("ascii", "ignore")
+        m = re.search(r'<meta[^>]+charset=["\']?([\w\-]+)', head, re.I)
+        if m:
+            charset = m.group(1)
+    candidates = ([charset] if charset else []) + ["utf-8", "gbk", "gb18030"]
+    for enc in candidates:
+        try:
+            return data.decode(enc)
+        except (LookupError, UnicodeDecodeError):
+            continue
+    return data.decode("utf-8", "ignore")
+
 
 def _opener(proxy=None):
     handlers = [urllib.request.HTTPSHandler(context=_CTX)]
@@ -46,12 +88,15 @@ def _opener(proxy=None):
 
 
 def fetch_jina(url, proxy=None, timeout=40):
-    """r.jina.ai 抓取 → (markdown, err)。"""
+    """r.jina.ai 抓取 → (markdown, err)。命中反爬验证页视为失败。"""
     try:
         opener = _opener(proxy)
         req = urllib.request.Request(
             "https://r.jina.ai/" + url, headers={"User-Agent": UA})
-        return opener.open(req, timeout=timeout).read().decode("utf-8", "ignore"), None
+        md = opener.open(req, timeout=timeout).read().decode("utf-8", "ignore")
+        if _is_captcha_page(md):
+            return None, "Jina 返回反爬验证页（CAPTCHA）"
+        return md, None
     except Exception as e:
         return None, f"{type(e).__name__}: {str(e)[:120]}"
 
@@ -76,11 +121,15 @@ def fetch_jina_with_arxiv_pdf_fallback(url, proxy=None, timeout=40):
 
 
 def fetch_html(url, proxy=None, timeout=40):
-    """直连/代理抓原始 HTML → (html, err)。"""
+    """直连/代理抓原始 HTML → (html, err)。按响应声明字符集解码；验证页视为失败。"""
     try:
         opener = _opener(proxy)
         req = urllib.request.Request(url, headers={"User-Agent": UA})
-        return opener.open(req, timeout=timeout).read().decode("utf-8", "ignore"), None
+        resp = opener.open(req, timeout=timeout)
+        html_text = _decode_bytes(resp.read(), getattr(resp, "headers", {}))
+        if _is_captcha_page(html_text):
+            return None, "目标站点返回反爬验证页（CAPTCHA）"
+        return html_text, None
     except Exception as e:
         return None, f"{type(e).__name__}: {str(e)[:120]}"
 
@@ -115,24 +164,24 @@ def fetch(url, proxy=DEFAULT_PROXY, timeout=40):
     errs = []
     # 1. Jina 经代理（arXiv HTML 过短时自动转 PDF）
     md, e = fetch_jina_with_arxiv_pdf_fallback(url, proxy=proxy, timeout=timeout)
-    if md:
+    if md and not _is_captcha_page(md):
         return "jina", md, None
-    errs.append(f"jina-proxy: {e}")
+    errs.append(f"jina-proxy: {e or '反爬验证页（CAPTCHA）'}")
     # 2. Jina 直连（同样带 arXiv PDF fallback）
     md, e = fetch_jina_with_arxiv_pdf_fallback(url, proxy=None, timeout=timeout)
-    if md:
+    if md and not _is_captcha_page(md):
         return "jina", md, None
-    errs.append(f"jina-direct: {e}")
+    errs.append(f"jina-direct: {e or '反爬验证页（CAPTCHA）'}")
     # 3. 直连 HTML
     html, e = fetch_html(url, proxy=None, timeout=timeout)
-    if html:
+    if html and not _is_captcha_page(html):
         return "html", html, None
-    errs.append(f"html-direct: {e}")
+    errs.append(f"html-direct: {e or '反爬验证页（CAPTCHA）'}")
     # 4. 代理 HTML
     html, e = fetch_html(url, proxy=proxy, timeout=timeout)
-    if html:
+    if html and not _is_captcha_page(html):
         return "html", html, None
-    errs.append(f"html-proxy: {e}")
+    errs.append(f"html-proxy: {e or '反爬验证页（CAPTCHA）'}")
     return None, None, " | ".join(errs)
 
 

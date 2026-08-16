@@ -116,4 +116,38 @@ try:
 except SystemExit:
     expect("ap- 非法 mode 报 SystemExit", True, True)
 
+# ---- 反爬验证页识别 ----
+expect("cp+ 微信验证页命中", wf._is_captcha_page("当前环境异常，完成验证后即可继续访问。\n[去验证]"), True)
+expect("cp+ Jina warning 命中", wf._is_captcha_page("Warning: This page maybe requiring CAPTCHA"), True)
+expect("cp+ 正常正文不命中", wf._is_captcha_page("# 李飞飞最新访谈：AI咋能代替人呢？\n正文内容。"), False)
+expect("cp+ 空输入不命中", wf._is_captcha_page(""), False)
+
+# ---- 字符集解码 ----
+gbk_bytes = "中文测试GBK编码".encode("gbk")
+utf8_bytes = "中文测试UTF8编码".encode("utf-8")
+expect("dc+ 按 Content-Type charset 解码", wf._decode_bytes(gbk_bytes, {"Content-Type": "text/html; charset=gbk"}), "中文测试GBK编码")
+expect("dc+ 无 charset 默认 UTF-8", wf._decode_bytes(utf8_bytes, {}), "中文测试UTF8编码")
+expect("dc+ meta charset 嗅探", wf._decode_bytes(b'<html><meta charset="gb2312"><body>' + gbk_bytes, {}), "<html><meta charset=\"gb2312\"><body>中文测试GBK编码")
+expect("dc+ 全失败 UTF-8 ignore 兜底", wf._decode_bytes(b"\xff\xfe\xfd", {}), "")
+
+# ---- fetch 降级：Jina 命中验证页 → 继续降级 HTML ----
+def fake_jina_captcha(url, proxy=None, timeout=40):
+    calls.append(("jina-captcha", proxy))
+    return "当前环境异常，完成验证后即可继续访问。", None
+
+def fake_html_ok(url, proxy=None, timeout=40):
+    calls.append(("html", proxy))
+    return "<html><h1>真实标题</h1></html>", None
+
+orig_jina, orig_html = wf.fetch_jina, wf.fetch_html
+try:
+    wf.fetch_jina, wf.fetch_html = fake_jina_captcha, fake_html_ok
+    calls.clear()
+    kind, content, err = wf.fetch("http://x/", proxy="http://p")
+    expect("cp+ Jina 验证页不返回", kind, "html")
+    expect("cp+ 降级到 HTML 内容", content, "<html><h1>真实标题</h1></html>")
+    expect("cp+ 降级成功无错误摘要", err, None)
+finally:
+    wf.fetch_jina, wf.fetch_html = orig_jina, orig_html
+
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
