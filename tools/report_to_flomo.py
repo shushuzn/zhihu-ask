@@ -161,6 +161,10 @@ def convert_text(text):
         if re.match(r"^\s*\|[\s:\-|]+\|\s*$", s):
             continue
 
+        # 剥离锚点独立行（<a id="ref-N"></a>）：flomo 不需要
+        if re.match(r"^\s*<a\s+id=\"ref-\d+\"[^>]*>\s*</a>\s*$", s):
+            continue
+
         # 整行的本地图片直接丢弃：报告规范里图片行后紧跟「图 N｜…」图注行，
         # 保留 alt 会与图注文字重复。公网图片不在此列（仍按行内规则保留 URL）。
         if LOCAL_IMG_LINE.match(s):
@@ -185,7 +189,13 @@ def convert_text(text):
 
         s2 = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", _img_repl, s)
 
+        # 外部链接 [text](url) → text（url）；锚点链接 [text](#...) 保留为 [text]（引注格式）
+        s2 = re.sub(r"\[([^\]]+)\]\((#[^)]+)\)", r"[\1]", s2)
         s2 = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1（\2）", s2)
+
+        # 剥离 HTML 标签（flomo 不支持 HTML）
+        s2 = re.sub(r"</?sup>", "", s2)
+        s2 = re.sub(r"<a[^>]*>[^<]*</a>", "", s2)
 
         s2 = s2.replace("`", "")
         out.append(s2)

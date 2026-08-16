@@ -323,7 +323,9 @@ def verify_doi(doi, cited_authors, cited_title):
     auth_ok = authors_match(cited_authors, reg_authors)
     title_ok = None
     if reg_title and cited_title:
-        nt = normalize(reg_title)
+        # CrossRef 注册题名可能含 HTML 标签（如下标 <sub>2</sub>），比对前剥离
+        reg_title_clean = re.sub(r"<[^>]+>", "", reg_title)
+        nt = normalize(reg_title_clean)
         nc = normalize(cited_title)
         title_ok = (nt in nc) or (nc in nt) or (len(set(nt) & set(nc)) >= max(4, min(len(nt), len(nc)) // 2))
     return auth_ok, title_ok, reg_title, reg_authors, pub_date, False
@@ -446,6 +448,8 @@ def check_date_reasonableness(text, pub_date, lineno, head_line, n, issues_hard)
     """引用日期合理性（学术纪律）：引用日期不得早于文献发布日期。
 
     发布信息缺失时跳过（无法判定）；发布信息存在且引用日期早于发布日期 → 硬伤。
+    日期按 (年,月,日) 元组比较（CrossRef/arXiv 发布日期可能无前导零，
+    如 "2026-8-12"，与著录 "2026-08-17" 字符串比较会误判）。
     """
     if not pub_date:
         return
@@ -453,7 +457,13 @@ def check_date_reasonableness(text, pub_date, lineno, head_line, n, issues_hard)
     if not cite_date:
         # 电子资源缺引用日期已由 check_gbt_refs 拦截，此处不重复
         return
-    if cite_date < pub_date:
+
+    def _norm(d):
+        m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", d.strip())
+        return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
+
+    c, p = _norm(cite_date), _norm(pub_date)
+    if c and p and c < p:
         issues_hard.append((head_line + lineno, "硬伤", "引用日期早于发布日期",
                             f"[{n}] 引用日期 {cite_date} 早于文献发布日期 {pub_date}（学术纪律：引用日期须晚于/等于发布日期）"))
 

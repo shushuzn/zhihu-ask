@@ -701,9 +701,12 @@ def check_fact_section_budget(body):
         nxt = secs[i + 1][1] if i + 1 < len(secs) else end
         seg = body[pos:nxt]
 
-        bullets = [ln for ln in seg.splitlines() if re.match(r"^\s*-\s+\S", ln)]
+        # 排除表格行（| 开头）和表格分隔行（|---|），只检测真正的 bullet（- 开头）
+        bullets = [ln for ln in seg.splitlines()
+                   if re.match(r"^\s*-\s+\S", ln)
+                   and not re.match(r"^\s*\|", ln)]
         if bullets:
-            issues.append((0, "小点未叙述化", f"第{num}节有 {len(bullets)} 条 bullet 单行——小点须写成连贯叙述段（表格是唯一允许的列表形式）",
+            issues.append((0, "小点未叙述化", f"第{num}节有 {len(bullets)} 条 bullet 单行——小点须写成连贯叙述段（表格行不受此检查限制）",
                            "bullet 单行"))
     return issues
 
