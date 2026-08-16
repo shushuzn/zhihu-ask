@@ -97,10 +97,10 @@
 ### 4.4 沉淀（必做）
 - **4.4.1 关键词回填**：有效关键词写 SQLite 关键词库（`keywords_db.py --add`）+ `--export docs/KEYWORDS.md` 同步。
 - **4.4.2 经验记录**：写 `research/<slug>/process_notes.md`（检索与踩坑记录）。
-- **4.4.3 笔记上传/同步（统一动作点；在信息收集与报告成稿后进行）**：
-  - 新建笔记：`python tools/note_upload.py research/<slug>/notes/` 逐条质检后上传（memo_create；索引/报告自动拦截；flomo 未配置则跳过并记录）；
-  - 1.1.3③ 标记「待更新」或「复用（待 4.4.3 终核）」的笔记：**最终过时核对**（对照阶段 1–3 收集的全部材料逐条复核）——确有过时 → 本地改写补结局/改写过时句子后 `python tools/note_upload.py research/<slug>/notes/<NN>_*.md --update` 按 `.flomo_ids.json` 记录用 `memo_update` 覆盖原 id（无记录回退新建并补记；禁止新建多版本）；核对后未过时 → 不动；
-  - 其余复用笔记：不再动。
+- **4.4.3 笔记上传/同步（统一动作点；在信息收集与报告成稿后进行，按 .flomo_ids.json 记录分流）**：
+  - **新建笔记（`.flomo_ids.json` 无记录的文件）**：逐条上传 `python tools/note_upload.py research/<slug>/notes/<文件名>.md`（无记录 → memo_create 并补记 id）。**禁止**对含已记录文件的目录跑无 `--update` 的整目录上传（工具对已记录文件也会 memo_create，造成重复笔记）；
+  - **1.1.3③ 标记「待更新」或「复用（待终核）」的笔记（有记录）**：**最终过时核对**（对照阶段 1–3 收集的全部材料逐条复核）——确有过时 → 本地改写补结局/改写过时句子后 `python tools/note_upload.py research/<slug>/notes/<文件名>.md --update` 按记录用 `memo_update` 覆盖原 id（禁止新建多版本）；核对后未过时 → 不动；
+  - **未过时复用的笔记（有记录，无待核标记）**：不再动（不执行任何上传/更新命令）。
 - **4.4.4 索引回填**：`plan.md` 状态回填"已完成"（`run_pipeline.py` 收尾门禁全过后自动回填）。
 
 ### 4.5 用户验收（决策点）
