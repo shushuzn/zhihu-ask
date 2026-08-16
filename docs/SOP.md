@@ -1,14 +1,15 @@
-# 知乎深度回答项目 — 完整流程 SOP
+# 知乎深度回答项目 — 完整流程 SOP（v9）
 
-> 执行标准：把知乎问题转化为**纯事实陈述**的深度研究报告。工具用法见 `docs/TOOLS.md`，环境约定见 `docs/CONVENTIONS.md`，质量清单见 `docs/CHECKLIST.md`，文风见 `docs/STYLE_GUIDE.md`。
-> 自动化分工：初始化、检索登记、通道门禁、质检由脚本强制（见各阶段「脚本」行）；人工环节仅检索执行、交叉验证与写作。
+> 执行标准：把知乎问题转化为**纯事实陈述**的深度研究报告。工具用法见 `docs/TOOLS.md`，环境约定见 `docs/CONVENTIONS.md`，质量清单见 `docs/CHECKLIST.md`（**收尾必须逐项自检，见 4.2**），文风见 `docs/STYLE_GUIDE.md`。
+> 自动化分工：初始化、检索登记、通道门禁、质检由脚本强制（见各阶段「脚本」行）；人工环节仅检索执行、交叉验证、CHECKLIST 自检与写作。
+> 执行纪律：阶段串行、P0 优先；每阶段输出不达标即回退该阶段重做；每一步的判定标准见本文件，不得跳过任何标「必做」的步骤。
 
 ## 0. 角色与职责
 
 | 角色 | 职责 | 不可替代动作 |
 |---|---|---|
 | 用户 | 提供问题；审批关键决策点；验收交付物 | 问题来源、发布决定 |
-| 主代理 | 全流程执行：检索、核查、写作 | 所有研究与写作 |
+| 主代理 | 全流程执行：检索、核查、写作、CHECKLIST 自检 | 所有研究与写作 |
 | 工具链（tools/） | 初始化 / 登记 / 门禁 / 质检自动化 | 门禁强制 |
 
 **边界**：研究执行与写作由主代理负责；「是否发布 / 删除 / 强推 / 改可见性」必须用户审批。
@@ -17,15 +18,15 @@
 
 **产出**：`research/<slug>/plan.md` 问题界定完成。
 
-1. 接收问题。知乎链接先 `web_fetch`；失败（403/登录墙）则请用户粘贴标题或描述。
-2. 拆解问题：主概念、关键实体、隐含前提、真实诉求；评估阅读价值（增量信息/反常识点）。
-3. 判定查询类型：深度优先（五视角逐项） / 广度优先（多子议题各按五视角） / 直接查询（一轮即可）。
-4. **脚本**：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
-5. 关键词 ≥6 组（不足提示，不阻塞）。
+- **0.1 接收问题**：知乎链接先 `web_fetch` 抓取；失败（403/登录墙）则请用户粘贴标题或描述。
+- **0.2 拆解问题**：主概念、关键实体、隐含前提、真实诉求；评估阅读价值（增量信息/反常识点）。
+- **0.3 判定查询类型**：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
+- **0.4 初始化（脚本）**：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
+- **0.5 关键词**：≥6 组（不足提示，不阻塞）。
 
 ## 阶段 1 · 信息检索（六通道 F/E/A/B/C/P）
 
-**顺序**：F 查重 → E → A → B → C → P。领域优先级矩阵（F/B 为通用 P0；`channel_state.channel_plan` 自动输出）：
+**执行顺序**：**1.1 F → 1.2 E → 1.3 A → 1.4 B → 1.5 C → 1.6 P**，六通道全部执行并登记后过 **1.7 门禁**。领域优先级矩阵（F/B 为通用 P0；`channel_state.channel_plan` 自动输出）：
 
 | 通道 | 学术科研 | 科技产业 | 财经时政 | 登记方式 |
 |---|---|---|---|---|
@@ -36,35 +37,80 @@
 | A 公众号 | P2 | P1 | P0 | `wechat_search.py --output gathered_wechat.md` 落盘自动登记 |
 | E ima | P1 | P1 | P1 | 未配置：环境级自动 skip；已配置手动登记 |
 
-**F 查重（第一步，阻断）**：`memo_search` 查本主题已有**笔记**；relevance ≥0.9 复用/更新（只补新信息）、0.5–0.9 参考（须合规 GB/T 来源）、<0.5 正常检索。**过时笔记原地更新（三步）**：① `flomo_search.py --keywords "<主题词>" --limit 50 --full` 或 `memo_batch_get` 拉取命中旧笔记全文；② 在本地修改文件中补结局/改写过时句子（不新建多版本）；③ `python tools/note_upload.py research/<slug>/notes/<NN>_*.md --update` 按 `.flomo_ids.json` 记录用 `memo_update` 原地更新原 id（无记录则回退新建并记录；纪律：更新一律 memo_update 原 id，禁止新建多版本）。flomo 命中笔记作素材须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测），不合规/没有 → 联网找对应来源 → 找不到则不可用。
+### 1.1 F flomo 查重（第一步，阻断；含「过时检查」分支）
 
-**统一检索入口**：`python tools/search_all.py --config tools/start.json` 并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
+- **1.1.1 执行查重**：`python tools/flomo_search.py --keywords "<主题词>" --limit 10`（或 WorkBuddy `memo_search`）。
+- **1.1.2 判读 relevance**：
+  - **≥0.9（本主题已有笔记）** → 进入 1.1.3「复用 + 过时检查」；
+  - **0.5–0.9（主题相近）** → 命中笔记可作参考素材（须有符合 GB/T 7714-2015 的参考文献，`check_flomo_note_refs.py` 检测；不合规/没有 → 联网找对应来源 → 找不到则不可用），正常检索；
+  - **<0.5（含命中但判定不相关的假阳性）** → 无本主题笔记，正常检索（新建）。
+- **1.1.3 已有笔记复用 + 过时检查（必做，不得跳过）**：
+  - ① **拉取全文**：`python tools/flomo_search.py --keywords "<主题词>" --limit 50 --full`（或 `memo_batch_get`）拉取命中笔记全文；
+  - ② **逐条核对是否过时**：对照本次材料（论文全文/最新信源）检查每条命中笔记——来源论文/文章是否有新版本（arXiv API 查 `updated` 字段与版本列表）？是否有新结果、新信息推翻笔记表述（如"尚无定论/待观察/未发布"已被证实/证伪）？
+  - ③ **过时 → 原地更新（三步）**：a. 本地 `notes/` 对应文件补结局或改写过时句子（不新建多版本）；b. `python tools/note_upload.py research/<slug>/notes/<NN>_*.md --update` 按 `.flomo_ids.json` 记录用 `memo_update` 原地更新原 id（无记录回退新建并补记）；c. 全程禁止新建多版本。
+  - ④ **未过时 → 直接复用**：本地 `notes/` 缺失时，按拉回全文**还原本地笔记文件**（还原内容，不重写、不新建主题），flomo 端不动。
+- **1.1.4 记录与登记**：判读结论（命中情况 / 过时检查结果 / 是否更新）写入 `research/<slug>/plan.md` 步骤 0 行；`python tools/mark_channel.py --slug <slug> --channel F --status done --note "memo_search 已执行：<命中概述>；过时检查：<过时/未过时>；<复用/更新/正常检索>"`。
+- **产出**：F 通道登记 done，结论与过时检查证据留痕。
 
-**素材落盘与登记**：各通道命中写 `research/<slug>/gathered_*.md`（非空且含标题/来源/链接）。A/B/P 落盘自动登记；F 查重**结论人工判读**（relevance ≥0.9 复用/更新、0.5–0.9 参考、<0.5 正常检索；命中但判定不相关的假阳性按 <0.5 处理）后用 mark_channel 登记；E/C 未配置由初始化自动登记 skip（环境级，跨研究共享，无需逐篇检查）；其余用 `python tools/mark_channel.py --slug <slug> --channel <F|E|A|B|C|P> --status <done|empty|skip> [--note ...]`。
+### 1.2 E ima 检索（P1）
+连接器未配置 → 环境级自动 skip（无需逐篇检查）；已配置 → `search_knowledge` 逐库检索（候选库取全、每库 ≥2 个关键词），全部无命中记"通道 E 无有效素材"。
 
-**门禁**：`python tools/check_progress.py --slug <slug> --require report_channels` 做「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。
+### 1.3 A 公众号（优先级按领域：财经时政 P0 / 科技产业 P1 / 学术科研 P2）
+`python tools/wechat_search.py --keywords tools/keywords_a.json --days 30 --output research/<slug>/gathered_wechat.md`；零结果 → 换词重试 1 次 → 仍无 → `mark_channel --status empty` 登记（落盘文件或 note 含"无命中/无结果"字样）。
+
+### 1.4 B Web（P0 通用）
+`python tools/web_search.py --queries-file tools/queries_b.json --parallel N --out research/<slug>/gathered_web.md`（或 `search_all.py` 统一入口并行）；命中逐条判读，噪音不计入素材；落盘自动登记。
+
+### 1.5 C 领域连接器（企查查/通达信/智慧芽；科技产业/财经时政 P0、学术科研 P1）
+连接器未配置 → 环境级自动 skip；已配置 → 按领域必做（专利+论文各一次调用等），无命中记"通道 C [数据源]无有效素材"。
+
+### 1.6 P 学术预印本聚合（学术科研 P0 / 科技产业·财经时政 P2）
+`python tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 --count 5 --out research/<slug> --slug <slug>`——arxiv → `gathered_arxiv.md`，bioRxiv/浪淘沙/PSSXiv → `gathered_preprints.md`（两文件同属通道 P）。学术/数学/AI 主题另需：主论文 **HTML 全文直抓**（`arxiv.org/html/<id>v1` → 落盘 `arxiv_html.md` + 文本化 `arxiv_text.md`）+ 相关预印本元数据核验（`id_list=` API）。平台命中与主题无关时在素材文件内注明判读结论，不计入。
+
+### 1.7 门禁（进入阶段 2 前必过）
+`python tools/check_progress.py --slug <slug> --require report_channels`——「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。
 
 **红线**：适用通道全部执行完毕才可进入阶段 2（P0 缺失须补足、P1 无命中记"无有效素材"、P2 记 skip）；未完成前不得产出 report.md。**落报告纪律**：通道"执行过"≠"交付完成"——每个适用通道的硬数据（事实/数字/实体/结论）必须写入 report.md 正文相应小节。
 
 ## 阶段 2 · 多视角信息收集
 
-- 五视角逐项覆盖：A 公众号观点 / B Web 事实 / C 领域分析 / D 差异化（高赞/争议）/ E 反方风险；每视角至少一轮检索。
-- **校验**：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷；补后仍无 → 结论标注"该子问题无公开素材"。
+- **2.1 五视角逐项覆盖**：A 公众号观点 / B Web 事实 / C 领域分析 / D 差异化（高赞/争议）/ E 反方风险；每视角至少一轮检索。
+- **2.2 校验**：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
 
 ## 阶段 3 · 交叉验证与量化
 
-- 关键数字标注数据级别（一手/二手/推断）；多源冲突以「最新 + 一手优先 + 口径一致」取舍；媒体转述数字尽量回溯一手，无法取得标"仅媒体口径"。
-- 数学/证明/机制类给完整论证链（定理-引理-证明或步骤归约），来源论文论证以全文（arXiv HTML 版）为准。
-- **决策点（用户审批）**：关键数字缺失导致结论悬空且无法推断时，暂停询问用户。
+- **3.1 数字口径**：关键数字标注数据级别（一手/二手/推断）；多源冲突以「最新 + 一手优先 + 口径一致」取舍；媒体转述数字尽量回溯一手，无法取得标"仅媒体口径"。
+- **3.2 论证完整**：数学/证明/机制类给完整论证链（定理-引理-证明或步骤归约），来源论文论证以全文（arXiv HTML 版）为准。
+- **3.3 决策点（用户审批）**：关键数字缺失导致结论悬空且无法推断时，暂停询问用户。
 
-## 阶段 4 · 报告生成与沉淀
+## 阶段 4 · 报告生成、自检与沉淀
 
-- 按 `templates/research_report_TEMPLATE.md` 产出 report.md：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。
-- **脚本收尾**：`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity → check_consistency → check_progress 轮次 → check_progress 落报告；硬伤与提示级均阻断）→ `report_to_docx.py` → `report_to_flomo.py`（本地存档）→ `check_all.py` 全库体检。**人工确认放行**：违规引用检查的「正文与题名疑似不符」为启发式提示，词面差异（如题名「遍历论」vs 正文「遍历理论」）机器无法判定时，由主代理逐条判读——真引用则 `python tools/run_pipeline.py --slug <slug> --ack <n1,n2,...>` 放行（门禁输出注明人工确认，判读理由须逐条说明并留痕，见 `docs/CONVENTIONS.md` §8）；真张冠李戴则修正正文。
-- **配图**：`tools/report_images.py --slug <slug>` —— AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `docs/CHECKLIST.md`）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
-- **沉淀（必做）**：有效关键词写 SQLite 关键词库（`keywords_db.py --add` + `--export docs/KEYWORDS.md`）；写 `process_notes.md`；`note_upload.py research/<slug>/notes/` 逐条质检后上传（索引/报告自动拦截；flomo 未配置则跳过并记录）；回填 `plan.md` 状态为"已完成"（`run_pipeline.py` 收尾门禁全过后自动回填）。
-- **按需**：`wechat_publish.py` 推送公众号草稿（用户指示时执行）。
-- **决策点**：交付前用户验收；被拒（AI 味/质量）则按 STYLE_GUIDE 重写后重新提交。
+### 4.1 撰写 report.md
+按 `templates/research_report_TEMPLATE.md` 产出：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。
+
+### 4.2 CHECKLIST 逐项自检（硬性·必做·留痕）
+- **4.2.1 打开 `docs/CHECKLIST.md`，从第 1 项到最后一项逐项核对**（不得只挑几项、不得口头声称已检查）。
+- **4.2.2 每项三态判定**：**通过** / **不适用**（写明理由）/ **不过**（必须修正后重核该项，直至通过或标注"无法核实"的收敛终点）。
+- **4.2.3 留痕**：自检结论（逐项通过/不适用清单 + 修正记录）写入 `research/<slug>/process_notes.md`「质量校验」节——例如"CHECKLIST 逐项自检：1-23 全过；第 12 项修正（……）；不适用项：7、19（理由）"。
+- **4.2.4 门禁**：全部通过后才可进入 4.3；任一不过 → 回退修正 `report.md` 后重核该项。
+
+### 4.3 脚本收尾（八件套门禁）
+`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity → check_consistency → check_progress 轮次 → check_progress 落报告；硬伤与提示级均阻断）→ `report_to_docx.py` → `report_to_flomo.py`（本地存档）→ `check_all.py` 全库体检。**人工确认放行**：违规引用检查的「正文与题名疑似不符」为启发式提示，词面差异机器无法判定时，由主代理逐条判读——真引用则 `--ack <n1,n2,...>` 放行（判读理由逐条说明并留痕，见 `docs/CONVENTIONS.md` §8）；真张冠李戴则修正正文。
+
+### 4.4 配图（按需）
+`tools/report_images.py --slug <slug>`——AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `docs/CHECKLIST.md`）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
+
+### 4.5 沉淀（必做）
+- **4.5.1 关键词回填**：有效关键词写 SQLite 关键词库（`keywords_db.py --add`）+ `--export docs/KEYWORDS.md` 同步。
+- **4.5.2 经验记录**：写 `research/<slug>/process_notes.md`（含 4.2.3 的 CHECKLIST 自检结论）。
+- **4.5.3 笔记上传/更新（分支）**：
+  - 新建笔记：`python tools/note_upload.py research/<slug>/notes/` 逐条质检后上传（memo_create；索引/报告自动拦截；flomo 未配置则跳过并记录）；
+  - 1.1.3③ 中已更新过的笔记：以 `--update` 完成（memo_update 覆盖原 id，禁止新建多版本）；
+  - 1.1.3④ 中未过时复用的笔记：不再动。
+- **4.5.4 索引回填**：`plan.md` 状态回填"已完成"（`run_pipeline.py` 收尾门禁全过后自动回填）。
+
+### 4.6 用户验收（决策点）
+交付前用户验收；被拒（AI 味/质量）则按 STYLE_GUIDE 重写后重新提交。
 
 ## 异常与回退
 
@@ -81,7 +127,7 @@
 
 ## 时限
 
-单次研究建议 1 个工作日内完成：阶段 0: 0.5h / 1: 1–2h / 2: 1–2h（可与 1 合并）/ 3: 2–3h / 4: 3–5h（含验收）。超 2 个工作日未完成须向用户说明原因。
+单次研究建议 1 个工作日内完成：阶段 0: 0.5h / 1: 1–2h / 2: 1–2h（可与 1 合并）/ 3: 2–3h / 4: 3–5h（含 4.2 自检与验收）。超 2 个工作日未完成须向用户说明原因。
 
 ## 质量红线
 
@@ -104,7 +150,7 @@
 输入为空 → 请求用户；知乎链接 → web_fetch 成功提取 / 失败请粘贴；拆解 → 判定查询类型 → `run_pipeline.py --config` 初始化（含 F 查重阻断门禁：flomo MCP 未配置或调用失败即阻断，禁止进入后续通道）。
 
 ## A.2 阶段 1 执行逻辑
-F 查重最先且阻断；E/C 未配置 → 环境级自动 skip（无需逐篇检查）；各通道零结果 → 换词重试 1 次 → 记录"无有效素材"；素材落盘自动登记（A/B/P/F），其余 `mark_channel.py` 登记；`check_progress --require report_channels` 双向校验通过后才进入阶段 2。有效通道 <2 时补充检索，仍不足则告知用户降级。
+F 查重最先且阻断：判读 relevance（≥0.9 复用 / 0.5–0.9 参考 / <0.5 正常检索）；≥0.9 时**过时检查必做**（1.1.3：拉全文 → 逐条核对新版本/新信息 → 过时则三步原地更新 / 未过时则直接复用），结论与证据记入 plan.md 与 F 通道 note。E/C 未配置 → 环境级自动 skip；各通道零结果 → 换词重试 1 次 → 记录"无有效素材"；素材落盘自动登记（A/B/P），其余 `mark_channel.py` 登记；`check_progress --require report_channels` 双向校验通过后才进入阶段 2。有效通道 <2 时补充检索，仍不足则告知用户降级。
 
 ## A.3 阶段 2 执行逻辑
 子问题无视角覆盖 → 补检索（P0）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
@@ -113,7 +159,7 @@ F 查重最先且阻断；E/C 未配置 → 环境级自动 skip（无需逐篇�
 关键数字无来源 → 标"未证实"并回溯一手；多源冲突 → 并列各方口径与来源、给取舍理由；结论悬空且不可推断 → 暂停询问用户（决策点）。
 
 ## A.5 阶段 4 执行逻辑
-报告 → CHECKLIST 逐项自检（任一不过返回修正）→ 用户验收 → 沉淀（词库 / process_notes / 笔记上传 / 索引回填）。用户 24h 未验收 → 再次提醒，交付物保留待查看。
+报告成稿 → **CHECKLIST 逐项自检（4.2：逐项核对 + 三态判定 + 结论写入 process_notes.md 留痕；任一不过返回修正）** → 八件套门禁（4.3）→ 配图（4.4）→ 沉淀（4.5：关键词 / process_notes / 笔记上传或更新 / 索引回填）→ 用户验收（4.6）。用户 24h 未验收 → 再次提醒，交付物保留待查看。
 
 ## A.6 全局异常与回退优先级
 阻断级（数据全缺失/信源全失败/权限问题）→ 立即暂停告知用户；非阻断级（单通道失败/子问题无素材/报告需重写）→ 降级继续并在交付物注明；回退遵循"就近回退"（退回上一阶段修正，不跨多阶段重启）。

@@ -7,7 +7,7 @@ description: 知乎深度回答研究流程。用于把知乎问题通过系统�
 
 ## Overview
 
-研究流水线: 问题接收 → flomo 查重 → 多通道检索 → 写笔记 → 写索引 → 组装报告 → 质检 → 上传笔记。
+研究流水线: 问题接收 → flomo 查重(命中已有笔记→过时检查: 过时→三步原地更新 / 未过时→复用还原) → 多通道检索 → 写笔记 → 写索引 → 组装报告 → CHECKLIST 逐项自检(留痕) → 质检八件套 → 上传/更新笔记。
 
 报告为**纯事实陈述、零立场**，正文按 GB/T 7714-2015 顺序编码制在引用处标注 [n]。
 
@@ -94,7 +94,7 @@ research/<slug>/
 
 **检索通道（优先级按主题领域分档——替代一刀切 P0）:**
 - **统一入口**: 启动后跑 `python tools/search_all.py --config tools/start.json`——并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工
-- F (flomo 查重, P0 通用): `memo_search` 查是否已有本主题笔记
+- F (flomo 查重, P0 通用): `memo_search` 查是否已有本主题笔记——判读 relevance: ≥0.9 已有笔记→**过时检查必做**(① `flomo_search --full` 拉全文; ② 逐条核对新版本/新信息是否推翻表述; ③ 过时→本地改写+`note_upload --update` memo_update 原地更新原 id / 未过时→本地缺失则按全文还原复用, 不新建不更新); 0.5–0.9 参考(须 GB/T 合规来源); <0.5 正常检索。结论与过时检查证据记 plan.md + F 通道 note
 - B (Web, P0 通用): `web_search` / `tools/web_search.py`
 - P (arxiv 平台单独检索): `tools/arxiv_search.py`(落盘 gathered_arxiv.md 登记通道 P)
 - P (预印本聚合, 含 arxiv, 学术科研 P0 / 科技产业·财经时政 P2): `tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 --count 5 --out research/<slug> --slug <slug>`——arxiv→gathered_arxiv.md + bioRxiv（生物医学）/ 浪淘沙（中文跨学科）/ PSSXiv（哲学社会科学）→gathered_preprints.md; 两文件同属通道 P, 一次性登记
