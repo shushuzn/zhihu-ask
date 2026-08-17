@@ -93,6 +93,20 @@ def bootstrap(config):
               "请指向 wechat-article-search 技能的 scripts 目录后重跑。")
     run([os.path.join(TOOLS, "research_start.py"), "--config", config],
         label="research_start.py")
+    
+    # J-Space 认知工作空间初始化
+    try:
+        import json
+        with open(config, encoding="utf-8") as f:
+            cfg = json.load(f)
+        slug = cfg.get("slug")
+        question = cfg.get("question", "")
+        if slug:
+            print("\n─── J-Space 初始化 ───")
+            js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "initialize", f"研究问题：{question[:100]}"]
+            subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space 初始化异常（非阻断）：{e}")
 
 
 def agent_todos(slug, query):
@@ -140,6 +154,14 @@ def check_phase1_complete(slug):
         print("  完成后运行: python tools/check_progress.py --slug " + slug + " --require report_channels")
         sys.exit(1)
     
+    # J-Space 接缝审计
+    print("\n─── J-Space 阶段1接缝审计 ───")
+    try:
+        js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段1完成，进入阶段2"]
+        subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
+    
     print("[通过] 阶段1已完成，可进入阶段2。")
     return True
 
@@ -157,6 +179,14 @@ def check_phase2_complete(slug):
         print("[阻断] 阶段2未完成：结构化笔记不足。")
         print("  请先在 notes/ 目录写入≥2篇结构化笔记（不含_TEMPLATE.md和00_index.md）。")
         sys.exit(1)
+    
+    # J-Space 接缝审计
+    print("\n─── J-Space 阶段2接缝审计 ───")
+    try:
+        js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段2完成，进入阶段3"]
+        subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
     print("[通过] 阶段2已完成，可进入阶段3。")
     return True
@@ -182,6 +212,14 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
         print("  请先完成交叉验证与量化步骤。")
         sys.exit(1)
     
+    # J-Space 接缝审计
+    print("\n─── J-Space 阶段3接缝审计 ───")
+    try:
+        js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段3完成，进入阶段4"]
+        subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
+    
     # 强制校验前置阶段：阶段4沉淀（关键词回填+经验记录+笔记上传）必须完成
     r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "phase4沉淀_done"],
             label="check_progress phase4沉淀_done", check=False)
@@ -191,6 +229,14 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
         print("           2) 经验记录（写入 process_notes.md）；")
         print("           3) 笔记上传（note_upload.py）。")
         sys.exit(1)
+    
+    # J-Space 接缝审计
+    print("\n─── J-Space 阶段4沉淀接缝审计 ───")
+    try:
+        js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段4沉淀完成，进入收尾门禁"]
+        subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
     print("[通过] 前置阶段校验全部通过。\n")
     
@@ -233,6 +279,14 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     # 否则视为交付未完成、阻断收尾（通道执行过≠交付完成）。
     run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "report_channels"],
         label="check_progress report_channels")
+
+    # J-Space 交付前检查
+    print("\n─── J-Space 交付前检查 ───")
+    try:
+        js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "ship", "report.md"]
+        subprocess.run(js_cmd, cwd=ROOT)
+    except Exception as e:
+        print(f"[提示] J-Space ship 检查异常（非阻断）：{e}")
 
     # 产出
     run([os.path.join(TOOLS, "report_to_docx.py"), "--slug", slug],

@@ -95,6 +95,7 @@ research/<slug>/
 3. **"按流程做"= 机械照步骤执行**，不是把流程当待解问题去拆解、补充或优化。用户说"按 SOP / 别想 / 以最新指令为准"时，立刻停止一切 deliberation 与 extras，只执行给定步骤。
 4. **最新指令优先**：用户若纠正或推翻早前的某次选择（含选项菜单选定项），以最新、最具体的指令为准，不得沿用已被推翻的旧选项。
 5. **禁止先答后走流程**：收到研究问题后，任何「先给一个简短答案 / 先说结论」的动作都属违规；必须先把流程跑到阶段 4 产出 report.md，再由 4.5 验收。直接概念性答复一律视为无效、须丢弃重做（见上方「触发判定」）。
+6. **J-Space 认知管理集成**：研究流程集成 J-Space 认知工作空间框架，用于状态跟踪、思维过程管理和接缝审计。在阶段转换时执行 `jspace.py seam` 审计，在研究开始时初始化 ledger，在交付前执行 `jspace.py ship` 检查。
 
 ## 核心流程
 
@@ -109,6 +110,7 @@ research/<slug>/
 5. 判定查询类型：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
 6. 关键词≥6 组（不足提示，不阻塞）。
 7. 初始化（脚本）：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
+8. J-Space 初始化：在研究目录执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" note --goal "研究问题：<问题摘要>" --next "执行阶段 1 六通道检索"` 初始化认知工作空间 ledger。
 
 ### 阶段 1 · 信息检索（六通道 F/E/A/B/C/P）
 
@@ -172,6 +174,8 @@ research/<slug>/
 #### 1.7 门禁（进入阶段 2 前必过）
 `python tools/check_progress.py --slug <slug> --require report_channels`——「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。有效通道 <2 须补充检索，仍不足告知用户降级。
 
+**J-Space 接缝审计**：阶段 1 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录阶段完成状态，更新 ledger 的 Verified 和 Next 字段。
+
 **落报告纪律**：通道"执行过"≠"交付完成"——每个适用通道的硬数据（事实/数字/实体/结论）必须写入 report.md 正文相应小节。
 
 **笔记写入规则：**
@@ -190,6 +194,7 @@ python tools/run_pipeline.py --slug <slug> --check-phase phase1
 3. 补充新笔记到 `notes/`。
 4. 校验：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷（P0 补检索）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
 5. 撰写模块化笔记（必做）：检索完成后撰写 `notes/*.md`（扁平目录、首行标签 `#维度1 #维度2 #主题/slug`；每篇含标签行 + 标题 + 正文 + 参考文献 GB/T 7714-2015）；写 `notes/00_index.md` 索引（`#索引`，以 `## 问题/历史/证明/结论/缺口` 串联各笔记）。阶段 1 判读为复用时，复用笔记已还原进本目录（不重写），与新建笔记一并构成笔记集。
+6. **J-Space 接缝审计**：阶段 2 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录笔记完成状态，更新 ledger。
 
 ### 阶段 3 · 交叉验证与量化
 
@@ -200,6 +205,7 @@ python tools/run_pipeline.py --slug <slug> --check-phase phase1
 - 数据不可得 → 标注"待核实"。
 - 决策点（用户审批）：关键数字缺失导致结论悬空且无法推断时，暂停询问用户。
 - **3.4 复用笔记最终过时核对（仅当阶段 1 判读为复用已有笔记时必做；在材料收集齐备后、4.1 撰写报告前执行）**：对照阶段 1–3 收集的全部材料，对每条复用笔记逐条复核（来源论文/文章是否有新版本、是否有新结果推翻笔记表述如"尚无定论/待观察/未发布"被证实/证伪）。**确有过时 → 立即在本地笔记文件中改写**（补结局/改写过时句子，不新建多版本），使 4.1 报告引用的一律是已校正内容；**终核结论（逐条：过时/未过时 + 依据 + 改写记录）写入 `process_notes.md` 留痕**，作为 4.4.3 同步动作的依据。写报告若引用还原笔记内容，必须先经本步终核。
+- **J-Space 接缝审计**：阶段 3 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录验证完成状态，更新 ledger。
 
 ### 阶段 4 · 报告生成、自检与沉淀
 
@@ -232,6 +238,8 @@ python tools/check_progress.py --slug <slug> --require phase4沉淀_done
 8. `check_progress --require report_channels` — 落报告门禁
 
 **人工确认放行**：违规引用检查的「正文与题名疑似不符」为启发式提示，词面差异机器无法判定时，由主代理逐条判读——真引用则 `--ack <n1,n2,...>` 放行（判读理由逐条说明并留痕，见 `docs/CONVENTIONS.md` §8）；真张冠李戴则修正正文。
+
+**J-Space 交付前检查**：在八件套门禁通过后、生成 docx 前，执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" ship report.md` 注册交付检查，确保报告符合认知管理标准。
 
 #### 4.3 配图（按需）
 `tools/report_images.py --slug <slug>`——AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `templates/research_report_TEMPLATE.md` 配图条）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
