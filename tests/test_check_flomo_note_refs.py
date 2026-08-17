@@ -1,4 +1,4 @@
-"""check_flomo_note_refs.py 回归测试：参考文献检测 + 标题提取 + 匹配键 + 相关性过滤 + 不联网判定（20 项）。
+"""check_flomo_note_refs.py 回归测试：参考文献检测 + 标题提取 + 匹配键 + 相关性过滤 + 不联网判定 + 一一对应校验（24 项）。
 
 覆盖：has_reference（来源:/## 参考文献/文献类型标识/URL/^[n] 条目）、extract_title（tag 行/转义下划线/加粗清理）、
 match_keys（中文/英文/前缀键）、relevant_candidates（标题匹配键过滤候选）、detect 不联网分支（无参考文献→fail）。
@@ -72,10 +72,10 @@ def test_relevant_candidates():
 
 # ---------- gbt_validate ----------
 def test_gbt_validate():
-    good = "## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c.\n\n来源类型: 一手"
+    good = "正文引用[1]。\n\n## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c.\n\n来源类型: 一手"
     ok, issues = cfr.gbt_validate(good)
     expect("合规条目通过", ok, True)
-    flomo_escaped = "## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c.\n\n来源类型: 一手"
+    flomo_escaped = "正文引用[1]。\n\n## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c.\n\n来源类型: 一手"
     ok, _ = cfr.gbt_validate(cfr.normalize(flomo_escaped.replace("[", r"\[").replace("]", r"\]")))
     expect("flomo转义格式反转义后合规", ok, True)
     no_type = "## 参考文献\n\n[1] 作者. 题名. 出版社, 2020."
@@ -92,13 +92,21 @@ def test_gbt_validate():
     ok, issues = cfr.gbt_validate(only_source)
     expect("无编号条目判不合规", ok, False)
     expect("无编号提示无[n]条目", any("无 [n] 编号条目" in i for i in issues), True)
+    dangling = "正文引用[1]和[2]。\n\n## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c."
+    ok, issues = cfr.gbt_validate(dangling)
+    expect("正文引[n]无对应条目判不合规", ok, False)
+    expect("悬空引注提示", any("无对应参考文献条目" in i for i in issues), True)
+    unused = "正文引用[1]。\n\n## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c.\n\n[2] 乙. 题名[J]. 刊名, 2021."
+    ok, issues = cfr.gbt_validate(unused)
+    expect("文献未在正文引用判不合规", ok, False)
+    expect("未引用提示", any("未在正文引用" in i for i in issues), True)
 
 
 # ---------- detect（不联网） ----------
 def test_detect_no_search():
     r = cfr.detect("无参考文献的纯文本内容", do_search=False)
     expect("不联网-无参考文献判fail", r["status"], "fail")
-    good = "有来源:\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c"
+    good = "正文引用[1]。\n有来源:\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c"
     r2 = cfr.detect(good, do_search=False)
     expect("不联网-合规参考文献判ok", r2["status"], "ok")
     bad = "有来源:\n[1] 作者. 题名. 无类型标识"
