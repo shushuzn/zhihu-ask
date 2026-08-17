@@ -8,7 +8,6 @@
 
 用法:
   python tools/note_upload.py research/<slug>/notes/01_xxx.md
-  python tools/note_upload.py research/<slug>/notes/01_xxx.md --force  # 跳过质检(慎用)
   python tools/note_upload.py research/<slug>/notes/  # 批量上传目录下所有笔记
 """
 
@@ -183,12 +182,11 @@ def save_ids(ids_path, ids):
         json.dump(ids, f, ensure_ascii=False, indent=2)
 
 
-def upload_file(filepath, force=False, max_retries=5, update=False,
+def upload_file(filepath, max_retries=5, update=False,
                 ids=None, ids_path=None):
     """上传单个文件, 返回 (success, memo_id, reason)。
 
     update=True 且 ids 记录中有该文件名 → memo_update 原地更新；否则 memo_create。
-    **即使 force=True，也必须检查已有 ID 防止重复上传。**
     上传成功且传入 ids 容器时把 {文件名: memo_id} 写入并落盘。
     """
     basename = os.path.basename(filepath)
@@ -197,11 +195,10 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
     if is_blocked(filepath):
         return False, None, f"禁止上传: {basename} (索引/报告文件)"
 
-    # 检查2: 质检（force 跳过）
-    if not force:
-        passed, output = run_quality_check(filepath)
-        if not passed:
-            return False, None, f"质检未通过: {basename}\n{output[:200]}"
+    # 检查2: 质检（强制，不可跳过）
+    passed, output = run_quality_check(filepath)
+    if not passed:
+        return False, None, f"质检未通过: {basename}\n{output[:200]}"
 
     # 读取内容
     with open(filepath, "r", encoding="utf-8") as f:
@@ -217,7 +214,7 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
     # 检查3: 防止重复上传——已有 ID 时强制走 update，不走 create
     existing = (ids or {}).get(basename)
     if existing:
-        # 已有记录：无论是否 --force/--update，都走 update（绝不 create 重复）
+        # 已有记录：都走 update（绝不 create 重复）
         memo_id = update_to_flomo(content, existing, max_retries=max_retries)
         action = "更新成功" if memo_id else None
     else:
@@ -236,7 +233,6 @@ def upload_file(filepath, force=False, max_retries=5, update=False,
 def main():
     parser = argparse.ArgumentParser(description="笔记上传工具(自动拦截违规文件)")
     parser.add_argument("path", help="笔记文件或目录")
-    parser.add_argument("--force", action="store_true", help="跳过质检(慎用)")
     parser.add_argument("--max-retries", type=int, default=5,
                         help="flomo 调用失败重试次数（默认 5，间隔 30s；0=不重试）")
     parser.add_argument("--update", action="store_true",
@@ -250,8 +246,8 @@ def main():
         # 单文件：ids 记录按所在 notes 目录定位
         ids_path = ids_path_for(os.path.dirname(path))
         ids = load_ids(ids_path)
-        success, memo_id, reason = upload_file(path, args.force, args.max_retries,
-                                               args.update, ids, ids_path)
+        success, memo_id, reason = upload_file(path, args.max_retries,
+                                              args.update, ids, ids_path)
         status = "✓" if success else "✗"
         print(f"{status} {os.path.basename(path)}: {reason}")
         if memo_id:
@@ -263,7 +259,7 @@ def main():
         files = sorted([f for f in os.listdir(path) if f.endswith(".md") and not f.startswith("_")])
         for fname in files:
             fpath = os.path.join(path, fname)
-            success, memo_id, reason = upload_file(fpath, args.force, args.max_retries,
+            success, memo_id, reason = upload_file(fpath, args.max_retries,
                                                    args.update, ids, ids_path)
             status = "✓" if success else "✗"
             print(f"{status} {fname}: {reason}")
