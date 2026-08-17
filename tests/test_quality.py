@@ -266,5 +266,21 @@ expect("aster+ **## 标题** 命中", has(qc.check_title_asterisk(aster_bad), "�
 expect("aster+ *小标题* 命中", has(qc.check_title_asterisk("*小标题用星号*\n"), "标题用*标记"), True)
 expect("aster+ ### 含* 命中", has(qc.check_title_asterisk("### 标题含 *强调* 也命中\n"), "标题用*标记"), True)
 
+# ---- 标题禁止用 # 标记（flomo 笔记上传质检，笔记模式 check_title_hash）----
+hash_body = ("#技术 #AI #主题/x\n\n"          # 首行 tag 行，# 后无空白，不命中
+             "笔记标题纯文本\n\n"
+             "正文段落不加 # 标题。\n\n"
+             "- * 列表项不应误报\n\n"
+             "| 列1 | 列2 |\n|---|---|\n")
+expect("hash- tag行与纯文本标题不命中", has(qc.check_title_hash(hash_body), "标题用#标记"), False)
+expect("hash- 正文斜体 *x* 不误报", has(qc.check_title_hash("正文里有 *斜体* 不误报\n"), "标题用#标记"), False)
+hash_bad = ("#技术 #AI #主题/x\n\n"
+            "## 大标题用#违规\n\n"
+            "### 小标题用#违规\n\n"
+            "# 单#也违规\n")
+expect("hash+ ## 大标题命中", has(qc.check_title_hash(hash_bad), "标题用#标记"), True)
+expect("hash+ ### 小标题命中", has(qc.check_title_hash("### 小标题也违规\n"), "标题用#标记"), True)
+expect("hash+ # 单级命中", has(qc.check_title_hash("# 单级也违规\n"), "标题用#标记"), True)
+
 print(f"\n==== quality_check 回归测试：PASS={PASS} FAIL={FAIL} ====")
 sys.exit(1 if FAIL else 0)
