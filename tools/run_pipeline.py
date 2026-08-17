@@ -30,6 +30,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 PY = sys.executable
 
+# 导入J-Space集成模块
+try:
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    from jspace_integration import JSpaceManager
+    JSPACE_AVAILABLE = True
+except ImportError as e:
+    JSPACE_AVAILABLE = False
+    print(f"[提示] J-Space集成模块不可用：{e}")
+
 
 def run(cmd, check=True, label=""):
     print(f"\n─── {label or cmd} ───")
@@ -105,6 +115,11 @@ def bootstrap(config):
             print("\n─── J-Space 初始化 ───")
             js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "initialize", f"研究问题：{question[:100]}"]
             subprocess.run(js_cmd, cwd=ROOT)
+            
+            # 同步.progress.json状态到J-space ledger
+            if JSPACE_AVAILABLE:
+                js = JSpaceManager(slug)
+                js.sync_progress()
     except Exception as e:
         print(f"[提示] J-Space 初始化异常（非阻断）：{e}")
 
@@ -159,6 +174,11 @@ def check_phase1_complete(slug):
     try:
         js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段1完成，进入阶段2"]
         subprocess.run(js_cmd, cwd=ROOT)
+        
+        # 同步状态到J-space ledger
+        if JSPACE_AVAILABLE:
+            js = JSpaceManager(slug)
+            js.sync_progress()
     except Exception as e:
         print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
@@ -185,6 +205,11 @@ def check_phase2_complete(slug):
     try:
         js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段2完成，进入阶段3"]
         subprocess.run(js_cmd, cwd=ROOT)
+        
+        # 同步状态到J-space ledger
+        if JSPACE_AVAILABLE:
+            js = JSpaceManager(slug)
+            js.sync_progress()
     except Exception as e:
         print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
@@ -217,6 +242,11 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     try:
         js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段3完成，进入阶段4"]
         subprocess.run(js_cmd, cwd=ROOT)
+        
+        # 同步状态到J-space ledger
+        if JSPACE_AVAILABLE:
+            js = JSpaceManager(slug)
+            js.sync_progress()
     except Exception as e:
         print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
@@ -235,6 +265,11 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     try:
         js_cmd = [PY, os.path.join(TOOLS, "jspace_integration.py"), slug, "seam", "阶段4沉淀完成，进入收尾门禁"]
         subprocess.run(js_cmd, cwd=ROOT)
+        
+        # 同步状态到J-space ledger
+        if JSPACE_AVAILABLE:
+            js = JSpaceManager(slug)
+            js.sync_progress()
     except Exception as e:
         print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     
@@ -368,11 +403,25 @@ def main():
                     help="原文应用类报告（访谈转述/文章整理）：check_ai_voice 跳过提示级表述检查，硬伤保留")
     ap.add_argument("--check-phase", choices=["phase1", "phase2", "phase3", "phase4"],
                     help="执行阶段完成校验（phase1=阶段1完成校验，phase2=阶段2完成校验，以此类推）")
+    ap.add_argument("--jspace-status", action="store_true",
+                    help="显示J-Space认知工作空间状态（需 --slug）")
     args = ap.parse_args()
 
-    if not args.config and not args.slug and not args.check_phase:
-        print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）至少其一")
+    if not args.config and not args.slug and not args.check_phase and not args.jspace_status:
+        print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）或 --jspace-status（J-Space状态）至少其一")
         sys.exit(1)
+    
+    # J-Space状态显示模式
+    if args.jspace_status:
+        if not args.slug:
+            print("ERROR: --jspace-status 需 --slug")
+            sys.exit(1)
+        if JSPACE_AVAILABLE:
+            js = JSpaceManager(args.slug)
+            js.status()
+        else:
+            print("[错误] J-Space集成模块不可用")
+        sys.exit(0)
 
     # 阶段校验模式
     if args.check_phase:

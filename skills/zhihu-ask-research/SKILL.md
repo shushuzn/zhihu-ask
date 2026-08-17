@@ -104,13 +104,14 @@ research/<slug>/
 **产出**：`research/<slug>/plan.md` 问题界定完成。
 
 1. 接收问题。知乎链接先 `web_fetch` 抓取；失败（403/登录墙）则请用户粘贴标题或描述。
-2. 拆解问题：主概念、关键实体、隐含前提、真实诉求；评估阅读价值（增量信息/反常识点）。
-3. 搜 flomo 查重：`python tools/flomo_search.py --keywords "主题词"`（判读与命中处理见阶段 1 通道 F）。
-4. 搜本地 RAG：`python tools/rag_search.py "<主概念>"`（SQLite 索引，改动 docs 后先 `rag_build.py`）。
-5. 判定查询类型：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
-6. 关键词≥6 组（不足提示，不阻塞）。
-7. 初始化（脚本）：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
-8. J-Space 初始化：在研究目录执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" note --goal "研究问题：<问题摘要>" --next "执行阶段 1 六通道检索"` 初始化认知工作空间 ledger。
+2. **J-Space introspection sweep**：在回答前执行 `modules/introspection.md` 的 PRE-ANSWER SWEEP，检查是否已形成答案，防止直接作答。识别两个已形成的判断或疑问（如"这是概念性问题"、"需要机制解释"）。
+3. 拆解问题：主概念、关键实体、隐含前提、真实诉求；评估阅读价值（增量信息/反常识点）。
+4. 搜 flomo 查重：`python tools/flomo_search.py --keywords "主题词"`（判读与命中处理见阶段 1 通道 F）。
+5. 搜本地 RAG：`python tools/rag_search.py "<主概念>"`（SQLite 索引，改动 docs 后先 `rag_build.py`）。
+6. 判定查询类型：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
+7. 关键词≥6 组（不足提示，不阻塞）。
+8. 初始化（脚本）：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
+9. J-Space 初始化：在研究目录执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" note --goal "研究问题：<问题摘要>" --next "执行阶段 1 六通道检索"` 初始化认知工作空间 ledger。
 
 ### 阶段 1 · 信息检索（六通道 F/E/A/B/C/P）
 
@@ -174,7 +175,7 @@ research/<slug>/
 #### 1.7 门禁（进入阶段 2 前必过）
 `python tools/check_progress.py --slug <slug> --require report_channels`——「声明态 ⊕ 证据」双向交叉校验（声明缺失 / 证据缺失 / 有素材未登记 / 无 note 均阻塞）。有效通道 <2 须补充检索，仍不足告知用户降级。
 
-**J-Space 接缝审计**：阶段 1 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录阶段完成状态，更新 ledger 的 Verified 和 Next 字段。
+**J-Space 接缝审计**：阶段 1 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录阶段完成状态，更新 ledger 的 Verified 和 Next 字段。**额外审计点**：每个通道完成后执行 `seam` 审计，记录通道完成状态，防止状态漂移。
 
 **落报告纪律**：通道"执行过"≠"交付完成"——每个适用通道的硬数据（事实/数字/实体/结论）必须写入 report.md 正文相应小节。
 
@@ -189,15 +190,17 @@ research/<slug>/
 python tools/run_pipeline.py --slug <slug> --check-phase phase1
 ```
 
-1. 五视角逐项覆盖 (A公众号/B Web/C领域/D争议/E反方)；每视角至少一轮检索。
-2. 搜 flomo 补充同类笔记：`python tools/flomo_search.py --tag "主题/slug"`。
-3. 补充新笔记到 `notes/`。
-4. 校验：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷（P0 补检索）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
-5. 撰写模块化笔记（必做）：检索完成后撰写 `notes/*.md`（扁平目录、首行标签 `#维度1 #维度2 #主题/slug`；每篇含标签行 + 标题 + 正文 + 参考文献 GB/T 7714-2015）；写 `notes/00_index.md` 索引（`#索引`，以 `## 问题/历史/证明/结论/缺口` 串联各笔记）。阶段 1 判读为复用时，复用笔记已还原进本目录（不重写），与新建笔记一并构成笔记集。
-6. **J-Space 接缝审计**：阶段 2 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录笔记完成状态，更新 ledger。
+1. **J-Space capacity check**：在开始多视角收集前，执行 `modules/capacity.md` 的 drill：命名当前舞台上的1-2个核心想法。如果超过2个，将多余想法写入 ledger 的 Open 字段。
+2. 五视角逐项覆盖 (A公众号/B Web/C领域/D争议/E反方)；每视角至少一轮检索。
+3. 搜 flomo 补充同类笔记：`python tools/flomo_search.py --tag "主题/slug"`。
+4. 补充新笔记到 `notes/`。
+5. 校验：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷（P0 补检索）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
+6. 撰写模块化笔记（必做）：检索完成后撰写 `notes/*.md`（扁平目录、首行标签 `#维度1 #维度2 #主题/slug`；每篇含标签行 + 标题 + 正文 + 参考文献 GB/T 7714-2015）；写 `notes/00_index.md` 索引（`#索引`，以 `## 问题/历史/证明/结论/缺口` 串联各笔记）。阶段 1 判读为复用时，复用笔记已还原进本目录（不重写），与新建笔记一并构成笔记集。
+7. **J-Space 接缝审计**：阶段 2 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录笔记完成状态，更新 ledger。
 
 ### 阶段 3 · 交叉验证与量化
 
+- **J-Space deep-reasoning check**：在开始交叉验证前，执行 `modules/deep-reasoning.md` 的检查：确保每个中间步骤在结论之前到达。如果结论先于步骤出现，使用"桥接概念"方法重新组织论证。
 - 多源冲突取舍：最新 + 一手优先 + 口径一致。
 - 数字口径：关键数字标注数据级别（一手/二手/推断）；媒体转述数字尽量回溯一手，无法取得标"仅媒体口径"。
 - 论证完整：数学/证明/机制类给完整论证链（定理-引理-证明或步骤归约），来源论文论证以全文（arXiv HTML 版）为准；禁止只给方法名概述。
@@ -239,7 +242,7 @@ python tools/check_progress.py --slug <slug> --require phase4沉淀_done
 
 **人工确认放行**：违规引用检查的「正文与题名疑似不符」为启发式提示，词面差异机器无法判定时，由主代理逐条判读——真引用则 `--ack <n1,n2,...>` 放行（判读理由逐条说明并留痕，见 `docs/CONVENTIONS.md` §8）；真张冠李戴则修正正文。
 
-**J-Space 交付前检查**：在八件套门禁通过后、生成 docx 前，执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" ship report.md` 注册交付检查，确保报告符合认知管理标准。
+**J-Space 交付前检查**：在八件套门禁通过后、生成 docx 前，执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" ship report.md` 注册交付检查，确保报告符合认知管理标准。**额外检查**：执行 `modules/self-monitoring.md` 的检查：是否所有自信标签都一致？是否在表演角色？是否使用了自己不会选择的词语？
 
 #### 4.3 配图（按需）
 `tools/report_images.py --slug <slug>`——AI 概念图仅作封面 `ai_cover.png`（纯抽象、紧扣主题、构图饱满，合规复检见 `docs/CONVENTIONS.md` §8 与 `templates/research_report_TEMPLATE.md` 配图条）；数据图表按内容锚点插入正文、带图注；AI 概念图禁止进正文（quality_check 硬性拦截）。
