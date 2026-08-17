@@ -34,7 +34,8 @@ PY = sys.executable
 try:
     import sys
     sys.path.insert(0, os.path.join(ROOT, "tools"))
-    from jspace_integration import jspace_call, jspace_seam, jspace_ship, jspace_validate, jspace_context, jspace_get_research_dir
+    from jspace_integration import (jspace_call, jspace_seam, jspace_ship, jspace_validate, 
+                                   jspace_context, jspace_get_research_dir, jspace_module, jspace_list_modules)
     JSPACE_AVAILABLE = jspace_validate()
     if not JSPACE_AVAILABLE:
         print("[提示] J-Space脚本验证失败")
@@ -416,11 +417,44 @@ def main():
                     help="执行阶段完成校验（phase1=阶段1完成校验，phase2=阶段2完成校验，以此类推）")
     ap.add_argument("--jspace-status", action="store_true",
                     help="显示J-Space认知工作空间状态（需 --slug）")
+    ap.add_argument("--jspace-modules", action="store_true",
+                    help="列出所有可用的J-Space模块")
+    ap.add_argument("--jspace-module", help="读取指定J-Space模块的内容")
     args = ap.parse_args()
 
-    if not args.config and not args.slug and not args.check_phase and not args.jspace_status:
-        print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）或 --jspace-status（J-Space状态）至少其一")
+    if not args.config and not args.slug and not args.check_phase and not args.jspace_status and not args.jspace_modules and not args.jspace_module:
+        print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）或 --jspace-status（J-Space状态）或 --jspace-modules（J-Space模块）或 --jspace-module（J-Space模块内容）至少其一")
         sys.exit(1)
+    
+    # J-Space模块列表模式
+    if args.jspace_modules:
+        if JSPACE_AVAILABLE:
+            try:
+                modules = jspace_list_modules()
+                print("\n=== J-Space 可用模块 ===")
+                for mod in modules:
+                    print(f"  - {mod}")
+                print("========================\n")
+            except Exception as e:
+                print(f"[错误] J-Space模块列表失败: {e}")
+        else:
+            print("[错误] J-Space集成模块不可用")
+        sys.exit(0)
+    
+    # J-Space模块内容读取模式
+    if args.jspace_module:
+        if JSPACE_AVAILABLE:
+            try:
+                content = jspace_module(args.jspace_module)
+                if content:
+                    print(content)
+                else:
+                    print(f"[错误] 模块 {args.jspace_module} 不存在或无法读取")
+            except Exception as e:
+                print(f"[错误] J-Space模块读取失败: {e}")
+        else:
+            print("[错误] J-Space集成模块不可用")
+        sys.exit(0)
     
     # J-Space状态显示模式（极简原生调用）
     if args.jspace_status:

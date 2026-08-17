@@ -11,13 +11,19 @@ J-Space 原生集成模块（zhihu-ask 项目专用）
   jspace_call("initialize", "--goal=研究问题：xxx")
   jspace_seam("阶段1完成")
   jspace_ship("report.md")
+  
+  # 模块调用
+  from tools.jspace_integration import jspace_module
+  
+  # 读取introspection模块
+  content = jspace_module("introspection")
 """
 
 import os
 import subprocess
 import sys
 import logging
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Dict
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -33,6 +39,22 @@ JSPACE_SCRIPT = os.environ.get(
     "JSPACE_SCRIPT_PATH",
     str(Path.home() / ".workbuddy" / "skills" / "J-Space-Cognition-Suite" / "scripts" / "jspace.py")
 )
+
+# J-Space模块目录
+JSPACE_MODULES_DIR = Path.home() / ".workbuddy" / "skills" / "J-Space-Cognition-Suite" / "modules"
+
+# 模块映射：模块名 -> 文件名
+MODULE_FILES: Dict[str, str] = {
+    "capacity": "capacity.md",
+    "broadcast": "broadcast.md",
+    "deep-reasoning": "deep-reasoning.md",
+    "directed-focus": "directed-focus.md",
+    "empirics": "empirics.md",
+    "introspection": "introspection.md",
+    "markers": "markers.md",
+    "self-monitoring": "self-monitoring.md",
+    "shorthand": "shorthand.md",
+}
 
 
 @contextmanager
@@ -166,6 +188,42 @@ def jspace_note(**kwargs) -> subprocess.CompletedProcess:
         return subprocess.CompletedProcess([], returncode=0)
 
 
+def jspace_module(module_name: str, read_only: bool = True) -> Optional[str]:
+    """读取J-Space模块内容
+    
+    Args:
+        module_name: 模块名（如 introspection, capacity 等）
+        read_only: 是否只读取（默认True）
+        
+    Returns:
+        Optional[str]: 模块内容，如果不存在则返回None
+    """
+    if module_name not in MODULE_FILES:
+        logger.error(f"未知模块: {module_name}")
+        return None
+    
+    module_path = JSPACE_MODULES_DIR / MODULE_FILES[module_name]
+    if not module_path.exists():
+        logger.error(f"模块文件不存在: {module_path}")
+        return None
+    
+    try:
+        with open(module_path, encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"读取模块文件失败: {e}")
+        return None
+
+
+def jspace_list_modules() -> list:
+    """列出所有可用的J-Space模块
+    
+    Returns:
+        list: 可用模块名列表
+    """
+    return list(MODULE_FILES.keys())
+
+
 def jspace_validate() -> bool:
     """验证J-Space脚本是否存在且可执行
     
@@ -264,7 +322,7 @@ if __name__ == "__main__":
     # 测试用法
     if len(sys.argv) < 2:
         print("用法: python jspace_integration.py <command> [args]")
-        print("命令: validate | seam <slug> [context] | ship <slug> <file> | resume <slug> | status <slug>")
+        print("命令: validate | seam <slug> [context] | ship <slug> <file> | resume <slug> | status <slug> | module <name> | modules")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -276,6 +334,26 @@ if __name__ == "__main__":
         else:
             print(f"J-Space脚本无效: {JSPACE_SCRIPT}")
             sys.exit(1)
+    
+    if command == "modules":
+        modules = jspace_list_modules()
+        print("可用模块:")
+        for mod in modules:
+            print(f"  - {mod}")
+        sys.exit(0)
+    
+    if command == "module":
+        if len(sys.argv) < 3:
+            print("module 命令需要模块名参数")
+            sys.exit(1)
+        module_name = sys.argv[2]
+        content = jspace_module(module_name)
+        if content:
+            print(content)
+        else:
+            print(f"模块 {module_name} 不存在或无法读取")
+            sys.exit(1)
+        sys.exit(0)
     
     if len(sys.argv) < 3:
         print(f"命令 {command} 需要slug参数")
