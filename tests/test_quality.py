@@ -35,6 +35,13 @@ expect("stance+ 我认为", has(qc.check_words("我认为这个判断很硬", qc
 expect("stance- 中性表述", has(qc.check_words("工信部于 2026 年发布通知", qc.STANCE_WORDS, "立场词"), "立场词"), False)
 expect("stance- 论文证明这豁免", has(qc.check_words("论文证明这两类对象都能计算", qc.STANCE_WORDS, "立场词"), "立场词"), False)
 expect("stance+ 这证明命中", has(qc.check_words("这证明该结论成立", qc.STANCE_WORDS, "立场词"), "立场词"), True)
+# 「我们」不再无条件命中：学术中性第一人称（定义/证明/考察…）豁免，仅主观立场动词命中
+expect("stance- 我们定义中性", has(qc.check_words("我们定义 X 为满足条件的对象。", qc.STANCE_WORDS, "立场词"), "立场词"), False)
+expect("stance- 我们证明中性", has(qc.check_words("我们证明下面这个引理。", qc.STANCE_WORDS, "立场词"), "立场词"), False)
+expect("stance- 我们考察中性", has(qc.check_words("我们考察该算子的谱。", qc.STANCE_WORDS, "立场词"), "立场词"), False)
+expect("stance+ 我们认为立场", has(qc.check_words("我们认为该方案更优。", qc.STANCE_WORDS, "立场词"), "立场词"), True)
+expect("stance+ 我们建议立场", has(qc.check_words("我们建议采用这种方法。", qc.STANCE_WORDS, "立场词"), "立场词"), True)
+expect("stance+ 我们主张立场", has(qc.check_words("我们主张先修正假设。", qc.STANCE_WORDS, "立场词"), "立场词"), True)
 expect("framework+ 综上所述", has(qc.check_words("综上所述，结论是", qc.FRAMEWORK_WORDS, "框架词"), "框架词"), True)
 expect("eval+ 太离谱", has(qc.check_words("这太离谱了", qc.EVALUATIVE_WORDS, "评价词"), "评价词"), True)
 
