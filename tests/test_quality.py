@@ -250,5 +250,21 @@ expect("para- 已分点不提示", has(qc.check_para_points_eligible(listed_para
 table_para = "# 结论\n\n| 列1 | 列2 |\n|---|---|\n| a | b |"
 expect("para- 表格段不提示", has(qc.check_para_points_eligible(table_para), "长段落建议分点"), False)
 
+# ---- 标题禁止用 * 标记（flomo 笔记上传质检，笔记模式 check_title_asterisk）----
+aster_body = ("# 技术 #AI #主题/x\n\n"
+             "## 正常标题\n\n"
+             "### 正常小标题\n\n"
+             "正文里有 *斜体强调* 不应误报。\n\n"
+             "- * 列表项不应误报\n\n"
+             "| 列1 | 列2 |\n|---|---|\n")
+expect("aster- 正常标题不命中", has(qc.check_title_asterisk(aster_body), "标题用*标记"), False)
+aster_bad = ("# 技术 #AI #主题/x\n\n"
+             "**## 用星号包裹的标题**\n\n"
+             "*小标题用星号*\n\n"
+             "### 标题含 *强调* 也命中\n")
+expect("aster+ **## 标题** 命中", has(qc.check_title_asterisk(aster_bad), "标题用*标记"), True)
+expect("aster+ *小标题* 命中", has(qc.check_title_asterisk("*小标题用星号*\n"), "标题用*标记"), True)
+expect("aster+ ### 含* 命中", has(qc.check_title_asterisk("### 标题含 *强调* 也命中\n"), "标题用*标记"), True)
+
 print(f"\n==== quality_check 回归测试：PASS={PASS} FAIL={FAIL} ====")
 sys.exit(1 if FAIL else 0)

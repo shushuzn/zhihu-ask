@@ -364,6 +364,34 @@ def check_title_len(body):
             break  # 只查首个 H1
     return issues
 
+def check_title_asterisk(body):
+    """检测标题/小标题行使用 * 作为标题标记（flomo 笔记规范：标题用 #/##/###，禁止用 * 强调代替）。
+
+    命中两类：
+    1. markdown 标题行（以 # 开头）含 *（如 "**## 标题**" "*### 小标题*" "## 标题 *强调*"）；
+    2. 整行被 * 包裹且较短（≤60 字符），视作用 * 充当标题标记（如 "*标题*" "**标题**"）。
+    不匹配：正文行内 * 强调、bullet 列表项（-/* 后带空格）、表格行、长段落。
+    """
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # bullet 列表行（* / - / + 后带空格）不视为标题行
+        if re.match(r"^[\*\-\+]\s+\S", stripped):
+            continue
+        # 表格行跳过
+        if stripped.startswith("|"):
+            continue
+        # 1) markdown 标题行含 *
+        if re.match(r"^#{1,6}\s+\S", stripped) and "*" in stripped:
+            issues.append((i, "标题用*标记", "标题应用 #/##/###，禁止用 * 强调代替", stripped[:60]))
+            continue
+        # 2) 整行被 * 包裹且较短（标题式强调，非正文斜体）
+        if re.match(r"^\*+[^\*].*\*+\s*$", stripped) and len(stripped) <= 60:
+            issues.append((i, "标题用*标记", "整行 * 包裹视作标题标记，改用 #/##/###", stripped[:60]))
+    return issues
+
 def check_judgment_hints(body):
     """检测提示性套话（SOP 硬性要求：成品不出现"判断权留给读者"等元话语提示词）。
 
@@ -789,7 +817,8 @@ def main():
         # 规范检查——标题/结论/小节/图片/LaTeX 公式规则不适用笔记；过程性字样
         # （笔记记录检索过程）、元话语自称（笔记引论文的"本文/前作"）、感叹号
         # （Unicode 公式中 k! 阶乘无 $ 保护易误报）均为笔记常态，一并跳过。
-        pass
+        # 标题禁止用 * 标记（flomo 上传质检要求，独立于报告标题检查规则）。
+        all_issues += check_title_asterisk(body)
     else:
         all_issues += check_exclamation(body)
         all_issues += check_process_words(body)
