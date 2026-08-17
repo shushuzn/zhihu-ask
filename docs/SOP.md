@@ -86,6 +86,26 @@
 
 ## 阶段 4 · 报告生成、自检与沉淀
 
+### 4.0 阶段校验（强制）
+进入阶段4前，必须通过以下校验（`check_progress.py --require`自动执行）：
+- **阶段2校验**：`notes/`目录至少有2篇结构化笔记（不含`_TEMPLATE.md`和`00_index.md`）
+- **阶段3校验**：阶段键为`phase3_done`或更后
+- **阶段4沉淀校验**：`process_notes.md`存在且>100字节
+
+**校验命令**：
+```bash
+python tools/check_progress.py --slug <slug> --require phase2_done
+python tools/check_progress.py --slug <slug> --require phase3_done
+python tools/check_progress.py --slug <slug> --require phase4沉淀_done
+```
+
+**阶段状态更新**：完成每个阶段后，用`--mark`更新状态：
+```bash
+python tools/check_progress.py --slug <slug> --mark phase2_done
+python tools/check_progress.py --slug <slug> --mark phase3_done
+python tools/check_progress.py --slug <slug> --mark phase4沉淀_done
+```
+
 ### 4.1 撰写 report.md
 按 `templates/research_report_TEMPLATE.md` 产出：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。报告内容以阶段 1–3 收集材料为准；复用笔记的内容若被引用，须已经 3.4 终核。
 

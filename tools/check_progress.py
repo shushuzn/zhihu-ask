@@ -8,6 +8,9 @@
 用法：
     python tools/check_progress.py --slug deepseek-price-motivation
     python tools/check_progress.py --slug deepseek-price-motivation --require phase1_done
+    python tools/check_progress.py --slug deepseek-price-motivation --require phase2_done
+    python tools/check_progress.py --slug deepseek-price-motivation --require phase3_done
+    python tools/check_progress.py --slug deepseek-price-motivation --require phase4沉淀_done
     python tools/check_progress.py --slug deepseek-price-motivation --require report_channels
     python tools/check_progress.py --slug deepseek-price-motivation --require_round 5
     python tools/check_progress.py --slug deepseek-price-motivation --require_round auto
@@ -25,7 +28,12 @@
   反向（存在的 gathered 文件→须被登记）、完整性（六通道均须声明）、report.md 承接。
   若未登记 channels_done，则回退旧版文件启发式（向后兼容，不破坏既有成品）。
   检出项需人工确认内容级落地。用 mark_channel.py 登记通道完成态。
-- 当前已知阶段键：phase1_done（阶段0初始化+阶段1通道A完成）、report_channels（落报告纪律）。
+- 当前已知阶段键：
+  phase1_done（阶段0初始化+阶段1通道A完成）
+  phase2_done（阶段2结构化笔记完成）
+  phase3_done（阶段3交叉验证完成）
+  phase4沉淀_done（阶段4.4沉淀完成：关键词回填+经验记录+笔记上传）
+  report_channels（落报告纪律）
 """
 
 import sys
@@ -281,15 +289,65 @@ def parse_args(argv):
         elif argv[i] == "--require_round" and i + 1 < len(argv):
             args["require_round"] = argv[i + 1]
             i += 2
+        elif argv[i] == "--mark" and i + 1 < len(argv):
+            args["mark"] = argv[i + 1]
+            i += 2
         else:
             i += 1
     return args
+
+
+def mark_stage(slug, stage):
+    """更新阶段状态到 .progress.json。
+    
+    支持的阶段键：
+    - phase1_done: 阶段0/1完成
+    - phase2_done: 阶段2完成（结构化笔记）
+    - phase3_done: 阶段3完成（交叉验证）
+    - phase4沉淀_done: 阶段4沉淀完成（关键词回填+经验记录+笔记上传）
+    - phase4_done: 阶段4全部完成
+    """
+    valid_stages = {"phase1_done", "phase2_done", "phase3_done", "phase4沉淀_done", "phase4_done"}
+    if stage not in valid_stages:
+        print(f"[错误] 不支持的阶段: {stage}（支持: {', '.join(sorted(valid_stages))}）")
+        return False
+    
+    prog_path = os.path.join(ROOT, "research", slug, ".progress.json")
+    if not os.path.exists(prog_path):
+        print(f"[错误] 未找到进度文件: {prog_path}")
+        return False
+    
+    try:
+        with open(prog_path, "r", encoding="utf-8") as f:
+            prog = json.load(f)
+    except (OSError, ValueError) as e:
+        print(f"[错误] 读取进度文件失败: {e}")
+        return False
+    
+    old_stage = prog.get("stage", "unknown")
+    prog["stage"] = stage
+    
+    try:
+        with open(prog_path, "w", encoding="utf-8") as f:
+            json.dump(prog, f, ensure_ascii=False, indent=2)
+    except OSError as e:
+        print(f"[错误] 写入进度文件失败: {e}")
+        return False
+    
+    print(f"[更新] {slug}: 阶段 {old_stage} → {stage}")
+    return True
 
 def main():
     args = parse_args(sys.argv[1:])
     slug = args["slug"]
     if not slug:
-        print("用法: python tools/check_progress.py (--slug <slug> | --file <report.md>) [--require <stage>]")
+        print("用法: python tools/check_progress.py (--slug <slug> | --file <report.md>) [--require <stage>] [--mark <stage>]")
+        sys.exit(1)
+
+    # --mark: 更新阶段状态
+    if args.get("mark"):
+        if mark_stage(slug, args["mark"]):
+            sys.exit(0)
         sys.exit(1)
 
     prog_path = os.path.join(ROOT, "research", slug, ".progress.json")
@@ -334,20 +392,59 @@ def main():
             rc = check_report_channels(os.path.join(ROOT, "research", slug), slug)
             sys.exit(rc)
 
-        expected = {"phase1_done"}
-        if args["require"] in expected:
-            done = stage == args["require"]
-            if not done and args["require"] == "phase1_done":
-
+        # 支持的阶段及其校验逻辑
+        supported_stages = {
+            "phase1_done": "阶段0/1",
+            "phase2_done": "阶段2",
+            "phase3_done": "阶段3",
+            "phase4沉淀_done": "阶段4沉淀",
+        }
+        
+        if args["require"] not in supported_stages:
+            print(f"[错误] 不支持的阶段校验: {args['require']}（支持: {', '.join(supported_stages.keys())}）")
+            sys.exit(1)
+            
+        stage_desc = supported_stages[args["require"]]
+        done = False
+        
+        if args["require"] == "phase1_done":
+            # 阶段1完成：检查阶段键或迭代轮次≥1
+            done = stage == "phase1_done"
+            if not done:
                 try:
                     cur_round = int(data.get("round", 0) or 0)
                 except (TypeError, ValueError):
                     cur_round = 0
                 done = cur_round >= 1
-            if done:
-                print(f"[通过] {slug}: 前置阶段 {args['require']} 已完成，可进入下一阶段。")
-                sys.exit(0)
-        print(f"[阻塞] {slug}: 前置阶段 {args['require']} 未完成（当前 {stage}），请先完成再继续。")
+                
+        elif args["require"] == "phase2_done":
+            # 阶段2完成：检查阶段键或notes目录有至少2篇笔记（不含_TEMPLATE.md和00_index.md）
+            done = stage in ("phase2_done", "phase3_done", "phase4_done", "phase4沉淀_done")
+            if not done:
+                notes_dir = os.path.join(ROOT, "research", slug, "notes")
+                if os.path.exists(notes_dir):
+                    note_files = [f for f in os.listdir(notes_dir) 
+                                 if f.endswith(".md") and f != "_TEMPLATE.md" and f != "00_index.md"]
+                    done = len(note_files) >= 2
+                    
+        elif args["require"] == "phase3_done":
+            # 阶段3完成：检查阶段键
+            done = stage in ("phase3_done", "phase4_done", "phase4沉淀_done")
+            
+        elif args["require"] == "phase4沉淀_done":
+            # 阶段4沉淀完成：检查阶段键或process_notes.md存在
+            done = stage == "phase4沉淀_done"
+            if not done:
+                process_notes = os.path.join(ROOT, "research", slug, "process_notes.md")
+                done = os.path.exists(process_notes) and os.path.getsize(process_notes) > 100
+                
+        if done:
+            print(f"[通过] {slug}: {stage_desc}（{args['require']}）已完成，可进入下一阶段。")
+            sys.exit(0)
+            
+        print(f"[阻塞] {slug}: {stage_desc}（{args['require']}）未完成（当前 {stage}），请先完成再继续。")
+        print(f"  提示: 阶段2需在notes/目录写入≥2篇结构化笔记；阶段3需完成交叉验证；")
+        print(f"        阶段4沉淀需写入process_notes.md（经验记录）并完成关键词回填与笔记上传。")
         sys.exit(1)
 
     print(f"[状态] {slug}: 当前阶段 = {stage}")
@@ -358,6 +455,12 @@ def main():
         print(f"  当前迭代轮次: {data.get('round', 1)}")
     if stage == "phase1_done":
         print("  建议下一步: 进入阶段2（多视角收集）→ 阶段3（交叉验证量化）→ 阶段4（产出+沉淀）")
+    elif stage == "phase2_done":
+        print("  建议下一步: 进入阶段3（交叉验证量化）→ 阶段4（产出+沉淀）")
+    elif stage == "phase3_done":
+        print("  建议下一步: 撰写报告 → 完成阶段4沉淀（关键词回填+经验记录+笔记上传）→ 收尾门禁")
+    elif stage == "phase4沉淀_done":
+        print("  建议下一步: 运行收尾门禁 python tools/run_pipeline.py --slug " + slug)
     sys.exit(0)
 
 if __name__ == "__main__":

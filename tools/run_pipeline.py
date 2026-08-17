@@ -121,6 +121,36 @@ def agent_todos(slug, query):
 
 def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_match=False):
     banner(f"阶段 4 收尾 · slug={slug}")
+    
+    # 强制校验前置阶段：阶段2（结构化笔记）必须完成
+    print("\n─── 前置阶段校验 ───")
+    r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "phase2_done"],
+            label="check_progress phase2_done", check=False)
+    if r != 0:
+        print("[阻断] 阶段2（结构化笔记）未完成，禁止进入阶段4收尾。")
+        print("  请先在 notes/ 目录写入≥2篇结构化笔记（不含_TEMPLATE.md和00_index.md）。")
+        sys.exit(1)
+    
+    # 强制校验前置阶段：阶段3（交叉验证）必须完成
+    r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "phase3_done"],
+            label="check_progress phase3_done", check=False)
+    if r != 0:
+        print("[阻断] 阶段3（交叉验证）未完成，禁止进入阶段4收尾。")
+        print("  请先完成交叉验证与量化步骤。")
+        sys.exit(1)
+    
+    # 强制校验前置阶段：阶段4沉淀（关键词回填+经验记录+笔记上传）必须完成
+    r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "phase4沉淀_done"],
+            label="check_progress phase4沉淀_done", check=False)
+    if r != 0:
+        print("[阻断] 阶段4沉淀未完成，禁止进入收尾门禁。")
+        print("  请先完成：1) 关键词回填（keywords_db.py --add）；")
+        print("           2) 经验记录（写入 process_notes.md）；")
+        print("           3) 笔记上传（note_upload.py）。")
+        sys.exit(1)
+    
+    print("[通过] 前置阶段校验全部通过。\n")
+    
     # 收尾前自动清理工作区缓存/临时文件
     run([os.path.join(TOOLS, "clean_workspace.py")],
         label="clean_workspace")
@@ -188,6 +218,10 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
 - 全库体检（check_all）已在上方自动跑过；如需单独复跑：
   python tools/check_all.py
 """)
+    
+    # 更新阶段状态为 phase4_done
+    run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--mark", "phase4_done"],
+        label="mark phase4_done")
 
 
 def mark_plan_done(slug, plan_path=None):

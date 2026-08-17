@@ -124,10 +124,10 @@ expect("normalize 破折号统一",
 # ---- LaTeX 命令归一化（arXiv 注册题名含 LaTeX 源码不误判不符）----
 expect("normalize 剥 LaTeX mathbb",
        ccv.normalize("on $\\mathbb{S}^N$") == ccv.normalize("on S^N"),
-       f"{ccv.normalize('on $\\mathbb{S}^N$')} vs {ccv.normalize('on S^N')}")
+       f"{ccv.normalize('on $' + chr(92) + 'mathbb{S}^N$')} vs {ccv.normalize('on S^N')}")
 expect("normalize 剥通用 LaTeX 命令",
        ccv.normalize("\\frac{1}{2}\\int u") == ccv.normalize("12int u"),
-       f"{ccv.normalize('\\frac{1}{2}\\int u')} vs {ccv.normalize('12int u')}")
+       f"{ccv.normalize(chr(92) + 'frac{1}{2}' + chr(92) + 'int u')} vs {ccv.normalize('12int u')}")
 
 
 # ---- 离线检查（不联网）----

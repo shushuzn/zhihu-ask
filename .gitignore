@@ -1,6 +1,8 @@
 # 本地工具数据
 .codebuddy/
 .workbuddy/
+.kilo/
+.tmp/
 
 # 知乎回答内容与项目内部计划（隐私，仅存本地，不推送公开仓库）
 research/
