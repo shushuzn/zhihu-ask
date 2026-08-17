@@ -67,12 +67,16 @@ nu.upload_to_flomo = lambda content, max_retries=5, retry_delay=30: (
 nu.update_to_flomo = lambda content, memo_id, max_retries=5, retry_delay=30: (
     calls["update"].append((content, memo_id)) or "OLD_ID")
 
+# 隔离质检：被测单元是上传分支，质检/存在性校验为外部依赖（原 force 跳过，现以 mock 等价替代）
+nu.run_quality_check = lambda filepath: (True, "")
+nu.memo_exists = lambda memo_id: True
+
 note = os.path.join(notes_dir, "01_a.md")
 with open(note, "w", encoding="utf-8") as f:
     f.write("#维度1 #维度2 #主题/x\n\n标题\n\n内容\n\n来源:\n[1] 甲. 书[M]. 京: 社, 2000.\n来源类型: 一手\n")
 
 ids = {}
-ok, mid, reason = nu.upload_file(note, force=True, ids=ids, ids_path=ids_path)
+ok, mid, reason = nu.upload_file(note, ids=ids, ids_path=ids_path)
 expect("up+ 默认模式 memo_create", (ok, mid), (True, "NEW_ID"))
 expect("up+ 默认模式动作词", reason, "上传成功")
 expect("up+ create 调用 1 次", len(calls["create"]), 1)
@@ -80,21 +84,21 @@ expect("up+ 成功写回 ids", ids.get("01_a.md"), "NEW_ID")
 expect("up+ ids 已落盘", nu.load_ids(ids_path).get("01_a.md"), "NEW_ID")
 
 # update=True 且有记录 → memo_update（原 id）
-ok, mid, reason = nu.upload_file(note, force=True, update=True, ids=ids, ids_path=ids_path)
+ok, mid, reason = nu.upload_file(note, update=True, ids=ids, ids_path=ids_path)
 expect("up+ update 模式 memo_update", (ok, mid), (True, "OLD_ID"))
 expect("up+ update 传原 id", calls["update"][-1][1], "NEW_ID")
 expect("up+ update 动作词", reason, "更新成功")
 
 # update=True 但无记录 → 回退 memo_create
 ids2 = {}
-ok, mid, reason = nu.upload_file(note, force=True, update=True, ids=ids2, ids_path=ids_path)
+ok, mid, reason = nu.upload_file(note, update=True, ids=ids2, ids_path=ids_path)
 expect("up+ update 无记录回退 create", (ok, mid), (True, "NEW_ID"))
 expect("up+ create 累计 2 次", len(calls["create"]), 2)
 
 # 禁止文件：不触碰网络
 calls["create"].clear()
 ok, mid, reason = nu.upload_file(os.path.join(notes_dir, "00_index.md"),
-                                 force=True, ids=ids, ids_path=ids_path)
+                                 ids=ids, ids_path=ids_path)
 expect("block+ 禁止文件不调用", (ok, mid), (False, None))
 expect("block+ 无网络调用", len(calls["create"]), 0)
 

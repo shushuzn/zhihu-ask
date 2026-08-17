@@ -104,7 +104,7 @@ NOTE_OK = """#标签1 #标签2 #主题/x
 
 笔记标题
 
-正文内容[1]。
+正文内容[1][2]。
 
 来源:
 [1] 甲. 书一[M]. 京: 社, 2000.
@@ -115,9 +115,21 @@ NOTE_OK = """#标签1 #标签2 #主题/x
 hard, warn = gbt.check(NOTE_OK, note_mode=True)
 expect("note+ 来源段零硬伤", not hard, f"hard={hard}")
 
-# 笔记模式：正文引用可选——文献[2]未被正文引用不报（参考来源清单）
-hard, warn = gbt.check(NOTE_OK, note_mode=True)
-expect("note+ 未全引不报", not any(h[2] == "文献未被正文引用" for h in hard), f"hard={hard}")
+# 笔记模式：文献须与正文 [n] 一一对应（b8a26a3 起笔记同报告强制对应）
+NOTE_SHORT = """#标签1 #标签2 #主题/x
+
+笔记标题
+
+正文内容[1]。
+
+来源:
+[1] 甲. 书一[M]. 京: 社, 2000.
+
+[2] 乙. 书二[EB/OL]. (2026-01-01)[2026-08-13]. https://example.com/b.
+来源类型: 一手
+"""
+hard, warn = gbt.check(NOTE_SHORT, note_mode=True)
+expect("note- 文献[2]未被引用仍报", any(h[2] == "文献未被正文引用" for h in hard), f"hard={hard}")
 
 # 笔记模式：悬空引注仍拦截
 hard, warn = gbt.check("正文[9]。\n\n来源:\n[1] 甲. 书一[M]. 京: 社, 2000.\n\n来源类型: 一手", note_mode=True)

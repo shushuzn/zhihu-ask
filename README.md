@@ -14,7 +14,7 @@ zhihu-ask/
 ├── README.md                      # 项目入口
 ├── plan.md                        # 问题索引表（本地，不入库）
 ├── docs/
-│   ├── SOP.md                     # 重定向（权威流程见 skills/zhihu-ask-research/SKILL.md）
+│   ├── （SOP.md 已删除：流程标准统一于 skills/zhihu-ask-research/SKILL.md）
 │   ├── TOOLS.md                   # 项目内工具说明
 │   ├── STYLE_GUIDE.md             # 知乎文风与排版指南
 │   ├── TEMPLATE_INDEX.md          # 模板说明与使用规则
