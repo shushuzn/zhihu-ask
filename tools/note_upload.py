@@ -20,10 +20,16 @@ import urllib.request
 import re
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    # 行缓冲：stdout 被管道接管时默认全缓冲，进度打印会被吞掉（见"无输出"排查）
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+    sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
 except Exception:
     pass
+
+
+def log(msg):
+    """强制刷新进度打印（兼容未启用行缓冲的环境）。"""
+    print(msg, flush=True)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -100,6 +106,47 @@ def mcp_call(method, params=None):
     return None
 
 
+def memo_exists(memo_id, max_retries=2):
+    """用 memo_batch_get 确认 memo 是否真实存在于当前 token 账户下。
+
+    用于防止拿着 .flomo_ids.json 里的陈旧/失效 id 去 memo_update 一个
+    根本不存在的 memo（常见于旧 token 上传后换 token）。不存在则回退新建。
+    """
+    import time as _t
+    for _ in range(max(1, max_retries)):
+        try:
+            result = mcp_call("tools/call", {"name": "memo_batch_get",
+                                             "arguments": {"ids": [memo_id]}})
+            if result and "result" in result:
+                text = result["result"]["content"][0]["text"]
+                data = json.loads(text)
+                if data.get("memos"):
+                    return True
+                return False
+        except Exception as e:
+            log(f"  (memo_exists 校验异常：{type(e).__name__}: {e})")
+        _t.sleep(1)
+    # 校验失败保守按"不存在"处理，回退新建，避免拿失效 id 反复 update
+    return False
+
+
+def _extract_id(result, label):
+    """从 MCP 响应里取 memo id；解析失败返回 (None, 错误说明)。"""
+    if not (result and "result" in result):
+        return None, "MCP 返回无 result（疑似 error 响应）"
+    try:
+        text = result["result"]["content"][0]["text"]
+        data = json.loads(text)
+        return data.get("id"), None
+    except Exception as e:
+        snippet = ""
+        try:
+            snippet = result["result"]["content"][0]["text"][:120]
+        except Exception:
+            pass
+        return None, f"响应解析失败 {type(e).__name__}: {e} | text前120字={snippet!r}"
+
+
 def upload_to_flomo(content, max_retries=5, retry_delay=30):
     """上传内容到 flomo, 返回 memo_id 或 None。
 
@@ -116,18 +163,17 @@ def upload_to_flomo(content, max_retries=5, retry_delay=30):
                 "name": "memo_create",
                 "arguments": {"content": content}
             })
-            if result and "result" in result:
-                text = result["result"]["content"][0]["text"]
-                data = json.loads(text)
-                return data.get("id")
-            last_err = "MCP 返回无 result"
+            memo_id, err = _extract_id(result, "memo_create")
+            if memo_id:
+                return memo_id
+            last_err = err or "MCP 返回无 result"
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"
         if attempt < max_retries - 1:
-            print(f"  (flomo 调用失败：{last_err}；{retry_delay}s 后重试 "
-                  f"{attempt + 2}/{max_retries}，单条完整版不变)")
+            log(f"  (flomo 调用失败：{last_err}；{retry_delay}s 后重试 "
+                f"{attempt + 2}/{max_retries}，单条完整版不变)")
             _time.sleep(retry_delay)
-    print(f"  (flomo 重试 {max_retries} 次仍失败：{last_err})")
+    log(f"  (flomo 重试 {max_retries} 次仍失败：{last_err})")
     return None
 
 
@@ -145,18 +191,17 @@ def update_to_flomo(content, memo_id, max_retries=5, retry_delay=30):
                 "name": "memo_update",
                 "arguments": {"id": memo_id, "content": content}
             })
-            if result and "result" in result:
-                text = result["result"]["content"][0]["text"]
-                data = json.loads(text)
-                return data.get("id") or memo_id
-            last_err = "MCP 返回无 result"
+            new_id, err = _extract_id(result, "memo_update")
+            if new_id:
+                return new_id
+            last_err = err or "MCP 返回无 result"
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"
         if attempt < max_retries - 1:
-            print(f"  (flomo 更新失败：{last_err}；{retry_delay}s 后重试 "
-                  f"{attempt + 2}/{max_retries}，单条完整版不变)")
+            log(f"  (flomo 更新失败：{last_err}；{retry_delay}s 后重试 "
+                f"{attempt + 2}/{max_retries}，单条完整版不变)")
             _time.sleep(retry_delay)
-    print(f"  (flomo 更新重试 {max_retries} 次仍失败：{last_err})")
+    log(f"  (flomo 更新重试 {max_retries} 次仍失败：{last_err})")
     return None
 
 
@@ -190,15 +235,20 @@ def upload_file(filepath, max_retries=5, update=False,
     上传成功且传入 ids 容器时把 {文件名: memo_id} 写入并落盘。
     """
     basename = os.path.basename(filepath)
+    log(f"→ [{basename}] 开始处理")
 
     # 检查1: 是否被禁止
     if is_blocked(filepath):
+        log(f"  ✗ 拦截: {basename} 是索引/报告文件，禁止上传")
         return False, None, f"禁止上传: {basename} (索引/报告文件)"
 
     # 检查2: 质检（强制，不可跳过）
+    log(f"  · 质检中: {basename} (quality_check + GB/T + 引用校验)")
     passed, output = run_quality_check(filepath)
     if not passed:
+        log(f"  ✗ 质检未通过: {basename}")
         return False, None, f"质检未通过: {basename}\n{output[:200]}"
+    log(f"  ✓ 质检通过: {basename}")
 
     # 读取内容
     with open(filepath, "r", encoding="utf-8") as f:
@@ -211,13 +261,20 @@ def upload_file(filepath, max_retries=5, update=False,
         lines[0] = re.sub(r"#(\s+)", r"#", lines[0])
         content = "\n".join(lines)
 
-    # 检查3: 防止重复上传——已有 ID 时强制走 update，不走 create
+    # 检查3: 防重复——已有 ID 时先校验该 memo 是否真实存在，存在才更新，
+    # 否则（陈旧/失效 id，常见于换 token）回退新建，避免对着不存在的 memo 空转。
     existing = (ids or {}).get(basename)
     if existing:
-        # 已有记录：都走 update（绝不 create 重复）
-        memo_id = update_to_flomo(content, existing, max_retries=max_retries)
-        action = "更新成功" if memo_id else None
+        if memo_exists(existing):
+            log(f"  · 更新中: {basename} (memo id {existing})")
+            memo_id = update_to_flomo(content, existing, max_retries=max_retries)
+            action = "更新成功" if memo_id else None
+        else:
+            log(f"  · 记录 id {existing} 在当前账户不存在，回退新建: {basename}")
+            memo_id = upload_to_flomo(content, max_retries=max_retries)
+            action = "新建成功(旧id失效)" if memo_id else None
     else:
+        log(f"  · 上传中: {basename} (flomo MCP)")
         memo_id = upload_to_flomo(content, max_retries=max_retries)
         action = "上传成功" if memo_id else None
     if memo_id:
@@ -246,27 +303,32 @@ def main():
         # 单文件：ids 记录按所在 notes 目录定位
         ids_path = ids_path_for(os.path.dirname(path))
         ids = load_ids(ids_path)
+        log(f"== 单文件上传: {path} ==")
         success, memo_id, reason = upload_file(path, args.max_retries,
                                               args.update, ids, ids_path)
         status = "✓" if success else "✗"
-        print(f"{status} {os.path.basename(path)}: {reason}")
+        log(f"{status} {os.path.basename(path)}: {reason}")
         if memo_id:
-            print(f"  flomo id: {memo_id}")
+            log(f"  flomo id: {memo_id}")
     elif os.path.isdir(path):
         # 目录批量：共享一份 ids 记录，全部处理完一次性落盘
         ids_path = ids_path_for(path)
         ids = load_ids(ids_path)
         files = sorted([f for f in os.listdir(path) if f.endswith(".md") and not f.startswith("_")])
+        log(f"== 目录批量上传: {path} ==")
+        log(f"   待处理文件({len(files)}): {', '.join(files) if files else '(无)'}")
         for fname in files:
             fpath = os.path.join(path, fname)
             success, memo_id, reason = upload_file(fpath, args.max_retries,
                                                    args.update, ids, ids_path)
             status = "✓" if success else "✗"
-            print(f"{status} {fname}: {reason}")
+            log(f"{status} {fname}: {reason}")
             if memo_id:
-                print(f"  flomo id: {memo_id}")
+                log(f"  flomo id: {memo_id}")
+        if ids_path and os.path.exists(ids_path):
+            log(f"   id 记录已落盘: {ids_path}")
     else:
-        print(f"ERROR: 路径不存在: {path}")
+        log(f"ERROR: 路径不存在: {path}")
         sys.exit(1)
 
 
