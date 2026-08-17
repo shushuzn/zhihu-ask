@@ -576,8 +576,11 @@ def check(body, offline=False, ack=(), skip_title_match=False):
         authors = extract_authors(text)
         if authors and n not in ack and not (DOI_RE.search(url) or is_arxiv_url(url)):
             if re.search(r"[A-Za-z]", authors) and not re.search(r"\b[A-Z]{2,}\b", authors):
-                warn.append((ref_head_line + lineno, "提示", "作者格式疑似异常",
-                             f"[{n}] 英文作者「{authors}」未按 GB/T 规范（姓全大写 名首字母，如 'MIAO Y'）"))
+                # 机构/平台名责任者为单一词（无空格、无逗号，如 Wikipedia、Nature、arXiv），
+                # 不适用「姓全大写 名首字母」个人作者规范，豁免该提示（原误报 Wikipedia 等机构名）
+                if re.search(r"[\s,]", authors):
+                    warn.append((ref_head_line + lineno, "提示", "作者格式疑似异常",
+                                 f"[{n}] 英文作者「{authors}」未按 GB/T 规范（姓全大写 名首字母，如 'MIAO Y'）"))
         if offline:
             continue
         title = extract_title(text)
