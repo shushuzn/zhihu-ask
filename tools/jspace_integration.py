@@ -23,6 +23,8 @@ import os
 import subprocess
 import sys
 import logging
+import signal
+import time
 from typing import Optional, Callable, Any, Dict
 from pathlib import Path
 from contextlib import contextmanager
@@ -113,6 +115,73 @@ def jspace_call(*args: str, check: bool = True, capture: bool = False) -> subpro
         )
     else:
         return subprocess.run(cmd)
+
+
+class JSpaceTimeoutError(Exception):
+    """J-Space调用超时异常"""
+    pass
+
+
+def jspace_call_with_timeout(*args: str, timeout: int = 30, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
+    """带超时的J-Space调用
+    
+    Args:
+        *args: 传递给jspace.py的命令行参数
+        timeout: 超时时间（秒）
+        check: 是否检查返回码
+        capture: 是否捕获输出
+        
+    Returns:
+        subprocess.CompletedProcess对象
+        
+    Raises:
+        JSpaceTimeoutError: 如果调用超时
+    """
+    def timeout_handler(signum, frame):
+        raise JSpaceTimeoutError("J-Space调用超时")
+    
+    # 设置信号处理器
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout)
+    
+    try:
+        return jspace_call(*args, check=check, capture=capture)
+    except JSpaceTimeoutError:
+        logger.error(f"J-Space调用超时（{timeout}秒）")
+        return subprocess.CompletedProcess([], returncode=-1, stdout="", stderr="超时")
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+
+def jspace_call_with_retry(*args: str, max_retries: int = 3, retry_delay: float = 1.0, **kwargs) -> subprocess.CompletedProcess:
+    """带重试的J-Space调用
+    
+    Args:
+        *args: 传递给jspace.py的命令行参数
+        max_retries: 最大重试次数
+        retry_delay: 重试延迟（秒）
+        **kwargs: 传递给jspace_call的其他参数
+        
+    Returns:
+        subprocess.CompletedProcess对象
+        
+    Raises:
+        Exception: 如果所有重试都失败
+    """
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            return jspace_call(*args, **kwargs)
+        except Exception as e:
+            last_exception = e
+            if attempt == max_retries - 1:
+                raise
+            logger.warning(f"J-Space调用失败（尝试 {attempt + 1}/{max_retries}），{retry_delay}秒后重试: {e}")
+            time.sleep(retry_delay)
+    
+    raise last_exception
 
 
 def jspace_seam(context: str = "", check: bool = True) -> subprocess.CompletedProcess:
@@ -300,6 +369,34 @@ def jspace_get_ledger_content(slug: str) -> Optional[str]:
         return None
 
 
+def jspace_directed_focus(slug: str, item: str) -> None:
+    """记录要保持的关注点（directed-focus模块）
+    
+    在长时间任务中保持目标不丢失，防止"做到一半忘了目标"。
+    
+    Args:
+        slug: 研究主题的slug标识
+        item: 要保持关注的项目
+    """
+    with jspace_context(slug):
+        jspace_call("note", f"--next=保持关注: {item}", check=False)
+
+
+def jspace_marker(slug: str, marker_type: str, description: str) -> None:
+    """记录标记点（markers模块）
+    
+    记录检查点和状态变化，用于追踪任务进度。
+    
+    Args:
+        slug: 研究主题的slug标识
+        marker_type: 标记类型（如 "checkpoint", "decision", "swap" 等）
+        description: 标记描述
+    """
+    with jspace_context(slug):
+        # 使用--next参数记录标记点
+        jspace_call("note", f"--next={marker_type}: {description}", check=False)
+
+
 def jspace_run_in_context(slug: str, func: Callable[[], Any], *args, **kwargs) -> Any:
     """在J-Space上下文中执行函数
     
@@ -316,6 +413,61 @@ def jspace_run_in_context(slug: str, func: Callable[[], Any], *args, **kwargs) -
     """
     with jspace_context(slug):
         return func(*args, **kwargs)
+
+
+# 默认配置
+DEFAULT_CONFIG = {
+    "default_timeout": 30,
+    "max_retries": 3,
+    "retry_delay": 1.0,
+    "log_level": "INFO",
+    "auto_seam": True,
+    "auto_ship": True,
+}
+
+
+def jspace_load_config() -> Dict[str, Any]:
+    """加载J-Space配置
+    
+    优先从配置文件加载，否则使用默认配置。
+    
+    Returns:
+        Dict[str, Any]: 配置字典
+    """
+    config_file = ROOT / "jspace_config.json"
+    if config_file.exists():
+        try:
+            import json
+            with open(config_file, encoding='utf-8') as f:
+                config = json.load(f)
+                # 合并默认配置
+                merged = DEFAULT_CONFIG.copy()
+                merged.update(config)
+                return merged
+        except Exception as e:
+            logger.warning(f"加载配置文件失败，使用默认配置: {e}")
+    
+    return DEFAULT_CONFIG.copy()
+
+
+def jspace_save_config(config: Dict[str, Any]) -> bool:
+    """保存J-Space配置
+    
+    Args:
+        config: 配置字典
+        
+    Returns:
+        bool: 是否保存成功
+    """
+    config_file = ROOT / "jspace_config.json"
+    try:
+        import json
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        logger.error(f"保存配置文件失败: {e}")
+        return False
 
 
 if __name__ == "__main__":

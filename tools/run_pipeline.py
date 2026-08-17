@@ -35,7 +35,8 @@ try:
     import sys
     sys.path.insert(0, os.path.join(ROOT, "tools"))
     from jspace_integration import (jspace_call, jspace_seam, jspace_ship, jspace_validate, 
-                                   jspace_context, jspace_get_research_dir, jspace_module, jspace_list_modules)
+                                   jspace_context, jspace_get_research_dir, jspace_module, jspace_list_modules,
+                                   jspace_directed_focus, jspace_marker, jspace_load_config)
     JSPACE_AVAILABLE = jspace_validate()
     if not JSPACE_AVAILABLE:
         print("[提示] J-Space脚本验证失败")
