@@ -25,8 +25,8 @@ config 文件格式（UTF-8，示例见 tools/start.example.json）：
 
 说明：
 - keywords 为公众号检索关键词（每组一轮搜索）；days 为时间范围（天），默认 365。
-- min_keywords 为关键词下限（默认 6，对应 SOP A.2「关键词≥6组」边界）；不足时提示但不阻塞（可降级以更少关键词继续）。
-- 本脚本做「阶段0初始化 + 阶段1通道A」，产出素材库后进入阶段2；不产观点，后续按 docs/SOP.md 附录 A 继续。
+- min_keywords 为关键词下限（默认 6，对应 SKILL.md 阶段0「关键词≥6组」边界）；不足时提示但不阻塞（可降级以更少关键词继续）。
+- 本脚本做「阶段0初始化 + 阶段1通道A」，产出素材库后进入阶段2；不产观点，后续按 skills/zhihu-ask-research/SKILL.md 阶段 2 继续。
 """
 
 import sys

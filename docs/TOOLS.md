@@ -159,7 +159,7 @@ python tools/run_pipeline.py --slug <slug> --ack 2,5,8
 
 ## search_all.py — 统一并行检索入口（B/A/P 三通道）
 
-**作用**：启动研究后（`run_pipeline --config`，F 查重门禁已执行），一条命令**并行**执行 B Web / A 公众号 / P 预印本检索，各自落盘 `gathered_*.md` 并**自动登记通道**（A/B/P 落盘即登记；E/C 环境级 skip）。F 判读登记仍人工（见 SOP 阶段 1）。
+**作用**：启动研究后（`run_pipeline --config`，F 查重门禁已执行），一条命令**并行**执行 B Web / A 公众号 / P 预印本检索，各自落盘 `gathered_*.md` 并**自动登记通道**（A/B/P 落盘即登记；E/C 环境级 skip）。F 判读登记仍人工（见 SKILL 阶段 1）。
 
 **用法**：
 ```bash
@@ -498,7 +498,7 @@ python tools/keywords_db.py --path                          # 打印数据库路
 - **E2 内容素材检索（核心）**：按领域从 `docs/IMA_LIBRARIES.md` 取候选订阅库（取全），逐库 `search_knowledge` 检索（每库 ≥2 个不同关键词），命中落盘 `research/<slug>/gathered_ima.md`（条目含 库名/标题/类型/media_id），与 A/B/C 并列计入有效通道；阶段 3 需原文时 `fetch_media_content(media_id)` 读取。全部候选库+全部关键词无命中才可记"通道 E 无有效素材"。
 
 **纪律**：
-- 连接器未配置 → 环境级自动 skip（见 `docs/SOP.md` 阶段 1），无需逐篇检查；接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 恢复手动登记。
+- 连接器未配置 → 环境级自动 skip（见 `skills/zhihu-ask-research/SKILL.md` 阶段 1），无需逐篇检查；接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 恢复手动登记。
 - 隐私：读取无限制；写入仅限公开级内容（docs/、templates/、脱敏经验与词库；定稿 report.md 须用户确认）；gathered 素材、plan.md、问题原文禁止写入。
 - 凭证：连接器方案无需凭证；脚本化（OpenAPI）才需 Client ID + API Key（agent-interface 生成，仅显示一次），存 `~/.config/ima/` 或环境变量。
 ## 领域连接器 — 通道 C 数据源（通达信 / 企查查 / 智慧芽）

@@ -5,7 +5,7 @@
 - 仓库地址：https://github.com/shushuzn/zhihu-ask
 - 环境约定与跨会话统一做法，请参阅 `docs/CONVENTIONS.md`。
 - 研究产出（`research/` 目录）仅存本地，不得推入公开仓库。
-- 完整流程标准见 `docs/SOP.md`，工具说明见 `docs/TOOLS.md`，架构图见 `docs/architecture.md`（PNG 不入库，本地渲染：`python docs/render_svg.py`）。
+- 完整流程标准见 `skills/zhihu-ask-research/SKILL.md`，工具说明见 `docs/TOOLS.md`，架构图见 `docs/architecture.md`（PNG 不入库，本地渲染：`python docs/render_svg.py`）。
 
 ## 目录结构
 
@@ -14,7 +14,7 @@ zhihu-ask/
 ├── README.md                      # 项目入口
 ├── plan.md                        # 问题索引表（本地，不入库）
 ├── docs/
-│   ├── SOP.md                     # 阶段化可执行流程（核心标准）
+│   ├── SOP.md                     # 重定向（权威流程见 skills/zhihu-ask-research/SKILL.md）
 │   ├── TOOLS.md                   # 项目内工具说明
 │   ├── STYLE_GUIDE.md             # 知乎文风与排版指南
 │   ├── TEMPLATE_INDEX.md          # 模板说明与使用规则
@@ -79,7 +79,7 @@ zhihu-ask/
 ## 使用流程
 
 1. **初始化研究**：写 `tools/start.json`（question/domain/slug/priority/keywords/days），执行 `python tools/research_start.py --config tools/start.json`——自动创建 `research/<slug>/`（plan.md/report.md/process_notes.md/notes/ + .progress.json）、判定领域档位（学术科研/科技产业/财经时政 → 通道优先级）、公众号初检；也可用 `python tools/run_pipeline.py --config tools/start.json` 一并打印 agent 待办清单。
-2. **六通道检索**（顺序 F→E→A→B→C→P，优先级按领域矩阵，`docs/SOP.md`）：**统一并行入口 `python tools/search_all.py --config tools/start.json`** 一次执行 B/A/P 三通道（B 多查询并行、通道级并行，各自落盘自动登记）；F 查重结论由主代理人工判读后 `mark_channel.py` 登记。
+2. **六通道检索**（顺序 F→E→A→B→C→P，优先级按领域矩阵，`skills/zhihu-ask-research/SKILL.md`）：**统一并行入口 `python tools/search_all.py --config tools/start.json`** 一次执行 B/A/P 三通道（B 多查询并行、通道级并行，各自落盘自动登记）；F 查重结论由主代理人工判读后 `mark_channel.py` 登记。
    - F flomo 查重（最先）：`flomo_search.py`；≥0.9 复用/更新、0.5~0.9 参考（须 GB/T 合规，`check_flomo_note_refs.py`）、<0.5 正常检索；旧笔记过时信息原地更新
    - E ima（P1，未配置记 skip）· A 公众号（`wechat_search.py`，分档）· B Web（`web_search.py` 多引擎 + `web_fetch.py` 三级降级，P0 通用）· C 领域连接器（通达信/企查查/智慧芽，分档）· P 学术预印本（`preprint_search.py --platform all` 四平台，分档）
    - 素材落盘 `gathered_*.md`；通道完成态登记（A/B/P 落盘自动，F/E/B/C 用 `mark_channel.py`；E/C 未配置环境级自动 skip）；门禁 `check_progress.py --require report_channels`

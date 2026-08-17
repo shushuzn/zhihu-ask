@@ -270,7 +270,7 @@ def main():
         print("提示: 未能自动更新 plan.md 索引表，请手动添加一行。")
 
     print("\n下一步：")
-    print("  1. 按 docs/SOP.md 阶段 0-4 执行检索")
+    print("  1. 按 skills/zhihu-ask-research/SKILL.md 阶段 0-4 执行检索")
     print("  2. 检索产出写入 gathered_*.md，模块化笔记写入 notes/（扁平目录，来源用 GB/T 7714-2015）")
     print("  3. 写 notes/00_index.md 索引，串联各模块化笔记")
     print("  4. 组装/撰写 report.md，跑质检与收尾")

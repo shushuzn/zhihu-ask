@@ -2,7 +2,7 @@
 
 > 结论先行：**可以接入，且对研究流水线有三处明确增益**（历史经验语义检索、公开素材沉淀、产物回传闭环）。唯一硬约束是隐私分级——ima 为云服务，必须与项目「research/ 仅存本地」红线做内容分层，不可整目录上云。
 >
-> **接入状态**：已按方案 A 接入——SOP 阶段 1 升级多通道（新增通道 E：ima 历史经验检索，主代理直执连接器工具），TOOLS/CONVENTIONS/SKILL 已同步更新，连接器已授权并实测（search_knowledge_base / search_knowledge 均可用）。脚本化（方案 B，tools/ima_*.py）为可选增强，待用户提供 OpenAPI 凭证后实施。
+> **接入状态**：已按方案 A 接入——SKILL 阶段 1 升级多通道（新增通道 E：ima 历史经验检索，主代理直执连接器工具），TOOLS/CONVENTIONS/SKILL 已同步更新，连接器已授权并实测（search_knowledge_base / search_knowledge 均可用）。脚本化（方案 B，tools/ima_*.py）为可选增强，待用户提供 OpenAPI 凭证后实施。
 
 ## 一、ima 能力盘点
 
@@ -89,7 +89,7 @@ A 用于交互式检索/手动回传，B 用于研究收尾自动沉淀。本地
 1. 用户授权 ima 连接器（方案 A）或提供 OpenAPI 凭证（方案 B）。
 2. 在 ima 中建库：建议按「研究经验库」「报告归档库」分库，与研究索引表的领域维度对应。
 3. 写 `tools/ima_sync.py`：白名单（仅公开级路径）+ 脱敏规则 + 关键词增量回传；写 `tools/ima_search.py`：检索封装（UTF-8 文件传参，规避本机乱码）。
-4. 更新 docs/SOP.md 阶段 1 增加「通道 E」，docs/TOOLS.md 增加工具说明，docs/CONVENTIONS.md 增加 ima 凭证与隐私约定。
+4. 更新 skills/zhihu-ask-research/SKILL.md 阶段 1 增加「通道 E」，docs/TOOLS.md 增加工具说明，docs/CONVENTIONS.md 增加 ima 凭证与隐私约定。
 5. 试点：以 1 个已完成主题的 process_notes 脱敏版同步验证，再全量启用。
 
 ## 六、风险与边界

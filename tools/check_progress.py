@@ -18,7 +18,7 @@
 说明：
 - 不传 --require 时，展示当前进度并给出建议下一步。
 - 传 --require 时，校验指定阶段是否已完成；未完成则退出码 1（阻塞提示）。
-- 传 --require_round N 时，校验迭代轮次是否 ≥N（对应 SOP A.8 领域最低轮次：
+- 传 --require_round N 时，校验迭代轮次是否 ≥N（对应 SKILL 阶段 4.7 领域最低轮次：
   默认统一 ≥1 轮）；未达标则退出码 1（阻塞提示）。
 - --require_round auto 按 .progress.json 的 domain 字段自动判定最低轮次
   （默认统一 → 1；domain 缺失时同样为 1）。
@@ -382,7 +382,7 @@ def main():
         if cur_round >= req_round:
             print(f"[通过] {slug}: 迭代轮次 {cur_round} ≥ 要求 {req_round}（{src}），达标。")
             sys.exit(0)
-        print(f"[阻塞] {slug}: 迭代轮次 {cur_round} < 要求 {req_round}（{src}，SOP A.8 领域最低轮次），请继续迭代。")
+        print(f"[阻塞] {slug}: 迭代轮次 {cur_round} < 要求 {req_round}（{src}，SKILL 阶段 4.7 领域最低轮次），请继续迭代。")
         sys.exit(1)
 
     if args["require"]:

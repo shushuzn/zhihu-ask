@@ -176,7 +176,7 @@ def main():
     print("\n下一轮执行建议：")
     print("  1. 打开 round_notes.md，逐条填写未尽问题")
     print("  2. 补检索 -> 深化分析 -> 直接在 report.md 上更新（不创建 vN 版本文件）")
-    print(f"  3. 领域最低轮次：{min_round} 轮（见 docs/SOP.md A.8；用户要求继续时以用户指示优先）")
+    print(f"  3. 领域最低轮次：{min_round} 轮（见 skills/zhihu-ask-research/SKILL.md 阶段 4.7；用户要求继续时以用户指示优先）")
 
 if __name__ == "__main__":
     main()
