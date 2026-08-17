@@ -78,6 +78,14 @@ expect("impl+ 验证脚本", qc.check_impl_residue("验证脚本输出如下"), 
 expect("impl+ 正则替换", qc.check_impl_residue("用正则替换提取字段"), True)
 expect("impl- 数学正则算子", qc.check_impl_residue("该算子是正则算子（regular）"), False)
 expect("impl- 普通正文", qc.check_impl_residue("双曲线 $x^2-y^2=1$ 与 $y=kx+1$ 相交"), False)
+expect("impl+ 多源交叉", qc.check_impl_residue("演进时间线（多源交叉）"), True)
+expect("impl+ 多源一致", qc.check_impl_residue("三步循环（多源一致）"), True)
+expect("impl+ 一手表述", qc.check_impl_residue("电池案例的一手表述来自访谈"), True)
+expect("impl+ 一手来源", qc.check_impl_residue("该数据为一手来源"), True)
+expect("impl+ 口径标注", qc.check_impl_residue("生态规模（截至 2026 年中，口径标注）"), True)
+expect("impl+ arXiv预印本", qc.check_impl_residue("学术研究揭示（arXiv 预印本）"), True)
+expect("impl- 预印本文献类型", qc.check_impl_residue("该论文以预印本形式发布"), False)
+expect("impl- 一手房术语", qc.check_impl_residue("二手房交易量增长"), False)
 
 # ---- AI 转折句式 ----
 expect("turn+ 不是…而是", qc.check_turn_pattern("这不是涨价，而是存量清理"), True)
