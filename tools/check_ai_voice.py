@@ -22,8 +22,8 @@ import re
 import sys
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+    sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
 except Exception:
     pass
 
@@ -129,19 +129,20 @@ def scan_lines(text):
 
 
 def check_hard(body):
-    """硬伤：固定禁用表达（逐行，首个命中即记）。"""
+    """硬伤：固定禁用表达（逐行，首个命中即记）。返回 (行号, 规则标签, 命中子串, 行预览)。"""
     issues = []
     lines = scan_lines(body)
     for i, line in enumerate(lines, 1):
         for pat, label in HARD_PATTERNS:
-            if re.search(pat, line):
-                issues.append((i, label, line.strip()[:70]))
+            m = re.search(pat, line)
+            if m:
+                issues.append((i, label, m.group(0)[:40], line.strip()[:70]))
                 break
     return issues
 
 
 def check_title_words(body):
-    """硬伤：标题行禁词（先/必须/清楚/反直觉）。"""
+    """硬伤：标题行禁词（先/必须/清楚/反直觉）。返回 (行号, 规则标签, 命中子串, 行预览)。"""
     issues = []
     for i, line in enumerate(body.splitlines(), 1):
         if line.strip().startswith("## 参考文献"):
@@ -149,50 +150,56 @@ def check_title_words(body):
         if not line.startswith("#") or line.startswith("#!"):
             continue
         for pat, label in TITLE_BANNED:
-            if re.search(pat, line):
-                issues.append((i, label, line.strip()[:70]))
+            m = re.search(pat, line)
+            if m:
+                issues.append((i, label, m.group(0)[:40], line.strip()[:70]))
                 break
     return issues
 
 
 def check_warn(body):
-    """提示：启发式表达（逐行，首个命中即记）。"""
+    """提示：启发式表达（逐行，首个命中即记）。返回 (行号, 规则标签, 命中子串, 行预览)。"""
     issues = []
     lines = scan_lines(body)
     for i, line in enumerate(lines, 1):
         for pat, label in WARN_PATTERNS:
-            if re.search(pat, line):
-                issues.append((i, label, line.strip()[:70]))
+            m = re.search(pat, line)
+            if m:
+                issues.append((i, label, m.group(0)[:40], line.strip()[:70]))
                 break
     return issues
 
 
 def check_dashes(body):
-    """提示：破折号长插入语 / 段内扎堆（用户：只在后接一句很短的解释时用）。"""
+    """提示：破折号长插入语 / 段内扎堆。返回 (行号, 规则标签, 命中子串, 行预览)。"""
     issues = []
     for i, line in enumerate(scan_lines(body), 1):
         # 长插入语：破折号后第一个完整小句（到句末标点为止）超过 25 字
         for m in re.finditer(r"——+([^——。！？]*。?)", line):
             tail = m.group(1).strip()
             if len(tail) > 25:
-                issues.append((i, "破折号长插入语（>25 字，应改冒号或拆句）", line.strip()[:70]))
+                issues.append((i, "破折号长插入语（>25 字，应改冒号或拆句）", m.group(0)[:40], line.strip()[:70]))
     # 同行 ≥2 个破折号即提示扎堆
     for i, line in enumerate(scan_lines(body), 1):
         if line.count("——") >= 2:
-            issues.append((i, "破折号扎堆（同行 ≥2 处）", line.strip()[:70]))
+            issues.append((i, "破折号扎堆（同行 ≥2 处）", "——", line.strip()[:70]))
     return issues
 
 
 def check_quotes(body):
-    """提示：引号包裹日常词（短引号 1–8 字命中日常词清单）。"""
+    """提示：引号包裹日常词（短引号 1–8 字，且整段引号内容本身就是日常词才报）。
+
+    注意：仅当引号内容整体为清单内日常词时命中（如 `"成功"`/`"消失"`）；
+    引号内嵌术语性短语（如 `"在首次成功处停止"`，`成功` 为概率论术语语境）不报，
+    避免 `cw in word` 子串匹配误伤合法长引号表述。
+    返回 (行号, 规则标签, 命中子串, 行预览)。
+    """
     issues = []
     for i, line in enumerate(scan_lines(body), 1):
         for m in re.finditer(r'"([^"\n]{1,8})"', line):
             word = m.group(1)
-            for cw in COMMON_QUOTED_WORDS:
-                if cw in word:
-                    issues.append((i, f"引号包裹日常词（{cw}；日常词不加引号）", line.strip()[:70]))
-                    break
+            if word in COMMON_QUOTED_WORDS:
+                issues.append((i, f"引号包裹日常词（{word}；日常词不加引号）", f'"{word}"', line.strip()[:70]))
     return issues
 
 
@@ -227,15 +234,15 @@ def main():
     if hard:
         print(f"\n[硬伤] {len(hard)} 处（命中即阻断，需修复）")
         for item in hard:
-            print(f"  行{item[0]}: {item[2]}")
+            print(f"  行{item[0]} 命中「{item[2]}」  [{item[1]}]")
             if verbose:
-                print(f"    -> 命中: {item[1]}")
+                print(f"    原文: {item[3]}")
     if warn:
         print(f"\n[提示] {len(warn)} 处（启发式，默认同样阻断）")
         for item in warn:
-            print(f"  行{item[0]}: {item[2]}")
+            print(f"  行{item[0]} 命中「{item[2]}」  [{item[1]}]")
             if verbose:
-                print(f"    -> 命中: {item[1]}")
+                print(f"    原文: {item[3]}")
 
     print("\n提示：提示级命中为启发式检出，需人工确认是否真正违规")
     print("（如「但」多为真实转折、「关键」可能是合法术语语境；引号若为非字面义/术语首现属合规）。")
