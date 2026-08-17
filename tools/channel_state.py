@@ -88,11 +88,37 @@ def save(path, prog):
     """原子写：写临时文件后 os.replace 替换，避免写一半被读/被并发写叠加。
 
     配合 file_lock 使用（mark 已包锁）；单独调用时不加锁，仅保证单次写原子。
+
+    Windows 下 os.replace（MoveFileExW + MOVEFILE_REPLACE_EXISTING）在目标文件
+    被另一进程以读取句柄占用时会瞬时抛 PermissionError(WinError 5)（replace 实际
+    未执行，tmp 仍在）。此处对 replace 做有限次退避重试消除该竞态；临时文件名带
+    PID，避免并发进程共用同一 .tmp 互相覆盖。
     """
-    tmp = path + ".tmp"
+    tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(prog, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, path)
+        f.flush()
+        os.fsync(f.fileno())
+    _replace_atomic(tmp, path)
+
+
+def _replace_atomic(tmp, path, attempts=8, backoff=0.01):
+    """对 os.replace 的瞬时 PermissionError（Windows 竞态）做指数退避重试。"""
+    import time
+    last = None
+    for i in range(attempts):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError as e:  # WinError 5：目标被并发读取句柄占用，瞬时竞态
+            last = e
+            if i < attempts - 1:
+                time.sleep(backoff * (i + 1))
+    try:
+        os.remove(tmp)
+    except OSError:
+        pass
+    raise last
 
 
 class file_lock:
