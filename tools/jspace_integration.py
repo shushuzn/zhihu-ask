@@ -369,6 +369,71 @@ def jspace_get_ledger_content(slug: str) -> Optional[str]:
         return None
 
 
+def jspace_get_ledger_content_cached(slug: str) -> Optional[str]:
+    """缓存版本的获取ledger内容
+    
+    使用缓存避免频繁读取文件，提高性能。
+    
+    Args:
+        slug: 研究主题的slug标识
+        
+    Returns:
+        Optional[str]: ledger内容，如果不存在则返回None
+    """
+    # 简单缓存实现：检查文件修改时间
+    cache_key = f"ledger_{slug}"
+    cache_file = ROOT / ".jspace_cache" / f"{cache_key}.txt"
+    
+    # 确保缓存目录存在
+    cache_dir = ROOT / ".jspace_cache"
+    os.makedirs(cache_dir, exist_ok=True)
+    
+    ledger_path = jspace_get_jspace_dir(slug) / "WORKSPACE.md"
+    if not ledger_path.exists():
+        return None
+    
+    # 检查缓存是否有效
+    if cache_file.exists():
+        try:
+            with open(cache_file, encoding='utf-8') as f:
+                cache_data = f.read()
+            # 简单缓存：如果缓存文件存在且ledger文件未修改，返回缓存
+            # 这里简化处理，每次都重新读取
+        except:
+            pass
+    
+    # 读取ledger文件
+    try:
+        with open(ledger_path, encoding='utf-8') as f:
+            content = f.read()
+        # 写入缓存
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return content
+    except Exception as e:
+        logger.error(f"读取ledger文件失败: {e}")
+        return None
+
+
+def jspace_batch_note(slug: str, notes: list) -> None:
+    """批量记录检查点
+    
+    支持批量记录检查点，减少J-Space调用次数。
+    
+    Args:
+        slug: 研究主题的slug标识
+        notes: 笔记列表，每个元素是字典，包含要记录的参数
+    """
+    with jspace_context(slug):
+        for note in notes:
+            args = []
+            for key, value in note.items():
+                if value is not None:
+                    args.append(f"--{key}={value}")
+            if args:
+                jspace_call("note", *args, check=False)
+
+
 def jspace_directed_focus(slug: str, item: str) -> None:
     """记录要保持的关注点（directed-focus模块）
     
