@@ -34,7 +34,7 @@ PY = sys.executable
 try:
     import sys
     sys.path.insert(0, os.path.join(ROOT, "tools"))
-    from jspace_integration import jspace_call, jspace_seam, jspace_ship, jspace_validate
+    from jspace_integration import jspace_call, jspace_seam, jspace_ship, jspace_validate, jspace_context, jspace_get_research_dir
     JSPACE_AVAILABLE = jspace_validate()
     if not JSPACE_AVAILABLE:
         print("[提示] J-Space脚本验证失败")
@@ -119,18 +119,10 @@ def bootstrap(config):
             question = cfg.get("question", "")
             if slug:
                 print("\n─── J-Space 初始化（原生） ───")
-                # 确保研究目录存在
-                research_dir = os.path.join(ROOT, "research", slug)
-                os.makedirs(research_dir, exist_ok=True)
-                
-                # 切换到研究目录并初始化ledger
-                original_dir = os.getcwd()
-                os.chdir(research_dir)
-                try:
+                # 使用上下文管理器简化目录切换
+                with jspace_context(slug):
                     jspace_call("note", f"--goal=研究问题：{question[:100]}", 
                                "--next=执行阶段 1 六通道检索")
-                finally:
-                    os.chdir(original_dir)
                 
         except Exception as e:
             print(f"[提示] J-Space 初始化异常（非阻断）：{e}")
@@ -187,17 +179,9 @@ def check_phase1_complete(slug):
     if JSPACE_AVAILABLE:
         print("\n─── J-Space 阶段1接缝审计（原生） ───")
         try:
-            # 确保研究目录存在
-            research_dir = os.path.join(ROOT, "research", slug)
-            os.makedirs(research_dir, exist_ok=True)
-            
-            # 切换到研究目录并执行seam审计
-            original_dir = os.getcwd()
-            os.chdir(research_dir)
-            try:
+            # 使用上下文管理器简化目录切换
+            with jspace_context(slug):
                 jspace_seam("阶段1完成，进入阶段2")
-            finally:
-                os.chdir(original_dir)
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -226,17 +210,9 @@ def check_phase2_complete(slug):
     if JSPACE_AVAILABLE:
         print("\n─── J-Space 阶段2接缝审计（原生） ───")
         try:
-            # 确保研究目录存在
-            research_dir = os.path.join(ROOT, "research", slug)
-            os.makedirs(research_dir, exist_ok=True)
-            
-            # 切换到研究目录并执行seam审计
-            original_dir = os.getcwd()
-            os.chdir(research_dir)
-            try:
+            # 使用上下文管理器简化目录切换
+            with jspace_context(slug):
                 jspace_seam("阶段2完成，进入阶段3")
-            finally:
-                os.chdir(original_dir)
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -271,17 +247,9 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     if JSPACE_AVAILABLE:
         print("\n─── J-Space 阶段3接缝审计（原生） ───")
         try:
-            # 确保研究目录存在
-            research_dir = os.path.join(ROOT, "research", slug)
-            os.makedirs(research_dir, exist_ok=True)
-            
-            # 切换到研究目录并执行seam审计
-            original_dir = os.getcwd()
-            os.chdir(research_dir)
-            try:
+            # 使用上下文管理器简化目录切换
+            with jspace_context(slug):
                 jspace_seam("阶段3完成，进入阶段4")
-            finally:
-                os.chdir(original_dir)
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -302,17 +270,9 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     if JSPACE_AVAILABLE:
         print("\n─── J-Space 阶段4沉淀接缝审计（原生） ───")
         try:
-            # 确保研究目录存在
-            research_dir = os.path.join(ROOT, "research", slug)
-            os.makedirs(research_dir, exist_ok=True)
-            
-            # 切换到研究目录并执行seam审计
-            original_dir = os.getcwd()
-            os.chdir(research_dir)
-            try:
+            # 使用上下文管理器简化目录切换
+            with jspace_context(slug):
                 jspace_seam("阶段4沉淀完成，进入收尾门禁")
-            finally:
-                os.chdir(original_dir)
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -365,17 +325,9 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     if JSPACE_AVAILABLE:
         print("\n─── J-Space 交付前检查（原生） ───")
         try:
-            # 确保研究目录存在
-            research_dir = os.path.join(ROOT, "research", slug)
-            os.makedirs(research_dir, exist_ok=True)
-            
-            # 切换到研究目录并执行ship检查
-            original_dir = os.getcwd()
-            os.chdir(research_dir)
-            try:
+            # 使用上下文管理器简化目录切换
+            with jspace_context(slug):
                 jspace_ship("report.md")
-            finally:
-                os.chdir(original_dir)
                 
         except Exception as e:
             print(f"[提示] J-Space ship 检查异常（非阻断）：{e}")
@@ -477,19 +429,13 @@ def main():
             sys.exit(1)
         if JSPACE_AVAILABLE:
             try:
-                # 确保研究目录存在
-                research_dir = os.path.join(ROOT, "research", args.slug)
-                os.makedirs(research_dir, exist_ok=True)
-                
-                # 切换到研究目录并显示状态
-                original_dir = os.getcwd()
-                os.chdir(research_dir)
-                try:
+                # 使用上下文管理器简化目录切换
+                with jspace_context(args.slug):
                     print("\n=== J-Space 研究状态（原生） ===")
                     jspace_call("seam", check=False)
                     
                     # 同时显示.progress.json状态（如果存在）
-                    progress_file = os.path.join(research_dir, ".progress.json")
+                    progress_file = os.path.join(jspace_get_research_dir(args.slug), ".progress.json")
                     if os.path.exists(progress_file):
                         import json
                         with open(progress_file, encoding='utf-8') as f:
@@ -504,9 +450,6 @@ def main():
                         print(f"已完成通道：{', '.join(done_channels) if done_channels else '无'}")
                     
                     print("========================\n")
-                    
-                finally:
-                    os.chdir(original_dir)
                 
             except Exception as e:
                 print(f"[错误] J-Space状态显示失败: {e}")

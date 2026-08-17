@@ -17,8 +17,9 @@ import os
 import subprocess
 import sys
 import logging
-from typing import Optional
+from typing import Optional, Callable, Any
 from pathlib import Path
+from contextlib import contextmanager
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -32,6 +33,30 @@ JSPACE_SCRIPT = os.environ.get(
     "JSPACE_SCRIPT_PATH",
     str(Path.home() / ".workbuddy" / "skills" / "J-Space-Cognition-Suite" / "scripts" / "jspace.py")
 )
+
+
+@contextmanager
+def jspace_context(slug: str):
+    """J-Space上下文管理器
+    
+    自动处理研究目录切换和异常恢复。
+    
+    Args:
+        slug: 研究主题的slug标识
+        
+    Yields:
+        Path: 研究目录路径
+    """
+    research_dir = jspace_get_research_dir(slug)
+    os.makedirs(research_dir, exist_ok=True)
+    
+    original_dir = os.getcwd()
+    os.chdir(research_dir)
+    
+    try:
+        yield research_dir
+    finally:
+        os.chdir(original_dir)
 
 
 def jspace_call(*args: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
@@ -217,6 +242,24 @@ def jspace_get_ledger_content(slug: str) -> Optional[str]:
         return None
 
 
+def jspace_run_in_context(slug: str, func: Callable[[], Any], *args, **kwargs) -> Any:
+    """在J-Space上下文中执行函数
+    
+    自动处理目录切换，确保函数在研究目录中执行。
+    
+    Args:
+        slug: 研究主题的slug标识
+        func: 要执行的函数
+        *args: 函数参数
+        **kwargs: 函数关键字参数
+        
+    Returns:
+        Any: 函数返回值
+    """
+    with jspace_context(slug):
+        return func(*args, **kwargs)
+
+
 if __name__ == "__main__":
     # 测试用法
     if len(sys.argv) < 2:
@@ -240,15 +283,8 @@ if __name__ == "__main__":
     
     slug = sys.argv[2]
     
-    # 确保研究目录存在
-    research_dir = jspace_get_research_dir(slug)
-    os.makedirs(research_dir, exist_ok=True)
-    
-    # 切换到研究目录
-    original_dir = os.getcwd()
-    os.chdir(research_dir)
-    
-    try:
+    # 使用上下文管理器
+    with jspace_context(slug):
         if command == "seam":
             context = sys.argv[3] if len(sys.argv) > 3 else ""
             jspace_seam(context)
@@ -266,5 +302,3 @@ if __name__ == "__main__":
         else:
             print(f"未知命令: {command}")
             sys.exit(1)
-    finally:
-        os.chdir(original_dir)
