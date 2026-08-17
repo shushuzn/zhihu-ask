@@ -52,9 +52,9 @@ REF_MARKERS = ["## 参考文献", "### 参考文献"]
 
 # 笔记模式（笔记用 Unicode、报告用 LaTeX）：
 # 文件位于 research/<slug>/notes/ 目录下即视为模块化笔记——
-# 文献段用笔记格式「来源:」（非报告的 ## 参考文献），正文允许 Unicode 手写公式。
-NOTE_SOURCE_MARKERS = ["\n来源:", "## 参考文献"]
-NOTE_REF_MARKERS = ["来源:", "## 参考文献"]
+# 文献段用笔记格式「来源:」或「参考文献:」（非报告的 ## 参考文献），正文允许 Unicode 手写公式。
+NOTE_SOURCE_MARKERS = ["\n来源:", "## 参考文献", "\n参考文献:"]
+NOTE_REF_MARKERS = ["来源:", "## 参考文献", "参考文献:"]
 
 REF_BAD_LABELS = ["一手", "二手", "推断"]
 
@@ -161,7 +161,7 @@ def check_ref_latex_ban(full, note_mode=False):
     issues = []
     # marker 用行首正则匹配 + 行偏移累计定位——find() 子串会命中
     # 正文的"一手来源:..."，把正文 $...$ 误判为参考文献区（chang-yang 笔记质检踩坑）。
-    head_re = (re.compile(r"^\s*来源:|^#{1,6}\s*参考文献")
+    head_re = (re.compile(r"^\s*来源:|^\s*参考文献[:：]?|^#{1,6}\s*参考文献")
                if note_mode else re.compile(r"^#{1,6}\s*参考文献"))
     start = None
     offset = 0
@@ -414,6 +414,39 @@ def check_title_hash(body):
         # markdown 标题行：# 后接空白 + 内容（tag 行 #技术 的 # 后无空白，不命中）
         if re.match(r"^#{1,6}\s+\S", stripped):
             issues.append((i, "标题用#标记", "笔记标题禁止用 #/##/###，改为纯文本", stripped[:60]))
+    return issues
+
+
+def check_citation_correspondence(full, note_mode=False):
+    """检测参考文献条目与正文 [n] 引注一一对应（flomo 上传质检，笔记模式强制）。
+
+    顺序编码制规则（不能少、不能多、须一一对应）：
+    1. 参考文献区每条 [n] 须在正文出现 [n] 引注（文献未被引用即报错）；
+    2. 正文每个 [n] 引注须有对应文献条目（悬空引注即报错）；
+    3. 二者编号集合须完全一致。
+
+    以「来源:」「参考文献:」（笔记）或「## 参考文献」（报告）为界划分正文/文献区，
+    文献区自身的 [n] 条目不计入正文引注。无参考文献区时返回 []（不触发）。
+    """
+    if note_mode:
+        m = re.search(r"(?:^|\n)\s*(?:来源|参考文献)[:：]?\s*$", full, re.MULTILINE)
+    else:
+        m = re.search(r"(?:^|\n)\s*#{1,6}\s*参考文献\s*$", full, re.MULTILINE)
+    if not m:
+        return []
+    head = full[:m.start()]
+    ref_sec = full[m.end():]
+    ref_nums = set(int(x) for x in re.findall(r"^\[(\d+)\]", ref_sec, re.MULTILINE))
+    cite_nums = set(int(x) for x in re.findall(r"\[(\d+)\]", head))
+    issues = []
+    missing = sorted(ref_nums - cite_nums)
+    orphan = sorted(cite_nums - ref_nums)
+    if missing:
+        issues.append((0, "文献未被引用",
+                       f"参考文献 {missing} 未在正文标注 [n] 引用（须一一对应，不能少）", ""))
+    if orphan:
+        issues.append((0, "引用无对应文献",
+                       f"正文 [n] {orphan} 无对应参考文献条目（须一一对应，不能多）", ""))
     return issues
 
 def check_judgment_hints(body):
@@ -845,6 +878,8 @@ def main():
         # 笔记仅首行 tag 行允许 #，大小标题一律纯文本，禁止 #/##/### 与 * 标记。
         all_issues += check_title_asterisk(body)
         all_issues += check_title_hash(body)
+        # 参考文献条目与正文 [n] 引注须一一对应（不能少、不能多）
+        all_issues += check_citation_correspondence(full, note_mode=True)
     else:
         all_issues += check_exclamation(body)
         all_issues += check_process_words(body)

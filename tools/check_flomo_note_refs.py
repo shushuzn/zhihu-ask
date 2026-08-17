@@ -39,7 +39,7 @@ from tools.web_search import search as web_search  # noqa: E402
 # ---------- 参考文献存在性检测 ----------
 
 REF_MARKERS = re.compile(
-    r"(来源[^\n]{0,4}[:：]|##\s*参考文献|###\s*参考文献"
+    r"(来源[^\n]{0,4}[:：]|参考文献[^\n]{0,4}[:：]|##\s*参考文献|###\s*参考文献"
     r"|\[EB/OL\]|\[M\]|\[J\]|\[C\]|\[P\]|\[D\]|\[R\]|\[S\]"
     r"|https?://"
     r"|^\s*\[\d+\]\s*\S)",
@@ -57,7 +57,7 @@ def gbt_validate(text):
     规则：1) 文献区须有 [n] 编号条目；2) 每条含文献类型标识 [X]/[X/OL]；
           3) 含 URL 的条目须带引用日期 [YYYY-MM-DD]；4) 编号从 1 连续。
     """
-    m = re.search(r"(##\s*参考文献|来源[^\n]{0,4}[:：])", text or "")
+    m = re.search(r"(##\s*参考文献|参考文献[^\n]{0,4}[:：]|来源[^\n]{0,4}[:：])", text or "")
     if not m:
         return False, ["无参考文献区"]
     ref_section = text[m.end():]
@@ -74,6 +74,19 @@ def gbt_validate(text):
     nums = [int(re.match(r"^\[(\d+)\]", e).group(1)) for e in entries]
     if nums and nums != list(range(1, len(nums) + 1)):
         issues.append(f"文献编号不连续: {nums}")
+    # 参考文献条目与正文 [n] 引注一一对应（不能少、不能多）
+    head = text[:m.start()]
+    body_cites = sorted({int(x) for x in re.findall(r"\[(\d+)\]", head)})
+    ref_set = set(nums)
+    if body_cites:
+        dangling = [c for c in body_cites if c not in ref_set]
+        if dangling:
+            issues.append(f"正文引用 {dangling} 无对应参考文献条目")
+        unused = [n for n in nums if n not in body_cites]
+        if unused:
+            issues.append(f"参考文献 {sorted(unused)} 未在正文引用（须一一对应）")
+    elif nums:
+        issues.append("正文未标注 [n] 引用但存在参考文献条目（须一一对应）")
     return (not issues, issues)
 
 

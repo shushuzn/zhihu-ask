@@ -282,5 +282,28 @@ expect("hash+ ## 大标题命中", has(qc.check_title_hash(hash_bad), "标题用
 expect("hash+ ### 小标题命中", has(qc.check_title_hash("### 小标题也违规\n"), "标题用#标记"), True)
 expect("hash+ # 单级命中", has(qc.check_title_hash("# 单级也违规\n"), "标题用#标记"), True)
 
+# ---- 参考文献与正文引注一一对应（笔记模式 check_citation_correspondence）----
+_cite_ok = ("#技术 #AI\n\n笔记标题\n\n某观点[1]。\n\n参考文献:\n"
+            "[1] A. Title[EB/OL]. (2025-01-01)[2026-01-01]. https://x.com.\n")
+_cite_missing = ("#技术 #AI\n\n笔记标题\n\n某观点[1]。\n\n参考文献:\n"
+                 "[1] A. Title[EB/OL]. (2025-01-01)[2026-01-01]. https://x.com.\n"
+                 "[2] B. Title[EB/OL]. (2025-01-01)[2026-01-01]. https://y.com.\n")
+_cite_orphan = ("#技术 #AI\n\n笔记标题\n\n某观点[1][2]。\n\n参考文献:\n"
+                "[1] A. Title[EB/OL]. (2025-01-01)[2026-01-01]. https://x.com.\n")
+_cite_noref = "#技术 #AI\n\n笔记标题\n\n正文无参考文献。\n"
+_rep_ok = ("报告标题\n\n某观点[1]。\n\n## 参考文献\n[1] A. Title[M]. 2025.\n")
+expect("cite- note 一一对应通过",
+       has(qc.check_citation_correspondence(_cite_ok, note_mode=True), "文献未被引用")
+       or has(qc.check_citation_correspondence(_cite_ok, note_mode=True), "引用无对应文献"), False)
+expect("cite+ note 文献未被引用(缺[2])",
+       has(qc.check_citation_correspondence(_cite_missing, note_mode=True), "文献未被引用"), True)
+expect("cite+ note 引用无对应文献(多[2])",
+       has(qc.check_citation_correspondence(_cite_orphan, note_mode=True), "引用无对应文献"), True)
+expect("cite- note 无参考文献段不触发",
+       qc.check_citation_correspondence(_cite_noref, note_mode=True), False)
+expect("cite- report 一一对应通过",
+       has(qc.check_citation_correspondence(_rep_ok, note_mode=False), "文献未被引用")
+       or has(qc.check_citation_correspondence(_rep_ok, note_mode=False), "引用无对应文献"), False)
+
 print(f"\n==== quality_check 回归测试：PASS={PASS} FAIL={FAIL} ====")
 sys.exit(1 if FAIL else 0)

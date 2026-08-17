@@ -60,7 +60,7 @@ def run_quality_check(filepath):
     """运行质检（quality_check 笔记模式 + check_gbt_refs 笔记模式 + 违规引用检查），返回 (passed, output)。
 
     笔记上传前除 quality_check 外，还须过 check_gbt_refs——
-    笔记「来源:」段的 GB/T 7714 著录（编号连续/类型标识/URL 引用日期/悬空引注）
+    笔记「参考文献:」段的 GB/T 7714 著录（编号连续/类型标识/URL 引用日期/悬空引注/正文一一对应）
     也纳入机器校验，防止不合规参考文献污染 flomo 知识库（对应"flomo 笔记引用须
     有合规参考文献"规则的上游防线）。
     另增加 check_citation_validity（离线模式）——URL 伪造/占位符、

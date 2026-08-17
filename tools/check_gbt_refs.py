@@ -10,11 +10,11 @@
 1. 文献类型标识缺失：每条须含 [M]/[J]/[C]//[N]/[D]/[R]/[S]/[Z] 或电子版 [X/OL]（[M/OL] 等）
 2. 编号不连续：文献条目 [n] 须从 1 起连续递增、无跳号重复
 3. 电子资源缺引用日期：含 http:// 或 https:// 的条目须带 [YYYY-MM-DD]
-4. 正文引注与文献列表不对应（仅当正文存在 [n] 引注时执行）：
+4. 正文引注与文献列表不对应（报告与笔记同等要求）：
    - 正文 [n] 须都能在文献列表找到（无悬空引注）
-   - 文献编号须全部被正文引用（无未被引用条目）
+   - 文献编号须全部被正文引用（无未被引用条目，一一对应）
    - 正文引注编号须连续（无缺号）
-   - 正文无 [n] 引注 = 参考来源清单模式（研究报告约定正文不标来源括注），跳过本项
+   - 正文无 [n] 引注但文献列表非空 = 不合规（须逐条引用，不得降级为清单模式）
 
 提示级（默认 RC=1，严格阻断为默认）：
 5. 转引条目未标注中间文献：条目含「见:」但「见:」后为空或同条内无书名/篇名
@@ -49,11 +49,10 @@ ENTRY_RE = re.compile(r"^\[(\d+)\]\s")
 CITE_RE = re.compile(r"\[(\d+)\]")
 # 参考文献块标题行（支持 ## 参考文献 / **参考文献（GB/T 7714-2015）** / 参考文献）
 REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
-# 笔记模式文献段标题：笔记格式为「来源:」行（也兼容 ## 参考文献）
+# 笔记模式文献段标题：笔记格式为「来源:」或「参考文献:」行（也兼容 ## 参考文献）
 NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献|^来源:")
-# 笔记模式：文件位于 research/<slug>/notes/ 目录 → 文献段为「来源:」行；
-# 笔记文献区是参考来源清单（正文引用可选），跳过"文献未被引用/引注编号连续"检查，
-# 保留：条目空行/编号连续/类型标识/URL 引用日期/悬空引注。
+# 笔记模式：文件位于 research/<slug>/notes/ 目录 → 文献段为「来源:」或「参考文献:」行；
+# 笔记与报告同样须满足正文 [n] 引注与文献列表一一对应（顺序编码制），不再降级为清单模式。
 def is_note_file(filepath):
     return os.path.basename(os.path.dirname(os.path.abspath(filepath))) == "notes"
 
@@ -126,32 +125,29 @@ def check(body, note_mode=False):
             hard.append((ref_head_line + lineno, "硬伤", "电子资源缺引用日期",
                          f"[{n}] 含 URL 但缺 [YYYY-MM-DD] 引用日期（国标：电子资源须标注引用日期）"))
 
-    # 4) 正文引注对应（GB/T 7714-2015 强制要求正文标注 [n]）
+    # 4) 正文引注对应（GB/T 7714-2015 顺序编码制：正文 [n] 与文献列表须一一对应，
+    #    笔记与报告同等要求——文献未被引用、引注无对应文献、编号不连续均判硬伤）
     body_cites = sorted({int(x) for x in CITE_RE.findall(body_txt)})
     entry_nums = set(nums)
-    # 清单模式: 正文无 [n] 引注 = 参考来源清单模式, 跳过本项
     if body_cites:
-        # 4a 悬空引注
+        # 4a 悬空引注：正文引用了不存在的编号
         dangling = [c for c in body_cites if c not in entry_nums]
         if dangling:
             hard.append((0, "硬伤", "正文引注无对应文献",
                          f"正文引用 [{dangling}] 但文献列表不存在"))
-        if not note_mode:
-            # 笔记模式：文献区是参考来源清单，正文引用可选——
-            # 只保留 4a 悬空检查，跳过 4b（引注连续）与 4c（文献未被引用）
-            # 4b 编号连续（正文引注从 1 起连续）
-            if body_cites != list(range(1, body_cites[-1] + 1)):
-                hard.append((0, "硬伤", "正文引注编号不连续",
-                             f"正文引注 {body_cites}，应从 1 连续递增"))
-            # 4c 文献未被引用
-            unused = [n for n in nums if n not in body_cites]
-            if unused:
-                hard.append((ref_head_line, "硬伤", "文献未被正文引用",
-                             f"文献 [{unused}] 未被正文引用（顺序编码制要求逐条引用）"))
-    elif not note_mode and nums:
-        # 正文无 [n] 引注但文献列表非空：报告模式下仍须逐条引用，不得降级为清单模式
+        # 4b 编号连续（正文引注从 1 起连续）
+        if body_cites != list(range(1, body_cites[-1] + 1)):
+            hard.append((0, "硬伤", "正文引注编号不连续",
+                         f"正文引注 {body_cites}，应从 1 连续递增"))
+        # 4c 文献未被引用：文献列表存在但正文未标注
+        unused = [n for n in nums if n not in body_cites]
+        if unused:
+            hard.append((ref_head_line, "硬伤", "文献未被正文引用",
+                         f"文献 [{unused}] 未被正文引用（须与正文 [n] 一一对应）"))
+    elif nums:
+        # 正文无任何 [n] 引注但文献列表非空：笔记与报告均须逐条引用，不得降级为清单模式
         hard.append((ref_head_line, "硬伤", "正文无引注",
-                     f"正文未标注 [n] 引注，但文献列表含 {len(entries)} 条（顺序编码制要求逐条引用）"))
+                     f"正文未标注 [n] 引注，但文献列表含 {len(entries)} 条（须与正文 [n] 一一对应）"))
 
     # 5) 提示级：转引未标注中间文献
     for n, text, lineno in entries:
