@@ -148,6 +148,10 @@ def check(body, note_mode=False):
             if unused:
                 hard.append((ref_head_line, "硬伤", "文献未被正文引用",
                              f"文献 [{unused}] 未被正文引用（顺序编码制要求逐条引用）"))
+    elif not note_mode and nums:
+        # 正文无 [n] 引注但文献列表非空：报告模式下仍须逐条引用，不得降级为清单模式
+        hard.append((ref_head_line, "硬伤", "正文无引注",
+                     f"正文未标注 [n] 引注，但文献列表含 {len(entries)} 条（顺序编码制要求逐条引用）"))
 
     # 5) 提示级：转引未标注中间文献
     for n, text, lineno in entries:

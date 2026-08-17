@@ -73,7 +73,7 @@ expect("bad- 正文引注悬空[5]", any(h[2] == "正文引注无对应文献" f
 hard, warn = gbt.check("正文[1]。\n\n**参考文献**\n[1] 甲. 书一[M]. 京: 社, 2000.\n[2] 乙. 书二[M]. 京: 社, 2001.")
 expect("bad- 文献[2]未被引用", any(h[2] == "文献未被正文引用" for h in hard))
 
-# ---- 参考来源清单模式：正文无 [n] 引注时不查对应（研究报告约定） ----
+# ---- 参考来源清单模式：正文无 [n] 引注时，报告模式下仍须逐条引用 ----
 LIST_MODE = """# 报告正文（不标来源括注）
 
 **参考文献（GB/T 7714-2015）**
@@ -82,8 +82,7 @@ LIST_MODE = """# 报告正文（不标来源括注）
 [2] 乙. 书二[M]. 京: 社, 2001.
 """
 hard, warn = gbt.check(LIST_MODE)
-expect("list+ 清单模式不报未被引用", not any(h[2] == "文献未被正文引用" for h in hard), f"hard={hard}")
-expect("list+ 清单模式零硬伤", not hard, f"hard={hard}")
+expect("list+ 清单模式报正文无引注", any(h[2] == "正文无引注" for h in hard), f"hard={hard}")
 
 # ---- 负向：正文引注编号不连续 ----
 hard, warn = gbt.check("正文[1][3]。\n\n**参考文献**\n[1] 甲. 书一[M]. 京: 社, 2000.\n[2] 乙. 书二[M]. 京: 社, 2001.\n[3] 丙. 书三[M]. 京: 社, 2002.")
