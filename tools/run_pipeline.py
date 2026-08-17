@@ -30,11 +30,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 PY = sys.executable
 
-# 导入J-Space集成模块
+# 导入J-Space集成模块（原生调用）
 try:
     import sys
     sys.path.insert(0, os.path.join(ROOT, "tools"))
-    from jspace_integration import JSpaceManager, JSpaceError, validate_jspace_script
+    from jspace_integration import jspace_call, jspace_seam, jspace_ship, validate_jspace_script, JSpaceManager
     JSPACE_AVAILABLE = validate_jspace_script()
     if not JSPACE_AVAILABLE:
         print("[提示] J-Space脚本验证失败")
@@ -109,7 +109,7 @@ def bootstrap(config):
     run([os.path.join(TOOLS, "research_start.py"), "--config", config],
         label="research_start.py")
     
-    # J-Space 认知工作空间初始化
+    # J-Space 认知工作空间初始化（原生调用）
     if JSPACE_AVAILABLE:
         try:
             import json
@@ -118,7 +118,8 @@ def bootstrap(config):
             slug = cfg.get("slug")
             question = cfg.get("question", "")
             if slug:
-                print("\n─── J-Space 初始化 ───")
+                print("\n─── J-Space 初始化（原生） ───")
+                # 使用原生调用初始化ledger
                 js = JSpaceManager(slug)
                 js.initialize(f"研究问题：{question[:100]}")
                 
@@ -176,15 +177,12 @@ def check_phase1_complete(slug):
         print("  完成后运行: python tools/check_progress.py --slug " + slug + " --require report_channels")
         sys.exit(1)
     
-    # J-Space 接缝审计
+    # J-Space 接缝审计（原生调用）
     if JSPACE_AVAILABLE:
-        print("\n─── J-Space 阶段1接缝审计 ───")
+        print("\n─── J-Space 阶段1接缝审计（原生） ───")
         try:
-            js = JSpaceManager(slug)
-            js.seam("阶段1完成，进入阶段2")
-            
-            # 同步状态到J-space ledger
-            js.sync_progress()
+            # 使用原生调用执行seam审计
+            jspace_seam("阶段1完成，进入阶段2")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -209,15 +207,12 @@ def check_phase2_complete(slug):
         print("  请先在 notes/ 目录写入≥2篇结构化笔记（不含_TEMPLATE.md和00_index.md）。")
         sys.exit(1)
     
-    # J-Space 接缝审计
+    # J-Space 接缝审计（原生调用）
     if JSPACE_AVAILABLE:
-        print("\n─── J-Space 阶段2接缝审计 ───")
+        print("\n─── J-Space 阶段2接缝审计（原生） ───")
         try:
-            js = JSpaceManager(slug)
-            js.seam("阶段2完成，进入阶段3")
-            
-            # 同步状态到J-space ledger
-            js.sync_progress()
+            # 使用原生调用执行seam审计
+            jspace_seam("阶段2完成，进入阶段3")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -248,15 +243,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
         print("  请先完成交叉验证与量化步骤。")
         sys.exit(1)
     
-    # J-Space 接缝审计
+    # J-Space 接缝审计（原生调用）
     if JSPACE_AVAILABLE:
-        print("\n─── J-Space 阶段3接缝审计 ───")
+        print("\n─── J-Space 阶段3接缝审计（原生） ───")
         try:
-            js = JSpaceManager(slug)
-            js.seam("阶段3完成，进入阶段4")
-            
-            # 同步状态到J-space ledger
-            js.sync_progress()
+            # 使用原生调用执行seam审计
+            jspace_seam("阶段3完成，进入阶段4")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -273,15 +265,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
         print("           3) 笔记上传（note_upload.py）。")
         sys.exit(1)
     
-    # J-Space 接缝审计
+    # J-Space 接缝审计（原生调用）
     if JSPACE_AVAILABLE:
-        print("\n─── J-Space 阶段4沉淀接缝审计 ───")
+        print("\n─── J-Space 阶段4沉淀接缝审计（原生） ───")
         try:
-            js = JSpaceManager(slug)
-            js.seam("阶段4沉淀完成，进入收尾门禁")
-            
-            # 同步状态到J-space ledger
-            js.sync_progress()
+            # 使用原生调用执行seam审计
+            jspace_seam("阶段4沉淀完成，进入收尾门禁")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -330,12 +319,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "report_channels"],
         label="check_progress report_channels")
 
-    # J-Space 交付前检查
+    # J-Space 交付前检查（原生调用）
     if JSPACE_AVAILABLE:
-        print("\n─── J-Space 交付前检查 ───")
+        print("\n─── J-Space 交付前检查（原生） ───")
         try:
-            js = JSpaceManager(slug)
-            js.ship("report.md")
+            # 使用原生调用执行ship检查
+            jspace_ship("report.md")
         except Exception as e:
             print(f"[提示] J-Space ship 检查异常（非阻断）：{e}")
     else:
@@ -429,15 +418,34 @@ def main():
         print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）或 --jspace-status（J-Space状态）至少其一")
         sys.exit(1)
     
-    # J-Space状态显示模式
+    # J-Space状态显示模式（原生调用）
     if args.jspace_status:
         if not args.slug:
             print("ERROR: --jspace-status 需 --slug")
             sys.exit(1)
         if JSPACE_AVAILABLE:
             try:
-                js = JSpaceManager(args.slug)
-                js.status()
+                # 使用原生调用显示状态
+                print("\n=== J-Space 研究状态（原生） ===")
+                jspace_call("seam", check=False)
+                
+                # 同时显示.progress.json状态（如果存在）
+                progress_file = os.path.join(ROOT, "research", args.slug, ".progress.json")
+                if os.path.exists(progress_file):
+                    import json
+                    with open(progress_file, encoding='utf-8') as f:
+                        progress = json.load(f)
+                    
+                    stage = progress.get('stage', '未知')
+                    channels = progress.get('data', {}).get('channels_done', {})
+                    done_channels = [ch for ch, info in channels.items() 
+                                   if info.get('status') == 'done']
+                    
+                    print(f"阶段：{stage}")
+                    print(f"已完成通道：{', '.join(done_channels) if done_channels else '无'}")
+                
+                print("========================\n")
+                
             except Exception as e:
                 print(f"[错误] J-Space状态显示失败: {e}")
         else:
