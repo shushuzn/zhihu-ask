@@ -68,7 +68,9 @@ def ensure_docx():
     if not os.path.exists(VENV_PY):
         print("主解释器缺依赖，正在创建隔离 venv 并安装…")
         import venv
-        venv.create(os.path.dirname(VENV_PY), with_pip=True)
+        # venv 根目录是 VENV_PY 的上两级（venv/Scripts/python.exe），
+        # 不能传 Scripts 层，否则把 venv 嵌套建到 venv/Scripts/ 下导致 python.exe 找不到
+        venv.create(os.path.dirname(os.path.dirname(VENV_PY)), with_pip=True)
         pip = [VENV_PY, "-m", "pip", "install", "-q",
                "python-docx", "Pillow", "matplotlib", "latex2mathml", "mathml2omml"]
         try:

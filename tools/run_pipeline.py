@@ -61,9 +61,14 @@ def flomo_gate(config):
         sys.exit(1)
     question = (cfg.get("question") or "").strip()
     keywords = cfg.get("keywords") or []
-    if isinstance(keywords, list):
-        keywords = " ".join(str(k) for k in keywords if str(k).strip())
-    query = question or str(keywords).strip()
+    if isinstance(keywords, list) and keywords:
+        # 查重词取首个主题词组：flomo MCP 对超长 query 返回空响应，
+        # JSON 解析失败（"Expecting value: line 1 column 1"）阻断初始化；
+        # 短主题词（如"第一性原理 马斯克 定义"）正常
+        keywords = str(keywords[0]).strip()
+    else:
+        keywords = ""
+    query = keywords or question[:60]
     if not query:
         print("[阻断] config 中缺少 question/keywords，无法执行 flomo 查重。")
         sys.exit(1)

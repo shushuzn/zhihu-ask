@@ -56,7 +56,7 @@ def is_blocked(filepath):
     return False
 
 
-def run_quality_check(filepath):
+def run_quality_check(filepath, ack=""):
     """运行质检（quality_check 笔记模式 + check_gbt_refs 笔记模式 + 违规引用检查），返回 (passed, output)。
 
     笔记上传前除 quality_check 外，还须过 check_gbt_refs——
@@ -66,12 +66,17 @@ def run_quality_check(filepath):
     另增加 check_citation_validity（离线模式）——URL 伪造/占位符、
     arxiv 非法 id、作者格式等离线可判项纳入上传拦截；联网核验（编造作者/题名不符）
     不在上传链中强制（网络不可用会阻塞上传），由报告质检阶段执行。
+    ack：人工判读确认合规的条目号（逗号分隔），透传给违规引用检查——
+    多词英文平台/站点名责任者（如 "Startup Archive"）不适用个人作者姓名规范，
+    属工具注释明确的人工放行场景，由主代理判读后传 --ack 放行。
     """
     outputs = []
     for tool, extra in (("quality_check.py", ()), ("check_gbt_refs.py", ()),
                         ("check_citation_validity.py", ("--offline",))):
         cmd = [sys.executable, os.path.join(ROOT, "tools", tool),
                "--file", filepath, *extra]
+        if tool == "check_citation_validity.py" and ack:
+            cmd += ["--ack", ack]
         r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         outputs.append((tool, r.returncode, (r.stdout or "") + (r.stderr or "")))
@@ -228,7 +233,7 @@ def save_ids(ids_path, ids):
 
 
 def upload_file(filepath, max_retries=5, update=False,
-                ids=None, ids_path=None):
+                ids=None, ids_path=None, ack=""):
     """上传单个文件, 返回 (success, memo_id, reason)。
 
     update=True 且 ids 记录中有该文件名 → memo_update 原地更新；否则 memo_create。
@@ -244,7 +249,7 @@ def upload_file(filepath, max_retries=5, update=False,
 
     # 检查2: 质检（强制，不可跳过）
     log(f"  · 质检中: {basename} (quality_check + GB/T + 引用校验)")
-    passed, output = run_quality_check(filepath)
+    passed, output = run_quality_check(filepath, ack=ack)
     if not passed:
         log(f"  ✗ 质检未通过: {basename}")
         return False, None, f"质检未通过: {basename}\n{output[:200]}"
@@ -295,6 +300,9 @@ def main():
     parser.add_argument("--update", action="store_true",
                         help="原地更新：按 .flomo_ids.json 记录用 memo_update 更新已有 memo；"
                              "无记录的文件回退 memo_create（新建并记录 id）")
+    parser.add_argument("--ack", default="",
+                        help="人工判读确认合规的参考文献条目号（逗号分隔），透传违规引用检查放行"
+                             "（多词英文平台/站点名责任者如 'Startup Archive' 不适用个人作者规范）")
     args = parser.parse_args()
 
     path = os.path.join(ROOT, args.path) if not os.path.isabs(args.path) else args.path
@@ -305,7 +313,7 @@ def main():
         ids = load_ids(ids_path)
         log(f"== 单文件上传: {path} ==")
         success, memo_id, reason = upload_file(path, args.max_retries,
-                                              args.update, ids, ids_path)
+                                              args.update, ids, ids_path, ack=args.ack)
         status = "✓" if success else "✗"
         log(f"{status} {os.path.basename(path)}: {reason}")
         if memo_id:
@@ -320,7 +328,7 @@ def main():
         for fname in files:
             fpath = os.path.join(path, fname)
             success, memo_id, reason = upload_file(fpath, args.max_retries,
-                                                   args.update, ids, ids_path)
+                                                   args.update, ids, ids_path, ack=args.ack)
             status = "✓" if success else "✗"
             log(f"{status} {fname}: {reason}")
             if memo_id:
