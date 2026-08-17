@@ -119,6 +119,17 @@ def check(body, note_mode=False):
             hard.append((ref_head_line + lineno, "硬伤", "缺文献类型标识",
                          f"[{n}] {text[:60]} 须含类型标识 {KNOWN_TYPES} 之一"))
 
+    # 2.5) 引用日期非国标：含 '访问' 字样
+    # GB/T 7714-2015 电子资源引用日期只用方括号 [YYYY-MM-DD]（"引用日期"），不写"访问"。
+    # '访问'是 GB/T 7714-2005 的"访问日期"旧术语，国标 2015 已废除该字；圆括号
+    # (YYYY-MM-DD 访问) 亦非标准著录形式。命中即硬伤。先剔除 URL 部分避免误伤含"访问"的路径。
+    for n, text, lineno in entries:
+        e = re.split(r"https?://", text)[0]
+        if "访问" in e:
+            hard.append((ref_head_line + lineno, "硬伤", "引用日期含'访问'字样（非国标）",
+                         f"[{n}] 含'访问'：GB/T 7714-2015 引用日期只写 [YYYY-MM-DD]，不写'访问'；"
+                         f"旧式 (YYYY-MM-DD 访问) 不合国标，删去圆括号部分仅留 [YYYY-MM-DD]"))
+
     # 3) 电子资源引用日期
     for n, text, lineno in entries:
         if ("http://" in text or "https://" in text) and not DATE_RE.search(text):

@@ -240,6 +240,47 @@ def check_process_words(body):
             issues.append((i, "过程性字样", "R轮次/第N轮/本轮/通道X", stripped[:60]))
     return issues
 
+# 成品报告实现过程残留词：正文禁止泄露"用什么语言/脚本/正则做的验证"或
+# 指向内部过程记录文件。这些是实现细节，属内部研究过程（落 process_notes），
+# 不得写进成品正文（对读者无信息量，且暴露工作手法）。
+# 数学术语「正则」(regular) 不作为独立词拦截，仅拦「正则替换/匹配/提取/表达式/解析」
+# 等工具实现用法，避免与数学含义冲突。
+IMPL_RESIDUE_WORDS = [
+    "纯 Python", "纯Python",
+    "过程记录", "过程文件", "过程笔记", "见过程", "详见过程", "过程文档",
+    "验证脚本", "脚本验证", "跑脚本", "用脚本", "脚本跑",
+    "正则替换", "正则匹配", "正则提取", "正则表达式", "用正则", "正则解析",
+    "临时文件", "草稿版",
+]
+
+def check_impl_residue(body):
+    """检测成品报告正文中的实现过程残留（用什么语言/脚本/正则做的验证，
+    或指向内部过程记录文件）。这些是实现细节，属内部研究过程，落 process_notes，
+    不得写进成品正文（SOP：成品只陈述事实与结论）。
+
+    匹配：
+    - 裸 Python（大小写不敏感、词边界）：成品报告不应出现实现语言；
+    - 纯 Python / 过程记录(文件/笔记) / 见过程 / 验证脚本 / 跑脚本 / 正则替换(匹配/
+      提取/表达式/解析) / 临时文件 / 草稿版 等显式残留词。
+    不匹配：引号内引述（《》/""/『』，check_words 同源豁免）、
+    参考文献区（scan_body 已分离）、数学术语「正则」(仅拦工具用法组合)。
+    """
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        # 引文豁免：书名号《》、弯引号""、方引号『』内为引述，不算本人实现残留
+        stripped = re.sub(r"[《「『][^》」』]*[》」』]", "", line)
+        stripped = re.sub(r"[\u201c\u2018][^\u201d\u2019]*[\u201d\u2019]", "", stripped)
+        stripped = re.sub(r'"[^"]*"', "", stripped)
+        # 裸 Python（大小写不敏感，词边界）——成品正文禁泄露实现语言
+        if re.search(r"(?i)\bpython\b", stripped):
+            issues.append((i, "实现过程残留", "Python（成品正文禁泄露实现语言）", line.strip()[:60]))
+            continue
+        for w in IMPL_RESIDUE_WORDS:
+            if w in stripped:
+                issues.append((i, "实现过程残留", w, line.strip()[:60]))
+                break
+    return issues
+
 def check_turn_pattern(body):
     """：检测"不是……，是/而是……"转折句式（典型 AI 语言，用户禁止）。
 
@@ -711,6 +752,31 @@ def check_source_attribution(body):
 
 
 
+def extract_conclusion(full):
+    """提取 H1 标题后的无标题结论段（位于首个 heading 之前）。
+
+    结论段定义：紧跟 H1 标题、且位于首个 heading（## 或 ###）之前的连续
+    段落。若该区域不存在（H1 后首行即为标题），返回 ("", False) 表示结论段
+    被标题占用/缺失——交由 check_report_structure 报硬伤，此处不重复报。
+
+    修订：原正则 `^# [^\\n]*\\n\\n(.*?)(?=^##\\s|$)` 在 `## 结论` 紧贴标题时
+    捕获到空文本，导致"结论过长/分点"检查全部空跑通过（本次缺口根因）。
+    改为显式定位 H1 后首个非空内容，非标题才视为结论段。
+    """
+    m = re.search(r"^#\s+[^\n]*\n(.*)$", full, re.S)
+    if not m:
+        return ("", False)
+    rest = re.sub(r"^\s*\n", "", m.group(1))
+    if re.match(r"^#{1,6}\s+", rest):
+        return ("", False)
+    end_m = re.search(r"^#{1,6}\s+", rest, re.M)
+    concl = rest[:end_m.start()] if end_m else rest
+    concl = concl.strip()
+    # 结论为单段：取首个空行之前
+    para = re.split(r"\n\s*\n", concl, 1)[0].strip()
+    return (para, True)
+
+
 def check_conclusion_len(full):
     """检测结论章节篇幅（结论控制在 300 字符内，含标题）。
 
@@ -719,11 +785,12 @@ def check_conclusion_len(full):
     （最终判断/关键数字/方法名）不得为压缩而删除。
     """
     issues = []
-    m = re.search(r"^# [^\n]*\n\n(.*?)(?=^##\s|$)", full, re.S | re.M)
-    if m:
-        length = len(m.group(1).strip())
-        if length > 300:
-            issues.append((0, "结论过长", f"结论 {length} 字符 > 300 上限", f"结论章节 {length} 字符"))
+    text, ok = extract_conclusion(full)
+    if not ok:
+        return issues  # 缺失/被标题占用由 check_report_structure 报硬伤
+    length = len(text)
+    if length > 300:
+        issues.append((0, "结论过长", f"结论 {length} 字符 > 300 上限", f"结论章节 {length} 字符"))
     return issues
 
 def check_conclusion_style(full):
@@ -735,14 +802,15 @@ def check_conclusion_style(full):
     "层面/端/方面"分层罗列；信息用分号在段落内串联。
     """
     issues = []
-    m = re.search(r"^# [^\n]*\n\n(.*?)(?=^##\s|$)", full, re.S | re.M)
-    if m:
-        for i, line in enumerate(m.group(1).splitlines(), 1):
-            stripped = line.strip()
-            if re.match(r"^\s*[-*]\s+", stripped):
-                issues.append((i, "结论分点", "结论应一段式总述，禁分点", stripped[:60]))
-            elif re.match(r"^[^，。；]{1,8}层面[，,]|^[^，。；]{1,8}端[，,]|^[^，。；]{1,8}方面[，,]|^[^，。；]{1,8}上[，,]", stripped):
-                issues.append((i, "结论分层", "结论禁'XX层面/端/方面'分层骨架", stripped[:60]))
+    text, ok = extract_conclusion(full)
+    if not ok:
+        return issues
+    for i, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if re.match(r"^\s*[-*]\s+", stripped):
+            issues.append((i, "结论分点", "结论应一段式总述，禁分点", stripped[:60]))
+        elif re.match(r"^[^，。；]{1,8}层面[，,]|^[^，。；]{1,8}端[，,]|^[^，。；]{1,8}方面[，,]|^[^，。；]{1,8}上[，,]", stripped):
+            issues.append((i, "结论分层", "结论禁'XX层面/端/方面'分层骨架", stripped[:60]))
     return issues
 
 def check_cross_ref(body):
@@ -889,6 +957,7 @@ def main():
     else:
         all_issues += check_exclamation(body)
         all_issues += check_process_words(body)
+        all_issues += check_impl_residue(body)
         all_issues += check_meta_discourse(body)
         all_issues += check_title_paren(body)
         all_issues += check_title_len(body)

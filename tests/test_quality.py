@@ -70,6 +70,15 @@ expect("proc+ 第N轮", qc.check_process_words("第 3 轮完成"), True)
 expect("proc- 电离通道", qc.check_process_words("电离通道传输稳定"), False)
 expect("proc- 算力迭代", qc.check_process_words("算力迭代更新"), False)
 
+# ---- 实现过程残留（纯 Python / 过程记录 / 脚本 / 正则工具用法）----
+expect("impl+ 纯 Python", qc.check_impl_residue("数值验证（纯 Python，双曲线相交）"), True)
+expect("impl+ 裸Python", qc.check_impl_residue("用 Python 跑了一遍验证"), True)
+expect("impl+ 过程记录", qc.check_impl_residue("数值验证见过程记录"), True)
+expect("impl+ 验证脚本", qc.check_impl_residue("验证脚本输出如下"), True)
+expect("impl+ 正则替换", qc.check_impl_residue("用正则替换提取字段"), True)
+expect("impl- 数学正则算子", qc.check_impl_residue("该算子是正则算子（regular）"), False)
+expect("impl- 普通正文", qc.check_impl_residue("双曲线 $x^2-y^2=1$ 与 $y=kx+1$ 相交"), False)
+
 # ---- AI 转折句式 ----
 expect("turn+ 不是…而是", qc.check_turn_pattern("这不是涨价，而是存量清理"), True)
 expect("turn- 独立否定", qc.check_turn_pattern("不是所有领域都有阈值"), False)
@@ -193,6 +202,11 @@ expect("conclen- 短", qc.check_conclusion_len("# 结论\n\n简短结论。"), F
 expect("constyle+ 分点", qc.check_conclusion_style("# 结论\n\n- 点1\n- 点2"), True)
 expect("constyle+ 分层", qc.check_conclusion_style("# 结论\n\n监管层面，加强监管。"), True)
 expect("constyle- 一段式", qc.check_conclusion_style("# 结论\n\n事实是 A；事实是 B。"), False)
+
+# ---- 结论提取修复回归（原正则 ## 结论 紧贴标题时捕获空文本 → 检查空跑通过） ----
+expect("extract+ 无标题结论段提取 ok=True", ["x"] if qc.extract_conclusion("# 标题\n\n本报告给出结论。\n\n### 一、分析\n文。\n\n## 参考文献\n1. 来源")[1] else [], True)
+expect("extract+ ## 结论 紧贴标题 ok=False（交结构校验报硬伤）", ["x"] if qc.extract_conclusion("# 标题\n\n## 结论\n\n正文。\n\n## 参考文献\n1. 来源")[1] else [], False)
+expect("extract+ 长结论仍被提取并触发过长", qc.check_conclusion_len("# 标题\n\n" + "x" * 301 + "\n\n### 一、分析\n文。\n\n## 参考文献\n1. 来源"), True)
 
 # ---- 交叉引用 ----
 expect("xref+ 错号", qc.check_cross_ref("### 2.5 小节\n见 3.7 节补充"), True)

@@ -84,6 +84,28 @@ def check_structure(lines):
         if req not in top_found:
             issues.append((1, f"缺少顶层章节: ## {req}"))
 
+    # --- 结论段禁标题 + 仅参考文献为顶层章节（补模板硬约束缺口） ---
+    # 规则(a)：仅 ## 参考文献（含英文 References）可为二级标题；其余二级标题
+    #          如 ## 结论 / ## 一、 均违规，内容小节须用 ###。
+    for i, line in enumerate(lines, 1):
+        s = line.strip()
+        if re.match(r"^##\s+", s):
+            htext = re.sub(r"^##\s+", "", s).strip()
+            if htext not in ("参考文献", "References", "references"):
+                issues.append((i, f"硬伤: 顶层章节违规: {s}（仅 ## 参考文献 可为顶层，内容小节须用 ###）"))
+
+    # 规则(b)：H1 标题后首个非空内容段不得是标题，且首行不得写"结论"字样
+    #          （模板：结论段无标题、首行不写"结论"字样）。
+    h1 = next((i for i, l in enumerate(lines) if re.match(r"^#\s+\S", l.strip())), None)
+    if h1 is not None:
+        for j, l in enumerate(lines[h1 + 1:], start=h1 + 2):
+            if l.strip():
+                # 去掉前导 # 标题标记后判断：首行以"结论"开头（无论标题或正文）即违规
+                s_stripped = re.sub(r"^#{1,6}\s+", "", l.strip()).strip()
+                if s_stripped.startswith("结论"):
+                    issues.append((j, "硬伤: 结论段首行不得写'结论'字样（结论段无标题、首行不写'结论'）"))
+                break
+
     ref_idx = next((i for i, line in enumerate(lines) if line.strip() == REQUIRED_REF), None)
     if ref_idx is None:
         issues.append((1, f"缺少参考文献章节: {REQUIRED_REF}"))

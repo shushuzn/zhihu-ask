@@ -65,6 +65,13 @@ expect("good- 条目间空行不误报", not any(h[2] == "文献条目间缺空�
 hard, warn = gbt.check("正文[1]。\n\n**参考文献**\n[1] 甲. 书一[M/OL]. https://example.com/a.")
 expect("bad- 电子资源缺日期", any(h[2] == "电子资源缺引用日期" for h in hard))
 
+# ---- 负向：引用日期含'访问'字样（GB/T 7714-2015 非国标）----
+hard, warn = gbt.check("正文[1]。\n\n**参考文献**\n[1] 甲. 网页[EB/OL]. (2026-08-17 访问)[2026-08-17]. https://example.com/a.")
+expect("bad- 引用日期含访问字样", any(h[2] == "引用日期含'访问'字样（非国标）" for h in hard), f"hard={hard}")
+# ---- 正向：国标 [YYYY-MM-DD] 引用日期（无'访问'）不误报 ----
+hard, warn = gbt.check("正文[1]。\n\n**参考文献**\n[1] 甲. 网页[EB/OL]. [2026-08-17]. https://example.com/a.")
+expect("good- 国标引用日期不误报", not any(h[2] == "引用日期含'访问'字样（非国标）" for h in hard), f"hard={hard}")
+
 # ---- 负向：正文引注悬空 ----
 hard, warn = gbt.check("正文[5]。\n\n**参考文献**\n[1] 甲. 书一[M]. 京: 社, 2000.")
 expect("bad- 正文引注悬空[5]", any(h[2] == "正文引注无对应文献" for h in hard))
