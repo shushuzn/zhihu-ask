@@ -119,6 +119,44 @@ def agent_todos(slug, query):
 """.replace("<slug>", slug).replace("<query>", query or ""))
 
 
+def check_phase1_complete(slug):
+    """校验阶段1是否完成：六通道全部登记且report_channels门禁通过。
+    
+    必须在进入阶段2（撰写结构化笔记）前调用。
+    """
+    print("\n─── 阶段1完成校验（阶段2前置） ───")
+    
+    # 校验report_channels门禁：六通道声明态 ⊕ 证据双向交叉校验
+    r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "report_channels"],
+            label="check_progress report_channels", check=False)
+    if r != 0:
+        print("[阻断] 阶段1未完成：六通道未全部登记或报告纪律不达标。")
+        print("  请先完成阶段1的所有通道检索（F→E→A→B→C→P），并用mark_channel登记。")
+        print("  完成后运行: python tools/check_progress.py --slug " + slug + " --require report_channels")
+        sys.exit(1)
+    
+    print("[通过] 阶段1已完成，可进入阶段2。")
+    return True
+
+
+def check_phase2_complete(slug):
+    """校验阶段2是否完成：结构化笔记≥2篇（不含_TEMPLATE.md和00_index.md）。
+    
+    必须在进入阶段3前调用。
+    """
+    print("\n─── 阶段2完成校验（阶段3前置） ───")
+    
+    r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "phase2_done"],
+            label="check_progress phase2_done", check=False)
+    if r != 0:
+        print("[阻断] 阶段2未完成：结构化笔记不足。")
+        print("  请先在 notes/ 目录写入≥2篇结构化笔记（不含_TEMPLATE.md和00_index.md）。")
+        sys.exit(1)
+    
+    print("[通过] 阶段2已完成，可进入阶段3。")
+    return True
+
+
 def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_match=False):
     banner(f"阶段 4 收尾 · slug={slug}")
     
@@ -269,11 +307,38 @@ def main():
                     help="用户验收通过后回填 plan.md 索引状态（进行中 → 已完成），需 --slug")
     ap.add_argument("--skip-source-voice", action="store_true",
                     help="原文应用类报告（访谈转述/文章整理）：check_ai_voice 跳过提示级表述检查，硬伤保留")
+    ap.add_argument("--check-phase", choices=["phase1", "phase2", "phase3", "phase4"],
+                    help="执行阶段完成校验（phase1=阶段1完成校验，phase2=阶段2完成校验，以此类推）")
     args = ap.parse_args()
 
-    if not args.config and not args.slug:
-        print("ERROR: 需 --config（启动）或 --slug（收尾）至少其一")
+    if not args.config and not args.slug and not args.check_phase:
+        print("ERROR: 需 --config（启动）或 --slug（收尾）或 --check-phase（阶段校验）至少其一")
         sys.exit(1)
+
+    # 阶段校验模式
+    if args.check_phase:
+        if not args.slug:
+            print("ERROR: --check-phase 需 --slug")
+            sys.exit(1)
+        if args.check_phase == "phase1":
+            check_phase1_complete(args.slug)
+        elif args.check_phase == "phase2":
+            check_phase2_complete(args.slug)
+        elif args.check_phase == "phase3":
+            r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", args.slug, "--require", "phase3_done"],
+                    label="check_progress phase3_done", check=False)
+            if r != 0:
+                print("[阻断] 阶段3未完成。")
+                sys.exit(1)
+            print("[通过] 阶段3已完成。")
+        elif args.check_phase == "phase4":
+            r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", args.slug, "--require", "phase4沉淀_done"],
+                    label="check_progress phase4沉淀_done", check=False)
+            if r != 0:
+                print("[阻断] 阶段4沉淀未完成。")
+                sys.exit(1)
+            print("[通过] 阶段4沉淀已完成。")
+        sys.exit(0)
 
     if args.backfill:
         if not args.slug:
