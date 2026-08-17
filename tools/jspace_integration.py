@@ -60,13 +60,14 @@ MODULE_FILES: Dict[str, str] = {
 
 
 @contextmanager
-def jspace_context(slug: str):
+def jspace_context(slug: str, auto_seam: bool = False):
     """J-Space上下文管理器
     
     自动处理研究目录切换和异常恢复。
     
     Args:
         slug: 研究主题的slug标识
+        auto_seam: 是否自动记录seam审计（默认False）
         
     Yields:
         Path: 研究目录路径
@@ -77,9 +78,16 @@ def jspace_context(slug: str):
     original_dir = os.getcwd()
     os.chdir(research_dir)
     
+    # 如果启用自动seam审计，记录进入时间
+    start_time = time.time()
+    
     try:
         yield research_dir
     finally:
+        # 如果启用自动seam审计，记录退出时间和持续时间
+        if auto_seam:
+            duration = time.time() - start_time
+            logger.debug(f"J-Space上下文执行时间: {duration:.2f}秒")
         os.chdir(original_dir)
 
 
@@ -462,6 +470,19 @@ def jspace_marker(slug: str, marker_type: str, description: str) -> None:
         jspace_call("note", f"--next={marker_type}: {description}", check=False)
 
 
+def jspace_self_monitor(slug: str, observation: str) -> None:
+    """记录自我监控观察（self-monitoring模块）
+    
+    在处理过程中记录自我监控观察，用于追踪思考过程。
+    
+    Args:
+        slug: 研究主题的slug标识
+        observation: 自我监控观察内容
+    """
+    with jspace_context(slug):
+        jspace_call("note", f"--next=观察: {observation}", check=False)
+
+
 def jspace_run_in_context(slug: str, func: Callable[[], Any], *args, **kwargs) -> Any:
     """在J-Space上下文中执行函数
     
@@ -478,6 +499,28 @@ def jspace_run_in_context(slug: str, func: Callable[[], Any], *args, **kwargs) -
     """
     with jspace_context(slug):
         return func(*args, **kwargs)
+
+
+def jspace_track_phase_transition(slug: str, from_phase: str, to_phase: str, notes: str = "") -> None:
+    """记录阶段转换
+    
+    自动记录阶段转换，用于状态跟踪。
+    
+    Args:
+        slug: 研究主题的slug标识
+        from_phase: 源阶段（如 "phase1", "phase2" 等）
+        to_phase: 目标阶段
+        notes: 额外备注
+    """
+    with jspace_context(slug):
+        # 记录阶段转换
+        description = f"阶段转换: {from_phase} → {to_phase}"
+        if notes:
+            description += f" ({notes})"
+        jspace_call("note", f"--next={description}", check=False)
+        
+        # 执行seam审计
+        jspace_seam(f"阶段转换: {from_phase} → {to_phase}")
 
 
 # 默认配置
@@ -535,11 +578,60 @@ def jspace_save_config(config: Dict[str, Any]) -> bool:
         return False
 
 
+def jspace_log_operation(operation: str, slug: str = "", details: str = "") -> None:
+    """记录J-Space操作日志
+    
+    将操作记录到日志文件，便于追踪和调试。
+    
+    Args:
+        operation: 操作类型（如 "seam", "ship", "initialize" 等）
+        slug: 研究主题的slug标识（可选）
+        details: 操作详情（可选）
+    """
+    log_file = ROOT / "jspace_operations.log"
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] {operation}"
+    if slug:
+        log_entry += f" (slug: {slug})"
+    if details:
+        log_entry += f" - {details}"
+    log_entry += "\n"
+    
+    try:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+    except Exception as e:
+        logger.warning(f"记录操作日志失败: {e}")
+
+
+def jspace_get_operation_log(limit: int = 10) -> list:
+    """获取最近的操作日志
+    
+    Args:
+        limit: 返回的最大条目数（默认10）
+        
+    Returns:
+        list: 日志条目列表
+    """
+    log_file = ROOT / "jspace_operations.log"
+    if not log_file.exists():
+        return []
+    
+    try:
+        with open(log_file, encoding='utf-8') as f:
+            lines = f.readlines()
+        # 返回最后N条
+        return lines[-limit:] if len(lines) > limit else lines
+    except Exception as e:
+        logger.error(f"读取操作日志失败: {e}")
+        return []
+
+
 if __name__ == "__main__":
     # 测试用法
     if len(sys.argv) < 2:
         print("用法: python jspace_integration.py <command> [args]")
-        print("命令: validate | seam <slug> [context] | ship <slug> <file> | resume <slug> | status <slug> | module <name> | modules")
+        print("命令: validate | seam <slug> [context] | ship <slug> <file> | resume <slug> | status <slug> | module <name> | modules | log [limit]")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -570,6 +662,14 @@ if __name__ == "__main__":
         else:
             print(f"模块 {module_name} 不存在或无法读取")
             sys.exit(1)
+        sys.exit(0)
+    
+    if command == "log":
+        limit = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+        logs = jspace_get_operation_log(limit)
+        print("最近J-Space操作日志:")
+        for line in logs:
+            print(line.strip())
         sys.exit(0)
     
     if len(sys.argv) < 3:

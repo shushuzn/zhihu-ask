@@ -25,6 +25,10 @@ from jspace_integration import (
     jspace_directed_focus,
     jspace_marker,
     jspace_batch_note,
+    jspace_self_monitor,
+    jspace_track_phase_transition,
+    jspace_log_operation,
+    jspace_get_operation_log,
 )
 
 
@@ -144,6 +148,41 @@ class TestJSpaceIntegration(unittest.TestCase):
         # ]
         # jspace_batch_note("test-slug", notes)
         pass
+    
+    def test_self_monitor(self):
+        """测试自我监控功能"""
+        # 这个测试需要实际的J-Space环境，这里只是概念验证
+        # jspace_self_monitor("test-slug", "测试自我监控观察")
+        pass
+    
+    def test_track_phase_transition(self):
+        """测试阶段转换跟踪功能"""
+        # 这个测试需要实际的J-Space环境，这里只是概念验证
+        # jspace_track_phase_transition("test-slug", "phase1", "phase2", "测试阶段转换")
+        pass
+    
+    def test_log_operation(self):
+        """测试操作日志功能"""
+        # 测试记录操作日志
+        jspace_log_operation("test_operation", "test-slug", "测试操作日志")
+        
+        # 验证日志文件已创建
+        import jspace_integration
+        log_file = jspace_integration.ROOT / "jspace_operations.log"
+        self.assertTrue(log_file.exists())
+        
+        # 验证日志内容
+        with open(log_file, encoding='utf-8') as f:
+            content = f.read()
+        self.assertIn("test_operation", content)
+        self.assertIn("test-slug", content)
+        self.assertIn("测试操作日志", content)
+    
+    def test_get_operation_log(self):
+        """测试获取操作日志功能"""
+        # 测试获取操作日志
+        logs = jspace_get_operation_log(5)
+        self.assertIsInstance(logs, list)
 
 
 if __name__ == "__main__":

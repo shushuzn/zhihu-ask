@@ -36,7 +36,8 @@ try:
     sys.path.insert(0, os.path.join(ROOT, "tools"))
     from jspace_integration import (jspace_call, jspace_seam, jspace_ship, jspace_validate, 
                                    jspace_context, jspace_get_research_dir, jspace_module, jspace_list_modules,
-                                   jspace_directed_focus, jspace_marker, jspace_load_config)
+                                   jspace_directed_focus, jspace_marker, jspace_load_config,
+                                   jspace_self_monitor, jspace_track_phase_transition, jspace_log_operation)
     JSPACE_AVAILABLE = jspace_validate()
     if not JSPACE_AVAILABLE:
         print("[提示] J-Space脚本验证失败")
@@ -185,6 +186,12 @@ def check_phase1_complete(slug):
             with jspace_context(slug):
                 jspace_seam("阶段1完成，进入阶段2")
             
+            # 记录阶段转换
+            jspace_track_phase_transition(slug, "phase1", "phase2", "六通道检索完成")
+            
+            # 记录操作日志
+            jspace_log_operation("phase1_complete", slug, "阶段1完成校验通过")
+            
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     else:
@@ -215,6 +222,12 @@ def check_phase2_complete(slug):
             # 使用上下文管理器简化目录切换
             with jspace_context(slug):
                 jspace_seam("阶段2完成，进入阶段3")
+            
+            # 记录阶段转换
+            jspace_track_phase_transition(slug, "phase2", "phase3", "多视角信息收集完成")
+            
+            # 记录操作日志
+            jspace_log_operation("phase2_complete", slug, "阶段2完成校验通过")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -253,6 +266,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
             with jspace_context(slug):
                 jspace_seam("阶段3完成，进入阶段4")
             
+            # 记录阶段转换
+            jspace_track_phase_transition(slug, "phase3", "phase4", "交叉验证完成")
+            
+            # 记录操作日志
+            jspace_log_operation("phase3_complete", slug, "阶段3完成校验通过")
+            
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
     else:
@@ -275,6 +294,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
             # 使用上下文管理器简化目录切换
             with jspace_context(slug):
                 jspace_seam("阶段4沉淀完成，进入收尾门禁")
+            
+            # 记录阶段转换
+            jspace_track_phase_transition(slug, "phase4沉淀", "收尾门禁", "沉淀完成")
+            
+            # 记录操作日志
+            jspace_log_operation("phase4沉淀_complete", slug, "阶段4沉淀完成校验通过")
             
         except Exception as e:
             print(f"[提示] J-Space seam 审计异常（非阻断）：{e}")
@@ -330,6 +355,9 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
             # 使用上下文管理器简化目录切换
             with jspace_context(slug):
                 jspace_ship("report.md")
+            
+            # 记录操作日志
+            jspace_log_operation("ship_check", slug, "交付前检查完成")
                 
         except Exception as e:
             print(f"[提示] J-Space ship 检查异常（非阻断）：{e}")
