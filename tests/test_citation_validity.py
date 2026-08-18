@@ -321,7 +321,8 @@ hard, warn = ccv.check("正文[1]。\n\n**参考文献**\n[1] miao yuchun. 题�
 expect("提示- 英文作者格式异常",
        any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
 
-# 机构/平台名责任者（ack 机制覆盖）：人工确认后跳过作者格式提示
+# 机构/平台名责任者：Title Case 多词组织名（如 "Easy Linear Algebra"）自动豁免
+# 个人作者规范（修复：Model Context Protocol 等官方机构名误报，无需 ack）
 ORG_AUTHOR = """# 测试报告
 
 可视化学习平台以线性变换为出发点[1]。
@@ -329,12 +330,20 @@ ORG_AUTHOR = """# 测试报告
 **参考文献**
 [1] Easy Linear Algebra. 线性代数学习平台[EB/OL]. (2024-01-10)[2026-08-16]. https://mathbase.cn/.
 """
-hard, warn = ccv.check(ORG_AUTHOR, offline=True, ack=(1,))
-expect("ack- 机构名责任者跳过作者格式提示",
+hard, warn = ccv.check(ORG_AUTHOR, offline=True)
+expect("提示- 机构名责任者自动豁免（Title Case 多词）",
        not any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
 
-hard, warn = ccv.check(ORG_AUTHOR, offline=True)
-expect("提示- 机构名责任者未确认仍报",
+# 个人作者（姓全大写 名首字母规范）仍报
+PERSON_AUTHOR = """# 测试报告
+
+正文[1]。
+
+**参考文献**
+[1] miao yuchun. 题名[M]. 京: 社, 2024. https://x.org/a.
+"""
+hard, warn = ccv.check(PERSON_AUTHOR, offline=True)
+expect("提示- 个人作者格式异常仍报",
        any(w[2] == "作者格式疑似异常" for w in warn), f"warn={warn}")
 
 # ---- arxiv.org/html/ 链接核验（此前 /html/ 被当普通 URL 只查可达性，
