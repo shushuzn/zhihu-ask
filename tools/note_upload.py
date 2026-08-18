@@ -336,7 +336,7 @@ def save_ids(ids_path, ids):
 
 
 def upload_file(filepath, max_retries=5, update=False,
-                ids=None, ids_path=None, ack=""):
+                ids=None, ids_path=None, ack="", update_id=""):
     """上传单个文件, 返回 (success, memo_id, reason)。
 
     update=True 且 ids 记录中有该文件名 → memo_update 原地更新；否则 memo_create。
@@ -387,21 +387,29 @@ def upload_file(filepath, max_retries=5, update=False,
             log(f"  · 记录 id {existing} 在当前账户不存在，转入内容搜索去重: {basename}")
             existing = None  # 失效记录，进入内容搜索
 
-    # 3b: 内容搜索去重（本地无有效记录时）
+    # 3b: 内容搜索去重（本地无有效记录时）——所有候选均需人工判断
     if not memo_id:
         log(f"  · 搜索相似笔记去重: {basename}")
         similar = search_similar_notes(content, limit=5)
         if similar:
             best_id, score = find_best_match(content, similar)
-            if best_id and score >= 0.9:
-                if memo_exists(best_id):
-                    log(f"  · 内容去重命中 (relevance={score:.2f}): {basename} → 更新 memo {best_id}")
-                    memo_id = update_to_flomo(content, best_id, max_retries=max_retries)
-                    action = f"内容去重更新(relevance={score:.2f})" if memo_id else None
-                else:
-                    log(f"  · 命中 memo {best_id} 但在当前账户不存在，回退新建")
+            if best_id:
+                log(f"  · 发现相似笔记 (relevance={score:.2f}): {basename}")
+                log(f"    候选 memo_id: {best_id}")
+                log(f"    请人工判断：是更新该笔记(memo_update)，还是新建？")
+                log(f"    [自动化环境无法交互，默认按新笔记处理；交互式运行请手动指定 --update-id <memo_id>]")
+                # 人工指定 --update-id 时，直接使用该 id 更新
+                if update_id and update_id == best_id:
+                    if memo_exists(best_id):
+                        log(f"  · 人工确认更新: {basename} → memo_update {best_id}")
+                        memo_id = update_to_flomo(content, best_id, max_retries=max_retries)
+                        action = f"人工确认更新(relevance={score:.2f})" if memo_id else None
+                    else:
+                        log(f"  · 指定的 memo_id {best_id} 在当前账户不存在，按新笔记处理")
+                # 自动化环境默认不更新，避免假阳性误更新
+                # 交互式可通过 --update-id 指定要更新的 memo_id
             elif best_id and score >= 0.5:
-                log(f"  · 发现相关笔记 (relevance={score:.2f})，但相似度不足 0.9，按新笔记处理: {basename}")
+                log(f"  · 发现相关笔记 (relevance={score:.2f})，供参考: {basename}")
 
     # 3c: 兜底新建
     if not memo_id:
@@ -430,6 +438,8 @@ def main():
     parser.add_argument("--ack", default="",
                         help="人工判读确认合规的参考文献条目号（逗号分隔），透传违规引用检查放行"
                              "（多词英文平台/站点名责任者如 'Startup Archive' 不适用个人作者规范）")
+    parser.add_argument("--update-id", default="",
+                        help="人工指定要更新的 memo_id（内容搜索发现相似笔记时使用，避免假阳性自动更新）")
     args = parser.parse_args()
 
     path = os.path.join(ROOT, args.path) if not os.path.isabs(args.path) else args.path
@@ -440,7 +450,7 @@ def main():
         ids = load_ids(ids_path)
         log(f"== 单文件上传: {path} ==")
         success, memo_id, reason = upload_file(path, args.max_retries,
-                                              args.update, ids, ids_path, ack=args.ack)
+                                              args.update, ids, ids_path, ack=args.ack, update_id=args.update_id)
         status = "✓" if success else "✗"
         log(f"{status} {os.path.basename(path)}: {reason}")
         if memo_id:
@@ -455,7 +465,7 @@ def main():
         for fname in files:
             fpath = os.path.join(path, fname)
             success, memo_id, reason = upload_file(fpath, args.max_retries,
-                                                   args.update, ids, ids_path, ack=args.ack)
+                                                   args.update, ids, ids_path, ack=args.ack, update_id=args.update_id)
             status = "✓" if success else "✗"
             log(f"{status} {fname}: {reason}")
             if memo_id:
