@@ -248,14 +248,30 @@ def load_from_dir(path):
 
 
 def batch_get(ids):
-    """用 flomo MCP memo_batch_get 拉取笔记全文（memo_search 只返回截断/摘要版）。"""
+    """用 flomo MCP memo_batch_get 拉取笔记全文（memo_search 只返回截断/摘要版）。
+
+    容错：MCP 调用失败 / 返回 400 / content 结构异常 / text 非 JSON 时
+    降级返回 {}（调用方回退到 memo_search 截断内容），不中断整体检测。
+    """
     from tools.flomo_search import mcp_call
-    result = mcp_call("tools/call", {"name": "memo_batch_get", "arguments": {"ids": ids}})
+    try:
+        result = mcp_call("tools/call", {"name": "memo_batch_get", "arguments": {"ids": ids}})
+    except Exception:
+        return {}
     if not result or "result" not in result:
         return {}
-    text = result["result"]["content"][0]["text"]
-    data = json.loads(text)
-    return {m["id"]: (m.get("content") or "") for m in data.get("memos", [])}
+    try:
+        text = result["result"]["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        return {}
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return {}
+    try:
+        return {m["id"]: (m.get("content") or "") for m in data.get("memos", [])}
+    except (TypeError, AttributeError):
+        return {}
 
 
 def load_from_flomo(keywords, tag, limit):

@@ -7,8 +7,10 @@ match_keys（中文/英文/前缀键）、relevant_candidates（标题匹配键�
 """
 import os
 import sys
+import json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import check_flomo_note_refs as cfr
 
@@ -119,7 +121,29 @@ def test_detect_no_search():
     expect("来源字段理由含非规定", "非规定字段" in r4["reason"], True)
 
 
+def test_batch_get_fallback():
+    import tools.flomo_search as fs
+
+    def fake_call(method, params=None):
+        raise RuntimeError("flomo MCP 网络失败")
+    orig = fs.mcp_call
+    fs.mcp_call = fake_call
+    expect("MCP异常降级空dict", cfr.batch_get(["x"]), {})
+
+    def fake_call2(method, params=None):
+        return {"result": {"content": [{"text": "not json"}]}}
+    fs.mcp_call = fake_call2
+    expect("非JSON降级空dict", cfr.batch_get(["x"]), {})
+
+    def fake_call3(method, params=None):
+        return {"result": {"content": [{"text": json.dumps({"memos": [{"id": "a", "content": "全文"}]})}]}}
+    fs.mcp_call = fake_call3
+    expect("正常JSON解析", cfr.batch_get(["a"]), {"a": "全文"})
+    fs.mcp_call = orig
+
+
 if __name__ == "__main__":
+    test_batch_get_fallback()
     test_has_reference()
     test_extract_title()
     test_match_keys()

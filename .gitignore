@@ -29,6 +29,8 @@ tools/_start_*.json
 tools/start*.json
 !tools/start.example.json
 tools/*.zip
+# 临时检索查询文件（研究过程产物，不入库）
+tools/queries_b[0-9]*.json
 .commit_msg.tmp
 .desc.tmp.txt
 *.tmp
@@ -46,3 +48,4 @@ Thumbs.db
 
 # j-space 控制器状态（不入库）
 .jspace/
+jspace_operations.log

@@ -102,6 +102,9 @@ def upload_cover(token, cover_path):
 
 # ─── Markdown → 公众号 HTML（内联样式）───────────────────────────────────
 
+UL_RE = re.compile(r"^[-*]\s+")
+OL_RE = re.compile(r"^\d+[.)]\s+")
+
 _INLINE_STYLES = {
     "h1": 'style="font-size:24px;font-weight:bold;margin:28px 0 14px;color:#1a1a1a;border-left:4px solid #576b95;padding-left:10px;"',
     "h2": 'style="font-size:20px;font-weight:bold;margin:22px 0 10px;color:#2a2a2a;border-left:4px solid #9aa8c8;padding-left:10px;"',
@@ -186,7 +189,7 @@ def md_to_wechat_html(md_text):
         if re.match(r"^[-*]\s+", ln):
             items = []
             while i < len(lines) and re.match(r"^[-*]\s+", lines[i]):
-                items.append(f"<li {_INLINE_STYLES['li']}>{esc(re.sub(r'^[-*]\s+', '', lines[i]))}</li>")
+                items.append(f"<li {_INLINE_STYLES['li']}>{esc(UL_RE.sub('', lines[i]))}</li>")
                 i += 1
             html.append("<ul style='padding-left:20px;margin:10px 0;'>" + "".join(items) + "</ul>")
             continue
@@ -194,7 +197,7 @@ def md_to_wechat_html(md_text):
         if re.match(r"^\d+[.)]\s+", ln):
             items = []
             while i < len(lines) and re.match(r"^\d+[.)]\s+", lines[i]):
-                items.append(f"<li {_INLINE_STYLES['li']}>{esc(re.sub(r'^\d+[.)]\s+', '', lines[i]))}</li>")
+                items.append(f"<li {_INLINE_STYLES['li']}>{esc(OL_RE.sub('', lines[i]))}</li>")
                 i += 1
             html.append("<ol style='padding-left:20px;margin:10px 0;'>" + "".join(items) + "</ol>")
             continue
