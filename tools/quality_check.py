@@ -58,9 +58,36 @@ REF_MARKERS = ["## 参考文献", "### 参考文献"]
 
 # 笔记模式（笔记用 Unicode、报告用 LaTeX）：
 # 文件位于 research/<slug>/notes/ 目录下即视为模块化笔记——
-# 文献段用笔记格式「来源:」或「参考文献:」（非报告的 ## 参考文献），正文允许 Unicode 手写公式。
-NOTE_SOURCE_MARKERS = ["\n来源:", "## 参考文献", "\n参考文献:"]
-NOTE_REF_MARKERS = ["来源:", "## 参考文献", "参考文献:"]
+# 文献段仅允许「参考文献:」标记（「来源:」为非规定字段，一律禁止），正文允许 Unicode 手写公式。
+NOTE_SOURCE_MARKERS = ["## 参考文献", "\n参考文献:"]
+NOTE_REF_MARKERS = ["## 参考文献", "参考文献:"]
+
+# 笔记非规定字段：flomo 笔记模板只允许「tag 行 + 纯文本标题 + 正文 + 参考文献:」，
+# 「来源」「概念」等字段一律禁止（来源信息只能以 GB/T 7714-2015 条目进参考文献区）。
+FORBIDDEN_NOTE_FIELDS = [
+    (r"^\s*\*\*来源\*\*\s*[:：]", "来源字段"),
+    (r"^\s*\*\*概念\*\*\s*[:：]", "概念字段"),
+    (r"^\s*来源\s*[:：]", "来源字段"),
+    (r"^\s*概念\s*[:：]", "概念字段"),
+]
+
+
+def check_note_forbidden_fields(body):
+    """检测笔记非规定字段（来源/概念等，flomo 笔记模板禁止）。
+
+    判定：行首出现「**来源**：」「来源:」「**概念**：」「概念:」等字段形式
+    （含全角/半角冒号、加粗变体）即报"非规定字段"。
+    不匹配：正文普通用词（"这些数字的来源是官方文档""核心概念是……"——非行首字段形式）。
+    """
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        for pat, label in FORBIDDEN_NOTE_FIELDS:
+            if re.search(pat, line):
+                issues.append((i, "非规定字段",
+                               f"笔记禁止「{label}」字段——来源只能以 GB/T 7714-2015 条目写入「参考文献:」区",
+                               line.strip()[:60]))
+                break
+    return issues
 
 REF_BAD_LABELS = ["一手", "二手", "推断"]
 
@@ -959,6 +986,8 @@ def main():
         # 笔记仅首行 tag 行允许 #，大小标题一律纯文本，禁止 #/##/### 与 * 标记。
         all_issues += check_title_asterisk(body)
         all_issues += check_title_hash(body)
+        # 非规定字段（来源/概念等）一律禁止——来源只能以 GB/T 条目进「参考文献:」区
+        all_issues += check_note_forbidden_fields(body)
         # 参考文献条目与正文 [n] 引注须一一对应（不能少、不能多）
         all_issues += check_citation_correspondence(full, note_mode=True)
     else:

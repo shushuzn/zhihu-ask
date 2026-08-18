@@ -64,7 +64,7 @@ UA = {"User-Agent": "Mozilla/5.0 (zhihu-ask citation validator)"}
 # 与 check_gbt_refs 保持一致的解析常量
 ENTRY_RE = re.compile(r"^\[(\d+)\]\s")
 REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
-NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献|^来源:")
+NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
 CITE_RE = re.compile(r"\[(\d+)\]")
 
 # 伪锚点：真实文献 URL 不会带这些片段
