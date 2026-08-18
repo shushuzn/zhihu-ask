@@ -200,4 +200,6 @@ expect("lock- 锁释放后无残留", not os.path.exists(p_l + ".lock"), True)
 cleanup(d_l)
 
 print(f"\n==== channel_state 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

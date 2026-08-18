@@ -169,4 +169,6 @@ expect("cli- 违规文件 RC=1", rc == 1)
 os.unlink(bad_path)
 
 print(f"\n==== check_gbt_refs 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

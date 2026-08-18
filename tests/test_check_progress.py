@@ -205,4 +205,6 @@ expect("p0+ 财经时政P2跳过→放行", cp.check_report_channels(d, s), 0)
 cleanup(d)
 
 print(f"\n==== check_progress 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

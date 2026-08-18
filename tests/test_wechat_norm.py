@@ -160,4 +160,6 @@ for sdir in (d1, d2):
     shutil.rmtree(sdir, ignore_errors=True)
 
 print(f"\n==== wechat_search 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

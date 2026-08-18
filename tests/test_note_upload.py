@@ -68,7 +68,7 @@ nu.update_to_flomo = lambda content, memo_id, max_retries=5, retry_delay=30: (
     calls["update"].append((content, memo_id)) or "OLD_ID")
 
 # 隔离质检：被测单元是上传分支，质检/存在性校验为外部依赖（原 force 跳过，现以 mock 等价替代）
-nu.run_quality_check = lambda filepath: (True, "")
+nu.run_quality_check = lambda filepath, ack="": (True, "")
 nu.memo_exists = lambda memo_id: True
 
 note = os.path.join(notes_dir, "01_a.md")
@@ -105,4 +105,6 @@ expect("block+ 无网络调用", len(calls["create"]), 0)
 shutil.rmtree(tmp, ignore_errors=True)
 
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

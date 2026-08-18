@@ -335,4 +335,6 @@ expect("cite- report 一一对应通过",
        or has(qc.check_citation_correspondence(_rep_ok, note_mode=False), "引用无对应文献"), False)
 
 print(f"\n==== quality_check 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

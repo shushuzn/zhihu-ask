@@ -556,7 +556,7 @@ def main():
                 print(f"[回填] {args.slug} 无变化（已回填或索引行缺失）")
         except Exception as e:
             print(f"[提示] plan.md 回填失败: {e}")
-        sys.exit(0)
+        return
 
     if args.config:
         bootstrap(args.config)

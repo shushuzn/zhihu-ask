@@ -87,4 +87,6 @@ expect("full- 最小合规报告通过", check(full), False)
 
 
 print(f"PASS={PASS} FAIL={FAIL}")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

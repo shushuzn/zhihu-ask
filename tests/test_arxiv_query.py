@@ -99,4 +99,6 @@ def test_curl_fallback():
 test_curl_fallback()
 
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

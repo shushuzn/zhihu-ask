@@ -51,4 +51,6 @@ fs = importlib.reload(fs)
 # 「查重结论」混为一谈，假阳性会漏判）。token 相关测试见上方。
 
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

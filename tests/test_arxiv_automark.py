@@ -96,4 +96,5 @@ if os.path.exists(out2):
     os.remove(out2)
 
 print(f"\n==== arxiv_search 自动登记 回归测试：PASS={PASS} FAIL={FAIL} ====")
-sys.exit(1 if FAIL else 0)
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

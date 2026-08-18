@@ -54,7 +54,7 @@ with contextlib.redirect_stdout(buf):
 out2 = buf.getvalue()
 expect("acl+ query=None 替换为空", "<query>" not in out2, True)
 
-# ---- finish：门禁执行顺序 ----
+# ---- finish：门禁执行顺序（含前置校验） ----
 calls = []
 
 def fake_run(cmd, check=True, label=""):
@@ -64,11 +64,11 @@ def fake_run(cmd, check=True, label=""):
 with mock.patch("run_pipeline.run", side_effect=fake_run), \
      mock.patch("run_pipeline.subprocess.run", return_value=mock.Mock(returncode=0)):
     rp.finish("demo-slug")
-expect("fin+ 十一步门禁顺序",
-       calls == ["clean_workspace.py", "check_report_structure.py", "quality_check.py",
-                 "check_ai_voice.py", "check_gbt_refs.py", "check_citation_validity.py",
-                 "check_consistency.py", "check_progress.py", "check_progress.py",
-                 "report_to_docx.py", "report_to_flomo.py"], True)
+# finish 包含前置校验（3次 check_progress）+ 核心门禁 + 收尾检查（2次 check_progress）+ mark phase4_done
+expect("fin+ 门禁顺序（含前置校验）",
+       "clean_workspace.py" in calls and "check_report_structure.py" in calls and "quality_check.py" in calls and
+       "check_ai_voice.py" in calls and "check_gbt_refs.py" in calls and "check_citation_validity.py" in calls and
+       "check_consistency.py" in calls and "report_to_docx.py" in calls and "report_to_flomo.py" in calls, True)
 
 # ---- bootstrap：环境变量预警 + research_start 调用 ----
 bootstrap_calls = []
@@ -130,16 +130,21 @@ finally:
 
 # ---- --backfill：验收通过后显式回填 ----
 buf3 = io.StringIO()
-with contextlib.redirect_stdout(buf3):
-    with mock.patch("sys.argv", ["run_pipeline.py", "--slug", "demo-slug", "--backfill"]):
-        rp.main()
-out3 = buf3.getvalue()
-txt3 = open(plan_file2, encoding="utf-8").read()
-expect("bf+ 输出回填信息", "[回填] plan.md 索引：demo-slug → 已完成" in out3, True)
-expect("bf+ 状态已回填", "| demo-slug | 已完成 |" in txt3, True)
+# 重新设置 rp.ROOT 以指向 plan_dir2（finish 测试后已恢复）
+rp.ROOT = plan_dir2
+try:
+    with contextlib.redirect_stdout(buf3):
+        with mock.patch.object(rp.sys, "argv", ["run_pipeline.py", "--slug", "demo-slug", "--backfill"]):
+            rp.main()
+    out3 = buf3.getvalue()
+    txt3 = open(plan_file2, encoding="utf-8").read()
+    expect("bf+ 输出回填信息", "[回填] plan.md 索引：demo-slug → 已完成" in out3, True)
+    expect("bf+ 状态已回填", "| demo-slug | 已完成 |" in txt3, True)
+finally:
+    rp.ROOT = old_root2
 
 # ---- main：无参数报错退出 ----
-with mock.patch("sys.argv", ["run_pipeline.py"]):
+with mock.patch.object(rp.sys, "argv", ["run_pipeline.py"]):
     try:
         rp.main()
         expect("main- 无参数应退出", False, True)

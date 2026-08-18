@@ -53,4 +53,6 @@ qdata = json.load(open(qf, encoding="utf-8"))
 expect("cmd+ 引号关键词写入文件", qdata["queries"], ['"精确短语" 测试', "x"])
 
 print(f"TOTAL: PASS={PASS} FAIL={FAIL}")
-sys.exit(1 if FAIL else 0)
+
+if __name__ == "__main__":
+    sys.exit(1 if FAIL else 0)

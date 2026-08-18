@@ -1,0 +1,19 @@
+== 目录批量上传: D:\OpenClaw\zhihu-ask\research/button-01-stop-paradox/notes/ ==
+   待处理文件(3): 00_index.md, 01_talmud-family-planning-analogue.md, 02_button-01-exact-solution.md
+→ [00_index.md] 开始处理
+  ✗ 拦截: 00_index.md 是索引/报告文件，禁止上传
+✗ 00_index.md: 禁止上传: 00_index.md (索引/报告文件)
+→ [01_talmud-family-planning-analogue.md] 开始处理
+  · 质检中: 01_talmud-family-planning-analogue.md (quality_check + GB/T + 引用校验)
+  ✓ 质检通过: 01_talmud-family-planning-analogue.md
+  · 上传中: 01_talmud-family-planning-analogue.md (flomo MCP)
+✓ 01_talmud-family-planning-analogue.md: 上传成功
+  flomo id: MjUyMzI0MTUz
+→ [02_button-01-exact-solution.md] 开始处理
+  · 质检中: 02_button-01-exact-solution.md (quality_check + GB/T + 引用校验)
+  ✓ 质检通过: 02_button-01-exact-solution.md
+  · 上传中: 02_button-01-exact-solution.md (flomo MCP)
+✓ 02_button-01-exact-solution.md: 上传成功
+  flomo id: MjUyMzI0MTU3
+   id 记录已落盘: D:\OpenClaw\zhihu-ask\research\button-01-stop-paradox\.flomo_ids.json
+EXIT=0
