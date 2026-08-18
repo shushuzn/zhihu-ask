@@ -1032,6 +1032,8 @@ def main():
     all_issues += check_ai_phrases(body)
     all_issues += check_judgment_hints(body)
     all_issues += check_internal_refs(body)
+    # Also check full content for flomo URLs in reference section
+    all_issues += check_internal_refs(full)
     all_issues += check_grade_paren(body)
     all_issues += check_evidence_grade(body)
     all_issues += check_stock_info(body)
