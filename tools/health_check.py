@@ -16,6 +16,7 @@
 
 import sys
 import os
+from glob import glob
 import subprocess
 import re
 
@@ -177,8 +178,9 @@ def main():
     all_ok &= check("git 仓库状态", rc == 0, branch_info)
 
     rc, out, _ = run_git("remote", "-v")
-    has_remote = "origin" in out and "git@github.com" in out
-    all_ok &= check("远程 origin (SSH)", has_remote,
+    has_remote = "origin" in out
+    ssh_detail = "SSH" if "git@github.com" in out else "HTTPS"
+    all_ok &= check("远程 origin 已配置", has_remote,
                     out.splitlines()[0] if out else "未配置")
 
     rc, out, _ = run_git("status", "--short", "--branch")
@@ -214,8 +216,9 @@ def main():
         venv_py = os.path.join(ROOT, "venv", "Scripts", "python.exe")
         if not os.path.exists(venv_py):
             venv_py = os.path.join(ROOT, "venv", "bin", "python")
-        docx_ok = os.path.exists(venv_py) and os.path.exists(
-            os.path.join(ROOT, "venv", "Lib", "site-packages", "docx"))
+        docx_ok = os.path.exists(venv_py) and (
+            os.path.exists(os.path.join(ROOT, "venv", "Lib", "site-packages", "docx"))
+            or bool(glob(os.path.join(ROOT, "venv", "lib", "python*", "site-packages", "docx"))))
         docx_detail = "venv 中可用" if docx_ok else "未安装（report_to_docx 将自动建 venv 安装）"
     check("python-docx 可用（信息）", docx_ok, docx_detail)
 

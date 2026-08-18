@@ -27,8 +27,8 @@ def expect(label, got, must_be):
 
 # ---------- has_reference ----------
 def test_has_reference():
-    expect("含来源:标记", cfr.has_reference("内容\n来源:\n[1] 作者. 题名"), True)
-    expect("含来源类型", cfr.has_reference("来源类型: 一手"), True)
+    expect("含[n]条目算参考文献", cfr.has_reference("内容\n来源:\n[1] 作者. 题名"), True)
+    expect("含来源字段不算参考文献", cfr.has_reference("来源类型: 一手"), False)
     expect("含参考文献标题", cfr.has_reference("## 参考文献\n[1] x"), True)
     expect("含文献类型标识", cfr.has_reference("题名[EB/OL]. (2024)"), True)
     expect("含URL", cfr.has_reference("详见 https://example.com/a"), True)
@@ -90,8 +90,8 @@ def test_gbt_validate():
     expect("编号不连续判不合规", ok, False)
     only_source = "**来源**：网络"
     ok, issues = cfr.gbt_validate(only_source)
-    expect("无编号条目判不合规", ok, False)
-    expect("无编号提示无[n]条目", any("无 [n] 编号条目" in i for i in issues), True)
+    expect("来源字段不算参考文献区判不合规", ok, False)
+    expect("来源字段提示无参考文献区", any("无参考文献区" in i for i in issues), True)
     dangling = "正文引用[1]和[2]。\n\n## 参考文献\n\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c."
     ok, issues = cfr.gbt_validate(dangling)
     expect("正文引[n]无对应条目判不合规", ok, False)
@@ -106,13 +106,17 @@ def test_gbt_validate():
 def test_detect_no_search():
     r = cfr.detect("无参考文献的纯文本内容", do_search=False)
     expect("不联网-无参考文献判fail", r["status"], "fail")
-    good = "正文引用[1]。\n有来源:\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c"
+    good = "正文引用[1]。\n参考文献:\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c"
     r2 = cfr.detect(good, do_search=False)
     expect("不联网-合规参考文献判ok", r2["status"], "ok")
-    bad = "有来源:\n[1] 作者. 题名. 无类型标识"
+    bad = "参考文献:\n[1] 作者. 题名. 无类型标识"
     r3 = cfr.detect(bad, do_search=False)
     expect("参考文献不合国标判fail", r3["status"], "fail")
     expect("不合规理由含国标", "GB/T" in r3["reason"], True)
+    src_field = "正文引用[1]。\n**来源**：网络\n\n参考文献:\n[1] 作者. 题名[EB/OL]. (2024-10)[2026-08-13]. https://a.b/c"
+    r4 = cfr.detect(src_field, do_search=False)
+    expect("含来源字段判fail", r4["status"], "fail")
+    expect("来源字段理由含非规定", "非规定字段" in r4["reason"], True)
 
 
 if __name__ == "__main__":
