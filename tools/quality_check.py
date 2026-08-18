@@ -21,6 +21,10 @@
 import sys
 import os
 import re
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from tools.check_latex_syntax import check_latex_syntax
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -693,6 +697,10 @@ def check_math_formula(body):
                            line.strip()[:60] + f"  → 命中: {''.join(sorted(set(hits)))[:12]}"))
     return issues
 
+
+
+
+
 # 转述体检测（发链接/文章/论文 = 提炼概念，正文以概念为主体，
 # 禁止"解读 XX 的文章/博客"式转述——来源交代只放参考文献区）。
 # 匹配把来源材料当叙述主语的句子（"XX 博客/文章/论文/姊妹篇/研究 + 解读/价值/处理/讲/说/介绍"）。
@@ -1006,6 +1014,7 @@ def main():
         all_issues += check_title_paren(body)
         all_issues += check_title_len(body)
         all_issues += check_math_formula(body)
+        all_issues += check_latex_syntax(body)
         all_issues += check_conclusion_len(full)
         all_issues += check_conclusion_style(full)
         all_issues += check_cross_ref(body)
