@@ -51,6 +51,7 @@ REQUIRED_FILES = [
     "tools/check_gbt_refs.py",
     "tools/check_citation_validity.py",
     "tools/check_latex_syntax.py",
+    "tools/check_source_consistency.py",
     "tools/check_consistency.py",
     "tools/clean_workspace.py",
     "tools/channel_state.py",

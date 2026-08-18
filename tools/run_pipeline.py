@@ -337,6 +337,12 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     if skip_title_match:
         citation_cmd.append("--skip-title-match")
     run(citation_cmd, label="check_citation_validity" + (" (offline)" if offline else ""))
+    # 来源一致性检查：报告关键事实与来源内容比对（禁止 flomo 链接、实体一致性）。
+    source_check_cmd = [os.path.join(TOOLS, "check_source_consistency.py"),
+                        "--slug", slug]
+    if offline:
+        source_check_cmd.append("--offline")
+    run(source_check_cmd, label="check_source_consistency" + (" (offline)" if offline else ""))
     # 矛盾与废话门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
     # check_consistency 是项目级检查，不接受 --slug。
     run([os.path.join(TOOLS, "check_consistency.py")],
