@@ -129,7 +129,8 @@ research/<slug>/
 | E ima | P1 | P1 | P1 | 未配置：环境级自动 skip；已配置手动登记 |
 
 **检索通道（按主题领域分档，替代一刀切 P0）：**
-- **统一入口**：启动后跑 `python tools/search_all.py --config tools/start.json`——并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
+- **内部搜索优先层**（阶段 0 步骤 4-5 + search_all.py 内置）：flomo_search + rag_search 必须在外部检索前执行。内部命中 ≥5 条 → 外部检索可聚焦补充视角（减少公众号 A 通道）；内部命中 ≥2 条 → 外部正常执行；内部命中 <2 条 → 外部全量执行。search_all.py 已内置此逻辑。
+- **统一入口**：启动后跑 `python tools/search_all.py --config tools/start.json`——先执行内部搜索优先层（flomo+rag），再并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
 - **F (flomo 查重, P0 通用)**：`memo_search` 查是否已有本主题笔记（中英双查纪律见下）。
 - **B (Web, P0 通用)**：`web_search` / `tools/web_search.py`。
 - **P (arxiv)**：`tools/arxiv_search.py`（落盘 gathered_arxiv.md 登记通道 P）。

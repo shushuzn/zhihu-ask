@@ -46,6 +46,71 @@ def load_config(path):
         return json.load(f)
 
 
+def run_internal_search(slug, keywords, max_results=5):
+    """内部搜索优先层：flomo + rag，返回命中数和关键词列表。
+    
+    返回 dict: {
+        "flomo_hits": int,  # flomo 命中数
+        "rag_hits": int,    # rag 命中数
+        "total": int,       # 总命中
+        "keywords": list,   # 可用于外部搜索的补充关键词
+    }
+    """
+    result = {"flomo_hits": 0, "rag_hits": 0, "total": 0, "keywords": list(keywords)}
+
+    # 1. flomo_search（内部知识库）
+    try:
+        r = subprocess.run(
+            [PY, os.path.join(TOOLS, "flomo_search.py"),
+             "--keywords", " ".join(keywords[:3]), "--limit", str(max_results)],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=30)
+        # 统计命中数
+        for line in (r.stdout or "").splitlines():
+            m = re.search(r"找到 (\d+) 条笔记", line)
+            if m:
+                result["flomo_hits"] = int(m.group(1))
+                break
+    except Exception:
+        pass
+
+    # 2. rag_search（项目文档 RAG）
+    try:
+        r = subprocess.run(
+            [PY, os.path.join(TOOLS, "rag_search.py"), " ".join(keywords[:3]), "-k", "3"],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=30)
+        # 统计命中数
+        for line in (r.stdout or "").splitlines():
+            m = re.search(r"(\d+) 条结果", line)
+            if m:
+                result["rag_hits"] = int(m.group(1))
+                break
+    except Exception:
+        pass
+
+    result["total"] = result["flomo_hits"] + result["rag_hits"]
+
+    # 3. 如果内部搜索命中丰富，提取补充关键词用于外部搜索
+    if result["total"] >= 3:
+        # 从 flomo 命中中提取 tag 作为补充关键词
+        try:
+            r = subprocess.run(
+                [PY, os.path.join(TOOLS, "flomo_search.py"),
+                 "--keywords", " ".join(keywords[:2]), "--limit", "3"],
+                cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=30)
+            for line in (r.stdout or "").splitlines():
+                tags = re.findall(r"#(\S+)", line)
+                for t in tags:
+                    if t not in result["keywords"] and len(t) > 1:
+                        result["keywords"].append(t)
+        except Exception:
+            pass
+
+    return result
+
+
 def build_commands(cfg, slug, keywords, days, parallel, skip_preprints):
     """构造三通道子进程命令。返回 [(label, cmd, out_file), ...]（纯函数，可测试）。"""
     tmp_dir = os.path.join(ROOT, ".tmp")
@@ -144,7 +209,27 @@ def main():
     plan = {ch: p for ch, p, _ in cs.channel_plan(dtype)}
     print(f"领域档位：{dtype}（domain={domain or '未填'}）")
     print(f"通道计划：F/B P0 通用；A={plan.get('A')} C={plan.get('C')} P={plan.get('P')} E={plan.get('E')}")
-    print(f"并行检索：B（{len(keywords)} 组查询 × {args.parallel} 并行）+ A + P 同时执行\n")
+
+    # 内部搜索优先层：flomo + rag
+    print("\n─── 内部搜索优先层 ───")
+    internal = run_internal_search(slug, keywords)
+    print(f"flomo 命中：{internal['flomo_hits']} 条")
+    print(f"rag 命中：{internal['rag_hits']} 条")
+    print(f"内部总命中：{internal['total']} 条")
+
+    # 根据内部搜索结果调整外部检索策略
+    if internal["total"] >= 5:
+        print("内部搜索命中丰富，外部检索可聚焦补充视角")
+        # 保留 B/P，减少 A（公众号学术科研 P2）
+        skip_preprints_final = args.skip_preprints
+    elif internal["total"] >= 2:
+        print("内部搜索有一定命中，外部检索正常执行")
+        skip_preprints_final = args.skip_preprints
+    else:
+        print("内部搜索命中较少，外部检索全量执行")
+        skip_preprints_final = args.skip_preprints
+
+    print(f"\n并行检索：B（{len(keywords)} 组查询 × {args.parallel} 并行）+ A + P 同时执行\n")
 
     cmds = build_commands(cfg, slug, keywords, args.days, args.parallel, args.skip_preprints)
     results = run_parallel(cmds)
