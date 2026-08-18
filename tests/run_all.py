@@ -43,8 +43,16 @@ def main():
         if matches:
             p, f = int(matches[-1][0]), int(matches[-1][1])
         else:
-            # 无标准汇总行：以退出码判定
-            p, f = (0, 0) if r.returncode == 0 else (0, 1)
+            # 无标准汇总行：尝试解析 unittest 风格输出（"Ran N tests ... OK/FAILED"）
+            ran = re.search(r"Ran (\d+) tests? in", out)
+            if ran and "OK" in out:
+                p, f = int(ran.group(1)), 0
+            elif ran:
+                fail_m = re.search(r"FAILED\s*\([^)]*failures=(\d+)", out)
+                p, f = 0, int(fail_m.group(1)) if fail_m else 1
+            else:
+                # 无任何汇总信息：以退出码判定
+                p, f = (0, 0) if r.returncode == 0 else (0, 1)
         total_pass += p
         total_fail += f
         bad = f > 0 or r.returncode != 0
