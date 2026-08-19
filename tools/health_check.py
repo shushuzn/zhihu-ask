@@ -79,6 +79,7 @@ REQUIRED_FILES = [
     "tools/qc_stance.py",
     "tools/qc_structure.py",
     "tools/qc_title.py",
+    "tools/find_phrase.py",
     "tools/flomo_upload_full.py",
     "tools/rag_build.py",
     "tools/rag_search.py",

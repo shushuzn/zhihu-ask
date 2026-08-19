@@ -22,13 +22,24 @@ C 通道 / arxiv 的 WebFetch 降级流程 / flomo 上传 / AI 封面）。
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import json
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 PY = sys.executable
+
+# 控制台编码容错：Windows 下 stdout 默认 gbk，引用校验输出可能含 gbk 不可编码字符
+# （如 ² 上标），strict 模式会抛 UnicodeEncodeError 中断流水线。改用 replace 仅替换
+# 个别字符，不影响中文显示（与 quality_check.py 同思路）。
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except (AttributeError, ValueError):
+    pass
 
 # 导入J-Space集成模块（极简原生调用）
 try:
@@ -56,6 +67,90 @@ def run(cmd, check=True, label=""):
         print(f"[阻断] 步骤失败（退出码 {r.returncode}），请修复后重试。")
         sys.exit(r.returncode)
     return r.returncode
+
+
+# 出网受限特征（异常文本）：超时 / DNS 失败 / 反爬 403——与「死链 404/5xx」本质不同，
+# 后者应继续阻断（引用须可溯源），前者可安全回退到 --offline 离线核验分支。
+_NET_SIGNALS = (
+    "timed out", "urlopen error", "HTTP Error 403", "403: Forbidden",
+    "Forbidden", "ConnectionError", "getaddrinfo", "Name or service not known",
+    "网络层无响应", "URLError",
+)
+
+
+def _url_network_blocked(url, timeout=4):
+    """探测单个 URL 是否因出网受限而不可达（超时/连接失败/反爬 403）。
+
+    返回 True 表示「网络层/反爬」导致不可达（可安全回退离线核验）；
+    返回 False 表示可达，或确定性失败（404/5xx 死链，不触发离线回退）。
+    """
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        urllib.request.urlopen(req, timeout=timeout)
+        return False
+    except Exception as e:  # noqa: BLE001 - 仅用于判定网络层受限
+        return any(sig in str(e) for sig in _NET_SIGNALS)
+
+
+def _egress_blocked_for_report(slug):
+    """读取 report.md 的参考文献 URL，探测出网是否受限（任一 URL 超时/403 即判受限）。"""
+    path = os.path.join(ROOT, "research", slug, "report.md")
+    if not os.path.isfile(path):
+        return False
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return False
+    urls = re.findall(r"https?://[^\s\)\]\>]+", text)
+    urls = [u.rstrip(".,;") for u in urls]
+    if not urls:
+        return False
+    for u in urls[:8]:
+        if _url_network_blocked(u):
+            return True
+    return False
+
+
+def _run_citation_gate(slug, offline, ack, skip_title_match):
+    """违规引用门禁：门禁均经 run() 执行（保持调用链可被测试录制）；
+
+    联网失败时（引用 URL 超时/反爬 403）自动以 --offline 重试——
+    死链 404/5xx 等真实内容问题仍照常阻断。
+    """
+    cmd = [os.path.join(TOOLS, "check_citation_validity.py"), "--slug", slug]
+    if ack:
+        cmd += ["--ack", ack]
+    if skip_title_match:
+        cmd.append("--skip-title-match")
+    if offline:
+        cmd.append("--offline")
+        run(cmd, check=True, label="check_citation_validity (offline)")
+        return
+    rc = run(cmd, check=False, label="check_citation_validity")
+    if rc == 0:
+        return
+    if _egress_blocked_for_report(slug):
+        print("[提示] 检测到出网受限（引用 URL 不可达/反爬拒绝），自动以 --offline 重试违规引用检查")
+        run(cmd + ["--offline"], check=True, label="check_citation_validity (offline)")
+        return
+    run(cmd, check=True, label="check_citation_validity")
+
+
+def _run_source_gate(slug, offline):
+    """来源一致性门禁：联网失败时同样自动 --offline 重试。"""
+    cmd = [os.path.join(TOOLS, "check_source_consistency.py"), "--slug", slug]
+    if offline:
+        cmd.append("--offline")
+        run(cmd, check=True, label="check_source_consistency (offline)")
+        return
+    rc = run(cmd, check=False, label="check_source_consistency")
+    if rc == 0:
+        return
+    if _egress_blocked_for_report(slug):
+        print("[提示] 检测到出网受限，自动以 --offline 重试来源一致性检查")
+        run(cmd + ["--offline"], check=True, label="check_source_consistency (offline)")
+        return
+    run(cmd, check=True, label="check_source_consistency")
 
 
 def banner(title):
@@ -329,20 +424,11 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     # 违规引用门禁（学术纪律）：编造作者/题名不符/URL 伪造/佚名误用/
     # 引用日期早于发布/死链——硬伤与提示级命中均阻断（工具默认严格阻断）。
     # --ack：人工判读确认合规的条目号（词面差异机器无法判定时由人确认后放行，输出注明）。
-    citation_cmd = [os.path.join(TOOLS, "check_citation_validity.py"), "--slug", slug]
-    if offline:
-        citation_cmd.append("--offline")
-    if ack:
-        citation_cmd += ["--ack", ack]
-    if skip_title_match:
-        citation_cmd.append("--skip-title-match")
-    run(citation_cmd, label="check_citation_validity" + (" (offline)" if offline else ""))
+    # 出网受限（URL 超时/反爬 403）时自动回退 --offline（联网核验豁免分支），
+    # 死链 404/5xx 等真实内容问题仍照常阻断。
+    _run_citation_gate(slug, offline, ack, skip_title_match)
     # 来源一致性检查：报告关键事实与来源内容比对（禁止 flomo 链接、实体一致性）。
-    source_check_cmd = [os.path.join(TOOLS, "check_source_consistency.py"),
-                        "--slug", slug]
-    if offline:
-        source_check_cmd.append("--offline")
-    run(source_check_cmd, label="check_source_consistency" + (" (offline)" if offline else ""))
+    _run_source_gate(slug, offline)
     # 矛盾与废话门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
     # check_consistency 是项目级检查，不接受 --slug。
     run([os.path.join(TOOLS, "check_consistency.py")],
