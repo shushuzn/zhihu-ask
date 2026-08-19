@@ -88,6 +88,7 @@ def main():
         all_issues += check_meta_discourse(body)
         all_issues += check_title_paren(body)
         all_issues += check_title_len(body)
+        all_issues += check_empty_section_title(body)
         all_issues += check_math_formula(body)
         all_issues += check_latex_syntax(body)
         all_issues += check_conclusion_len(full)
