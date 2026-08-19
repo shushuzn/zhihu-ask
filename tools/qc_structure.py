@@ -10,11 +10,17 @@ def check_placeholders(body):
             issues.append((i, "模板占位符", m.group(0), line.strip()[:60]))
     return issues
 
-def check_process_words(body):
-    """检测成品报告中的过程性字样（SOP 硬性要求：正文禁止"第 N 轮/迭代/更新"等过程字样）。
+_PROCESS_WORDS = (
+    "交叉验证", "多源交叉",  # 过程/方法自指（成品正文应直接陈述事实，不自指研究方法）
+)
 
-    匹配：R 轮次（如 R1-R9，含括注形式）、第 N 轮、本轮/上一轮/下一轮、通道 X（检索通道标记）
-    等迭代/流程过程标记。
+def check_process_words(body):
+    """检测成品报告中的过程性字样（SOP 硬性要求：正文禁止过程自指）。
+
+    匹配：
+      1) R 轮次（如 R1-R9，含括注形式）、第 N 轮、本轮/上一轮/下一轮、通道 X（检索通道标记）
+         等迭代/流程过程标记；
+      2) 过程/方法自指（交叉验证/多源交叉 等）——正文应直接陈述事实，不自指研究方法。
     不匹配：URL 中的字母段（英文 R 数字用单词边界保证，如 4RUO50eR9Gh 不误报）、
     技术名词"迭代/更新"（如算力迭代/数据更新）、"通道"的其他技术含义（如电离通道/信道）。
     """
@@ -26,6 +32,11 @@ def check_process_words(body):
            "本轮" in stripped or "上一轮" in stripped or "下一轮" in stripped or \
            re.search(r"通道\s*[A-Z]", stripped):
             issues.append((i, "过程性字样", "R轮次/第N轮/本轮/通道X", stripped[:60]))
+            continue
+        for w in _PROCESS_WORDS:
+            if w in stripped:
+                issues.append((i, "过程性字样", f"过程方法自指「{w}」", stripped[:60]))
+                break
     return issues
 
 def check_paragraph_len(body):
