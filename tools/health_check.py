@@ -50,6 +50,8 @@ REQUIRED_FILES = [
     "tools/check_ai_voice.py",
     "tools/check_gbt_refs.py",
     "tools/check_citation_validity.py",
+    "tools/cv_parse.py",
+    "tools/cv_net.py",
     "tools/check_latex_syntax.py",
     "tools/check_source_consistency.py",
     "tools/check_consistency.py",
