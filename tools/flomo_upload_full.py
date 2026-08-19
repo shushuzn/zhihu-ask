@@ -20,6 +20,12 @@ import urllib.error
 import os
 import argparse
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
+
 
 def load_mcp_flomo():
     """返回 (url, token)。只从环境变量 FLOMO_MCP_TOKEN 读取（不读 .env、不读 mcp.json）。"""

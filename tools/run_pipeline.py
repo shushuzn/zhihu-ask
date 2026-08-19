@@ -32,12 +32,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 PY = sys.executable
 
-# 控制台编码容错：Windows 下 stdout 默认 gbk，引用校验输出可能含 gbk 不可编码字符
-# （如 ² 上标），strict 模式会抛 UnicodeEncodeError 中断流水线。改用 replace 仅替换
-# 个别字符，不影响中文显示（与 quality_check.py 同思路）。
+# 控制台编码容错：Windows 下 stdout 默认 gbk，整条流水线会打印含 gbk 不可编码字符
+# 的输出（² / 希腊字母 / emoji）。quality_check 已是 encoding="utf-8",errors="replace"；
+# run_pipeline 作为顶层驱动需同样配置，否则打印子工具捕获的 utf-8 输出仍会中断。
 try:
-    sys.stdout.reconfigure(errors="replace")
-    sys.stderr.reconfigure(errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 except (AttributeError, ValueError):
     pass
 

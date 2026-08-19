@@ -23,6 +23,12 @@ import os
 import subprocess
 import sys
 import logging
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
 import signal
 import time
 from typing import Optional, Callable, Any, Dict

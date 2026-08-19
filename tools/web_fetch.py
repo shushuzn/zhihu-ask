@@ -28,6 +28,12 @@ import sys
 import urllib.request
 
 try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
+
+try:
     import certifi
     _CTX = ssl.create_default_context(cafile=certifi.where())
 except Exception:  # certifi 不可用时退回系统默认
