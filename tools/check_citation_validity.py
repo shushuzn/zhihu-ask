@@ -52,6 +52,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from qc_common import is_note_file
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -91,8 +92,7 @@ def is_arxiv_url(url):
             or "arxiv.org/html/" in url)
 
 
-def is_note_file(filepath):
-    return os.path.basename(os.path.dirname(os.path.abspath(filepath))) == "notes"
+# is_note_file 已统一迁至 qc_common（单一事实来源），本模块复用
 
 
 def split_ref_block(body, note_mode=False):

@@ -31,6 +31,7 @@ import argparse
 import os
 import re
 import sys
+from qc_common import is_note_file
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -53,8 +54,7 @@ REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文�
 NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
 # 笔记模式：文件位于 research/<slug>/notes/ 目录 → 文献段为「来源:」或「参考文献:」行；
 # 笔记与报告同样须满足正文 [n] 引注与文献列表一一对应（顺序编码制），不再降级为清单模式。
-def is_note_file(filepath):
-    return os.path.basename(os.path.dirname(os.path.abspath(filepath))) == "notes"
+# is_note_file 已统一迁至 qc_common（单一事实来源），本模块复用
 
 # 期刊/文献标题中的年份（4 位数字）会与引用日期混淆，DATE_RE 已限定 [20xx-xx-xx] 格式，不会误伤
 # 文献类型标识清单（用于提示语）
