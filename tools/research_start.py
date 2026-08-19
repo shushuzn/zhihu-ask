@@ -55,13 +55,27 @@ except ModuleNotFoundError:
 PROGRESS_FILE = ".progress.json"
 
 def run(cmd):
-    """捕获模式执行子命令（与 check_all 的 run 同形：返回 bool 成功标志）。"""
+    """捕获模式执行子命令（与 check_all 的 run 同形：返回 bool 成功标志）。
+
+    注意：调用方已传 `[sys.executable, 子脚本, ...]`，run_util.capture 内部会再
+    前置 PY，故此处不走 run_util 封装，直接 `subprocess` 捕获（避免双重 `[PY, [PY, ...]]`）。
+    """
+    import subprocess
+
     try:
-        from tools.run_util import capture  # 与 run_pipeline/maintain 共用同一执行入口
-    except ModuleNotFoundError:
-        from run_util import capture
-    rc, out = capture(cmd)
-    return rc == 0
+        r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    except Exception as e:  # noqa: BLE001 - 兜底：缺口径时启动仍可继续
+        print(f"STDERR: {e}")
+        return False
+    out = (r.stdout or "").strip()
+    err = (r.stderr or "").strip()
+    if out:
+        print(out)
+    if r.returncode != 0:
+        # 测试与线上均以 "STDERR:" 为锚点判定子进程失败原因
+        print(f"STDERR: {err}" if err else f"STDERR: exit {r.returncode}")
+        return False
+    return True
 
 def validate_config(cfg, min_kw):
     """对应 SOP A.1/A.2：配置校验与边界条件。返回 (errors, warnings)。"""

@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
 """模块化笔记组装工具（zhihu-ask 项目专用）
 
-从 notes/ 目录读取模块化笔记和索引笔记, 组装成报告骨架。
-配合 flomo MCP 使用时, 可从 flomo 检索拉取笔记内容。
+从 notes/ 目录读取模块化笔记和索引笔记, 组装成报告骨架——
+**仅作过渡段落拾遗与材料对照的预览工具（draft），不替代综合式报告写作**。
+
+本工具曾被直接作为「报告拼接器」使用，导致产出为笔记段落拼接
+（逻辑链缺失、视角单一、门禁提示级不阻断时质量仍差）。本工具
+已收敛为预览工具（默认仅 --dry-run，落盘需 --force），供写作前后
+核对材料覆盖度与索引一致性。**正文报告须综合 notes 内容独立撰写**。
 
 用法:
-  python tools/note_assemble.py --slug <slug>
-  python tools/note_assemble.py --slug <slug> --dry-run  # 只预览, 不写文件
-  python tools/note_assemble.py --slug <slug> --output report_draft.md
+  python tools/note_assemble.py --slug <slug>               # 仅预览（dry-run）
+  python tools/note_assemble.py --slug <slug> --force       # 落盘到 report_draft.md（预览骨架）
+  python tools/note_assemble.py --slug <slug> --output x.md # 自定义预览输出
 
 流程:
   1. 读取 notes/00_index.md 索引笔记, 确定报告结构
   2. 按索引顺序读取 notes/ 下的模块化笔记
-  3. 组装成报告骨架 (标记需要补过渡段的位置)
-  4. 输出 report_draft.md 或打印到 stdout
-
-配合 flomo MCP:
-  从 flomo 检索模块化笔记, 与本地 notes/ 合并, 去重后组装。
-  flomo 检索结果优先 (最新版本), 本地文件做备份。
+  3. 组装成报告骨架预览 (仅用于核对材料覆盖度与索引一致性)
+  4. 输出到 stdout（默认）或 report_draft.md（--force 显式落盘）
 """
 
 import sys
@@ -139,13 +140,15 @@ def build_report_from_index(index_note, all_notes):
 
 
 def assemble_report(sections, slug):
-    """将报告结构组装成 Markdown 文本。"""
+    """将报告结构组装成预览文本（仅用于材料覆盖度核对，不替代综合写作）。"""
     today = date.today().isoformat()
     lines = []
 
-    lines.append(f"# {{知乎问题标题}}")
+    lines.append(f"# {{知乎问题标题}} — 预览骨架（draft，仅用于核对材料覆盖度）")
     lines.append("")
-    lines.append(f"<!-- 组装于 {today}, slug: {slug} -->")
+    lines.append(f"<!-- 预览组装于 {today}, slug: {slug} —— 本预览为笔记段落拼接，不替代综合式报告写作 -->")
+    lines.append("")
+    lines.append("<!-- ⚠️ 本预览为投机路径产物：小节为笔记段落拼接，未作综合；请以 notes 内容综合撰写 report.md -->")
     lines.append("")
     lines.append("{{结论一两句话 ≤300 字}}")
     lines.append("")
@@ -159,16 +162,11 @@ def assemble_report(sections, slug):
                 lines.append(f"> {note['content']}")
                 lines.append("")
             else:
-                # 模块化笔记内容直接使用，来源统一在文末「## 参考文献」区著录
+                # 预览：笔记段落原样拼入（仅用于核对覆盖度）；报告正文须综合撰写
                 lines.append(note.get("content", ""))
                 lines.append("")
 
-        # 标记需要补过渡段的位置
-        if i < len(sections) - 1:
-            lines.append("<!-- [TODO: 补过渡段落] -->")
-            lines.append("")
-
-    # 参考文献区 (GB/T 7714-2015)
+    # 参考文献区 (GB/T 7714-2015) — 预览去重
     lines.append("## 参考文献")
     lines.append("")
     ref_num = 1
@@ -189,10 +187,11 @@ def assemble_report(sections, slug):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="模块化笔记组装工具")
+    parser = argparse.ArgumentParser(description="模块化笔记组装工具（仅作索引/材料覆盖度预览，不替代综合式报告写作）")
     parser.add_argument("--slug", required=True, help="研究主题 slug")
-    parser.add_argument("--dry-run", action="store_true", help="只预览, 不写文件")
-    parser.add_argument("--output", default=None, help="输出文件路径 (默认 research/<slug>/report_draft.md)")
+    parser.add_argument("--dry-run", action="store_true", help="只预览, 不写文件（默认即预览）")
+    parser.add_argument("--force", action="store_true", help="显式落盘到 report_draft.md（预览骨架，不替代 report.md）")
+    parser.add_argument("--output", default=None, help="输出文件路径（默认仅预览，不落盘；--force 时默认 report_draft.md）")
     args = parser.parse_args()
 
     slug = args.slug
@@ -218,17 +217,22 @@ def main():
     sections = build_report_from_index(index_note, notes)
     report = assemble_report(sections, slug)
 
-    if args.dry_run:
+    # 默认即预览：不落盘，仅 stdout；显式 --force 才落盘（仍为 draft 预览）
+    if args.dry_run or not args.force:
+        if not args.dry_run:
+            print("\n[预览] 默认仅预览（不落盘）。如需落盘用 --force。")
         print("\n" + "=" * 60)
-        print("预览 (dry-run):")
+        print("预览（draft，仅用于核对材料覆盖度与索引一致性）：")
         print("=" * 60)
         print(report)
-    else:
-        output_path = args.output or os.path.join(ROOT, "research", slug, "report_draft.md")
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(report)
-        print(f"\n已生成报告骨架: {os.path.relpath(output_path, ROOT)}")
-        print("下一步: 补充过渡段落, 跑质检八件套。")
+        if args.output:
+            print(f"\n提示：--output 与预览模式配合时建议加 --force。当前未落盘。")
+        return
+    # --force 显式落盘
+    output_path = args.output or os.path.join(ROOT, "research", slug, "report_draft.md")
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(report)
+    print(f"\n[预览骨架] 已生成: {os.path.relpath(output_path, ROOT)}（仅用于核对材料覆盖度；报告须综合笔记内容独立撰写）")
 
 
 if __name__ == "__main__":
