@@ -35,10 +35,14 @@ import json
 import subprocess
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel_state as cs

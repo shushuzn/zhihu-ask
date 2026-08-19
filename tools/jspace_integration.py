@@ -25,10 +25,14 @@ import sys
 import logging
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except (AttributeError, ValueError):
-    pass
+    from tools.console_encoding import setup as _ce
+    _ce()
+except Exception:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 import signal
 import time
 from typing import Optional, Callable, Any, Dict

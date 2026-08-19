@@ -36,10 +36,14 @@ PY = sys.executable
 # 的输出（² / 希腊字母 / emoji）。quality_check 已是 encoding="utf-8",errors="replace"；
 # run_pipeline 作为顶层驱动需同样配置，否则打印子工具捕获的 utf-8 输出仍会中断。
 try:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except (AttributeError, ValueError):
-    pass
+    from tools.console_encoding import setup as _ce
+    _ce()
+except Exception:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # 导入J-Space集成模块（极简原生调用）
 try:

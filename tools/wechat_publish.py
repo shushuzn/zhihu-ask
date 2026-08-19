@@ -31,10 +31,14 @@ import urllib.error
 from latex_unicode import latex_to_unicode
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 API_BASE = "https://api.weixin.qq.com/cgi-bin"
 TOKEN_CACHE = os.path.expanduser("~/.config/wechat_access_token.json")

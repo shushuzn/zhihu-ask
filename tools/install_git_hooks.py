@@ -17,10 +17,14 @@ import os
 import stat
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOOK_PATH = os.path.join(ROOT, ".git", "hooks", "pre-commit")

@@ -33,10 +33,14 @@ from datetime import datetime, timezone, timedelta
 import channel_state as cs
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # 与 tools/web_search.py 相同的处理：Windows 下 ssl 加载系统证书存储失败时
 # C 层直接向 stderr 打印噪音（不走 warnings）。用 certifi 的 CA bundle 指定

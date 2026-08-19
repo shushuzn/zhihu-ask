@@ -15,10 +15,14 @@ import urllib.parse
 from qc_common import is_note_file
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 from cv_parse import *  # noqa: F401,F403  (注入解析符号到 facade.__dict__)
 from cv_net import *    # noqa: F401,F403  (注入 UA/网络符号到 facade.__dict__)

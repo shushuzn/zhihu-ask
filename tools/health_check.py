@@ -23,10 +23,14 @@ import re
 from internal_files import is_internal
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -79,6 +83,7 @@ REQUIRED_FILES = [
     "tools/qc_stance.py",
     "tools/qc_structure.py",
     "tools/qc_title.py",
+    "tools/console_encoding.py",
     "tools/find_phrase.py",
     "tools/flomo_upload_full.py",
     "tools/rag_build.py",

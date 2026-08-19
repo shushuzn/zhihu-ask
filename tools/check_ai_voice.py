@@ -22,10 +22,14 @@ import re
 import sys
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
-    sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # ---- 硬伤：固定禁用表达（命中即阻断） -------------------------------------
 HARD_PATTERNS = [

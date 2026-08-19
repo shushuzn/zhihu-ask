@@ -21,10 +21,14 @@ import os
 import re
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 REQUIRED_TOP = []  # 无顶层内容章节：结论无标题、### 小节直接平铺，仅参考文献为顶层
 REQUIRED_REF = "## 参考文献"

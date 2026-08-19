@@ -53,10 +53,14 @@ import warnings
 from datetime import date
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # Windows 下 Python ssl 加载系统证书存储失败时，C 层直接向 stderr 打印
 # "failed to load native root certificate ..."（不走 warnings 系统，

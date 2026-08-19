@@ -20,10 +20,9 @@ import urllib.request
 import re
 
 try:
-    # 行缓冲：stdout 被管道接管时默认全缓冲，进度打印会被吞掉（见"无输出"排查）
-    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
-    sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
-except Exception:
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True, errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", line_buffering=True, errors="replace")
+except (AttributeError, ValueError):
     pass
 
 

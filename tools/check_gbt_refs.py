@@ -34,10 +34,14 @@ import sys
 from qc_common import is_note_file
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    from tools.console_encoding import setup as _ce
+    _ce()
 except Exception:
-    pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # 文献类型标识（GB/T 7714-2015 附录）：M 专著 J 期刊 C 论文集 D 学位论文 R 报告 S 标准 Z 其他
 # 电子资源在类型后加 /OL（如 [M/OL]、[EB/OL]）；[C]// 是析出文献格式（类型标识仍是 [C]）

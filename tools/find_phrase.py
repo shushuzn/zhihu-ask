@@ -12,10 +12,14 @@ import os
 import sys
 
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
-except (AttributeError, ValueError):
-    pass
+    from tools.console_encoding import setup as _ce
+    _ce()
+except Exception:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 DEFAULT_EXTS = {"md", "py", "json", "txt", "yaml", "yml", "toml"}
 SKIP_DIRS = {".git", ".kilo", "venv", "__pycache__", "node_modules",

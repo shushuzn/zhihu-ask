@@ -8,10 +8,14 @@ import sys
 import os
 import re
 try:
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
-except (AttributeError, ValueError):
-    pass
+    from tools.console_encoding import setup as _ce
+    _ce()
+except Exception:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from tools.qc_common import *
 from tools.qc_stance import *
