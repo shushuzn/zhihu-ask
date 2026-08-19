@@ -38,11 +38,18 @@ from tools.web_search import search as web_search  # noqa: E402
 
 # ---------- 参考文献存在性检测 ----------
 
+# 「来源:」是非规定字段，不算参考文献区标记（文献区只能以「参考文献:」开头）
 REF_MARKERS = re.compile(
-    r"(来源[^\n]{0,4}[:：]|参考文献[^\n]{0,4}[:：]|##\s*参考文献|###\s*参考文献"
+    r"(参考文献[^\n]{0,4}[:：]|##\s*参考文献|###\s*参考文献"
     r"|\[EB/OL\]|\[M\]|\[J\]|\[C\]|\[P\]|\[D\]|\[R\]|\[S\]"
     r"|https?://"
     r"|^\s*\[\d+\]\s*\S)",
+    re.MULTILINE,
+)
+
+# 非规定字段（来源/概念等，模板只允许 tag 行 + 标题 + 正文 + 参考文献:）
+FORBIDDEN_FIELD_RE = re.compile(
+    r"^\s*(?:\*\*)?(?:来源|概念)[^\n]{0,6}[:：]",
     re.MULTILINE,
 )
 
@@ -57,7 +64,7 @@ def gbt_validate(text):
     规则：1) 文献区须有 [n] 编号条目；2) 每条含文献类型标识 [X]/[X/OL]；
           3) 含 URL 的条目须带引用日期 [YYYY-MM-DD]；4) 编号从 1 连续。
     """
-    m = re.search(r"(##\s*参考文献|参考文献[^\n]{0,4}[:：]|来源[^\n]{0,4}[:：])", text or "")
+    m = re.search(r"(##\s*参考文献|参考文献[^\n]{0,4}[:：])", text or "")
     if not m:
         return False, ["无参考文献区"]
     ref_section = text[m.end():]
@@ -203,6 +210,9 @@ def detect(text, do_search=True):
             error（联网搜索网络失败，需重试）/ fail（无参考文献且联网无对应来源，或参考文献不合国标）
     """
     text = normalize(text)
+    if FORBIDDEN_FIELD_RE.search(text):
+        return {"status": "fail",
+                "reason": "含非规定字段（「来源」「概念」等）——来源只能以 GB/T 7714-2015 条目写入「参考文献:」区，须改造后重新判定"}
     if has_reference(text):
         ok, issues = gbt_validate(text)
         if ok:
@@ -238,14 +248,30 @@ def load_from_dir(path):
 
 
 def batch_get(ids):
-    """用 flomo MCP memo_batch_get 拉取笔记全文（memo_search 只返回截断/摘要版）。"""
+    """用 flomo MCP memo_batch_get 拉取笔记全文（memo_search 只返回截断/摘要版）。
+
+    容错：MCP 调用失败 / 返回 400 / content 结构异常 / text 非 JSON 时
+    降级返回 {}（调用方回退到 memo_search 截断内容），不中断整体检测。
+    """
     from tools.flomo_search import mcp_call
-    result = mcp_call("tools/call", {"name": "memo_batch_get", "arguments": {"ids": ids}})
+    try:
+        result = mcp_call("tools/call", {"name": "memo_batch_get", "arguments": {"ids": ids}})
+    except Exception:
+        return {}
     if not result or "result" not in result:
         return {}
-    text = result["result"]["content"][0]["text"]
-    data = json.loads(text)
-    return {m["id"]: (m.get("content") or "") for m in data.get("memos", [])}
+    try:
+        text = result["result"]["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        return {}
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return {}
+    try:
+        return {m["id"]: (m.get("content") or "") for m in data.get("memos", [])}
+    except (TypeError, AttributeError):
+        return {}
 
 
 def load_from_flomo(keywords, tag, limit):

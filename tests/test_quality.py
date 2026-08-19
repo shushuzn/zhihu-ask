@@ -198,8 +198,10 @@ expect("reflat- 参考文献Unicode通过",
        ref_latex_hit("## 参考文献\n[1] 佚名. 题名[EB/OL]. (2026-01-01)[2026-08-14]. https://x.org/a. 含 λ₁ 值."), False)
 expect("reflat- 无参考文献区",
        ref_latex_hit("正文含 $\\lambda$ 公式（正文允许 LaTeX）"), False)
-expect("reflat+ 笔记来源段同样拦截",
-       ref_latex_hit("来源:\n[1] 佚名. 题名[EB/OL]. (2026-01-01)[2026-08-14]. https://x.org/a. 含 $\\lambda$.", note_mode=True), True)
+expect("reflat+ 笔记参考文献段同样拦截",
+       ref_latex_hit("参考文献:\n[1] 佚名. 题名[EB/OL]. (2026-01-01)[2026-08-14]. https://x.org/a. 含 $\\lambda$.", note_mode=True), True)
+expect("reflat- 笔记来源字段不算文献区（正文LaTeX不拦）",
+       ref_latex_hit("来源:\n[1] 佚名. 题名[EB/OL]. (2026-01-01)[2026-08-14]. https://x.org/a. 含 $\\lambda$.", note_mode=True), False)
 
 # ---- 结论长度（上限 300 字符） ----
 expect("conclen+ 超300", qc.check_conclusion_len("# 结论\n\n" + "x" * 301), True)

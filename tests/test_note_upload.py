@@ -87,7 +87,7 @@ expect("up+ ids 已落盘", nu.load_ids(ids_path).get("01_a.md"), "NEW_ID")
 ok, mid, reason = nu.upload_file(note, update=True, ids=ids, ids_path=ids_path)
 expect("up+ update 模式 memo_update", (ok, mid), (True, "OLD_ID"))
 expect("up+ update 传原 id", calls["update"][-1][1], "NEW_ID")
-expect("up+ update 动作词", reason, "更新成功")
+expect("up+ update 动作词", reason.startswith("更新成功"), True)
 
 # update=True 但无记录 → 回退 memo_create
 ids2 = {}

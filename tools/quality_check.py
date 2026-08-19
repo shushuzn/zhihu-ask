@@ -21,6 +21,10 @@
 import sys
 import os
 import re
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from tools.check_latex_syntax import check_latex_syntax
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -58,9 +62,36 @@ REF_MARKERS = ["## 参考文献", "### 参考文献"]
 
 # 笔记模式（笔记用 Unicode、报告用 LaTeX）：
 # 文件位于 research/<slug>/notes/ 目录下即视为模块化笔记——
-# 文献段用笔记格式「来源:」或「参考文献:」（非报告的 ## 参考文献），正文允许 Unicode 手写公式。
-NOTE_SOURCE_MARKERS = ["\n来源:", "## 参考文献", "\n参考文献:"]
-NOTE_REF_MARKERS = ["来源:", "## 参考文献", "参考文献:"]
+# 文献段仅允许「参考文献:」标记（「来源:」为非规定字段，一律禁止），正文允许 Unicode 手写公式。
+NOTE_SOURCE_MARKERS = ["## 参考文献", "\n参考文献:"]
+NOTE_REF_MARKERS = ["## 参考文献", "参考文献:"]
+
+# 笔记非规定字段：flomo 笔记模板只允许「tag 行 + 纯文本标题 + 正文 + 参考文献:」，
+# 「来源」「概念」等字段一律禁止（来源信息只能以 GB/T 7714-2015 条目进参考文献区）。
+FORBIDDEN_NOTE_FIELDS = [
+    (r"^\s*\*\*来源\*\*\s*[:：]", "来源字段"),
+    (r"^\s*\*\*概念\*\*\s*[:：]", "概念字段"),
+    (r"^\s*来源\s*[:：]", "来源字段"),
+    (r"^\s*概念\s*[:：]", "概念字段"),
+]
+
+
+def check_note_forbidden_fields(body):
+    """检测笔记非规定字段（来源/概念等，flomo 笔记模板禁止）。
+
+    判定：行首出现「**来源**：」「来源:」「**概念**：」「概念:」等字段形式
+    （含全角/半角冒号、加粗变体）即报"非规定字段"。
+    不匹配：正文普通用词（"这些数字的来源是官方文档""核心概念是……"——非行首字段形式）。
+    """
+    issues = []
+    for i, line in enumerate(body.splitlines(), 1):
+        for pat, label in FORBIDDEN_NOTE_FIELDS:
+            if re.search(pat, line):
+                issues.append((i, "非规定字段",
+                               f"笔记禁止「{label}」字段——来源只能以 GB/T 7714-2015 条目写入「参考文献:」区",
+                               line.strip()[:60]))
+                break
+    return issues
 
 REF_BAD_LABELS = ["一手", "二手", "推断"]
 
@@ -162,12 +193,13 @@ def check_ref_latex_ban(full, note_mode=False):
     理由：GB/T 7714-2015 著录是纯文本格式（作者. 题名[类型]. 出版信息.），
     数学符号应直接用 Unicode/文字（如"π""10⁶"），$...$ LaTeX 会破坏著录结构
     且 docx 转换器（report_to_docx.py）对参考文献区的 $ 不做 OMML 转换。
-    命中即硬伤：$...$ / $$...$$ 出现在参考文献区（## 参考文献 / 笔记「来源:」之后）。
+    命中即硬伤：$...$ / $$...$$ 出现在参考文献区（## 参考文献 / 笔记「参考文献:」之后；
+    「来源:」为非规定字段，不算文献区）。
     """
     issues = []
     # marker 用行首正则匹配 + 行偏移累计定位——find() 子串会命中
     # 正文的"一手来源:..."，把正文 $...$ 误判为参考文献区（chang-yang 笔记质检踩坑）。
-    head_re = (re.compile(r"^\s*来源:|^\s*参考文献[:：]?|^#{1,6}\s*参考文献")
+    head_re = (re.compile(r"^\s*参考文献[:：]?|^#{1,6}\s*参考文献")
                if note_mode else re.compile(r"^#{1,6}\s*参考文献"))
     start = None
     offset = 0
@@ -538,11 +570,14 @@ def check_internal_refs(body):
     落 process_notes 与进度文件，禁止写进正文（对读者无信息量）。
     说明：成品报告引用须为公开来源；内部素材（flomo 笔记/检索记录/验证脚本）不入成品，
     改为引用其对应的公开出处或删除（验证脚本只留存研究目录，不写入正文）。
+    禁止在参考文献中使用 flomo 笔记地址（v.flomoapp.com）作为来源。
     """
     issues = []
     internal_words = ["flomo", "内部笔记", "信号笔记", "gathered_",
                       "智慧芽", "企查查", "通达信", "产业无对应", "无适用主体", "无约定主题布局"]
     internal_re = re.compile(r"verify_[\w-]+\.py", re.I)
+    # flomo 笔记地址禁止作为参考文献来源
+    flomo_url_re = re.compile(r"https?://v\.flomoapp\.com/")
     for i, line in enumerate(body.splitlines(), 1):
         for w in internal_words:
             if w.lower() in line.lower():
@@ -552,6 +587,10 @@ def check_internal_refs(body):
             m = internal_re.search(line)
             if m:
                 issues.append((i, "内部标识", m.group(0), line.strip()[:60]))
+                continue
+        # 单独检测 flomo URL（即使不含 "flomo" 关键词也拦截域名）
+        if flomo_url_re.search(line):
+            issues.append((i, "非公开来源", "flomo 笔记地址不可作参考文献", line.strip()[:60]))
     return issues
 
 def check_grade_paren(body):
@@ -657,6 +696,10 @@ def check_math_formula(body):
             issues.append((i, "Unicode手写公式", "数学公式须用 LaTeX $...$（禁止 Unicode 手写）",
                            line.strip()[:60] + f"  → 命中: {''.join(sorted(set(hits)))[:12]}"))
     return issues
+
+
+
+
 
 # 转述体检测（发链接/文章/论文 = 提炼概念，正文以概念为主体，
 # 禁止"解读 XX 的文章/博客"式转述——来源交代只放参考文献区）。
@@ -879,7 +922,7 @@ def check_fact_section_budget(body):
 def check_structure(body, full, note_mode=False):
     """结构完整性检查：
     1. 必须存在参考文献章节且含至少 1 条可溯源条目（GB/T 编号 / [标题](url) / 纯文本标题；SOP 硬性要求：纯事实报告可溯源）。
-       笔记模式：文献段「来源:」视为参考文献节。
+       笔记模式：文献段仅认「参考文献:」（「来源:」为非规定字段，禁止）。
     2. 正文不得残留未决占位标记（TODO/待补充/待填写/此处填写 等；"仍无法核实"为合法口径标注，不在此列）。
     """
     issues = []
@@ -959,6 +1002,8 @@ def main():
         # 笔记仅首行 tag 行允许 #，大小标题一律纯文本，禁止 #/##/### 与 * 标记。
         all_issues += check_title_asterisk(body)
         all_issues += check_title_hash(body)
+        # 非规定字段（来源/概念等）一律禁止——来源只能以 GB/T 条目进「参考文献:」区
+        all_issues += check_note_forbidden_fields(body)
         # 参考文献条目与正文 [n] 引注须一一对应（不能少、不能多）
         all_issues += check_citation_correspondence(full, note_mode=True)
     else:
@@ -969,6 +1014,7 @@ def main():
         all_issues += check_title_paren(body)
         all_issues += check_title_len(body)
         all_issues += check_math_formula(body)
+        all_issues += check_latex_syntax(body)
         all_issues += check_conclusion_len(full)
         all_issues += check_conclusion_style(full)
         all_issues += check_cross_ref(body)
@@ -986,6 +1032,8 @@ def main():
     all_issues += check_ai_phrases(body)
     all_issues += check_judgment_hints(body)
     all_issues += check_internal_refs(body)
+    # Also check full content for flomo URLs in reference section
+    all_issues += check_internal_refs(full)
     all_issues += check_grade_paren(body)
     all_issues += check_evidence_grade(body)
     all_issues += check_stock_info(body)

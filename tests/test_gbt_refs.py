@@ -106,21 +106,20 @@ expect("warn- 正常转引不误报", not any(w[2] == "转引未标注中间文�
 hard, warn = gbt.check("正文[1]。\n\n**参考文献**\n[1] 甲. 书一[M]. 京: 社, 2000.")
 expect("warn+ 标题只需参考文献", not any(w[2] == "参考文献标题未标注国标" for w in warn))
 
-# ---- 笔记模式：文献段「来源:」行 ----
+# ---- 笔记模式：文献段「参考文献:」行（「来源:」为非规定字段，禁止） ----
 NOTE_OK = """#标签1 #标签2 #主题/x
 
 笔记标题
 
 正文内容[1][2]。
 
-来源:
+参考文献:
 [1] 甲. 书一[M]. 京: 社, 2000.
 
 [2] 乙. 书二[EB/OL]. (2026-01-01)[2026-08-13]. https://example.com/b.
-来源类型: 一手
 """
 hard, warn = gbt.check(NOTE_OK, note_mode=True)
-expect("note+ 来源段零硬伤", not hard, f"hard={hard}")
+expect("note+ 参考文献段零硬伤", not hard, f"hard={hard}")
 
 # 笔记模式：文献须与正文 [n] 一一对应（b8a26a3 起笔记同报告强制对应）
 NOTE_SHORT = """#标签1 #标签2 #主题/x
@@ -129,22 +128,25 @@ NOTE_SHORT = """#标签1 #标签2 #主题/x
 
 正文内容[1]。
 
-来源:
+参考文献:
 [1] 甲. 书一[M]. 京: 社, 2000.
 
 [2] 乙. 书二[EB/OL]. (2026-01-01)[2026-08-13]. https://example.com/b.
-来源类型: 一手
 """
 hard, warn = gbt.check(NOTE_SHORT, note_mode=True)
 expect("note- 文献[2]未被引用仍报", any(h[2] == "文献未被正文引用" for h in hard), f"hard={hard}")
 
 # 笔记模式：悬空引注仍拦截
-hard, warn = gbt.check("正文[9]。\n\n来源:\n[1] 甲. 书一[M]. 京: 社, 2000.\n\n来源类型: 一手", note_mode=True)
+hard, warn = gbt.check("正文[9]。\n\n参考文献:\n[1] 甲. 书一[M]. 京: 社, 2000.", note_mode=True)
 expect("note- 悬空引注仍报", any(h[2] == "正文引注无对应文献" for h in hard), f"hard={hard}")
 
 # 笔记模式：条目间缺空行仍报
-hard, warn = gbt.check("正文。\n\n来源:\n[1] 甲. 书一[M]. 京: 社, 2000.\n[2] 乙. 书二[M]. 京: 社, 2001.\n\n来源类型: 一手", note_mode=True)
+hard, warn = gbt.check("正文。\n\n参考文献:\n[1] 甲. 书一[M]. 京: 社, 2000.\n[2] 乙. 书二[M]. 京: 社, 2001.", note_mode=True)
 expect("note- 缺空行仍报", any(h[2] == "文献条目间缺空行" for h in hard), f"hard={hard}")
+
+# 笔记模式：「来源:」是非规定字段，不构成文献段 → 无参考文献块
+hard, warn = gbt.check("正文。\n\n来源:\n[1] 甲. 书一[M]. 京: 社, 2000.", note_mode=True)
+expect("note- 来源字段不算文献段", any(h[2] == "无参考文献块" for h in hard), f"hard={hard}")
 
 # 报告模式不认「来源:」段（防报告正文行首"来源:"误判；仅 ## 参考文献 有效）
 hard, warn = gbt.check("正文\n\n来源: 网络转载\n[1] 甲. 书一[M]. 京: 社, 2000.")

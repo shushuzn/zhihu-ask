@@ -64,7 +64,7 @@ UA = {"User-Agent": "Mozilla/5.0 (zhihu-ask citation validator)"}
 # 与 check_gbt_refs 保持一致的解析常量
 ENTRY_RE = re.compile(r"^\[(\d+)\]\s")
 REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
-NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献|^来源:")
+NOTE_REF_HEAD_RE = re.compile(r"^#{1,6}\s*参考文献|^\*\*参考文献|^参考文献")
 CITE_RE = re.compile(r"\[(\d+)\]")
 
 # 伪锚点：真实文献 URL 不会带这些片段
@@ -579,8 +579,15 @@ def check(body, offline=False, ack=(), skip_title_match=False):
                 # 机构/平台名责任者为单一词（无空格、无逗号，如 Wikipedia、Nature、arXiv），
                 # 不适用「姓全大写 名首字母」个人作者规范，豁免该提示（原误报 Wikipedia 等机构名）
                 if re.search(r"[\s,]", authors):
-                    warn.append((ref_head_line + lineno, "提示", "作者格式疑似异常",
-                                 f"[{n}] 英文作者「{authors}」未按 GB/T 规范（姓全大写 名首字母，如 'MIAO Y'）"))
+                    # Title Case 多词组织名（每个词首字母大写其余小写，如 "Model Context Protocol"）
+                    # 同为机构/平台责任者，非个人作者，豁免（原误报 MCP 官方机构名）
+                    words = [w for w in re.split(r"[^A-Za-z]+", authors) if w]
+                    is_title_case = bool(words) and all(
+                        w[:1].isupper() and w[1:].islower() for w in words if len(w) > 1
+                    )
+                    if not is_title_case:
+                        warn.append((ref_head_line + lineno, "提示", "作者格式疑似异常",
+                                     f"[{n}] 英文作者「{authors}」未按 GB/T 规范（姓全大写 名首字母，如 'MIAO Y'）"))
         if offline:
             continue
         title = extract_title(text)

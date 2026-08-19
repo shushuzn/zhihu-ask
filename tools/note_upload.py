@@ -111,6 +111,109 @@ def mcp_call(method, params=None):
     return None
 
 
+def search_similar_notes(content, limit=5):
+    """按笔记标题/标签/正文关键词搜索 flomo 中相似笔记。
+
+    用于防重复：上传前先搜，relevance ≥0.9 的视为已存在，直接更新。
+    """
+    # 从内容提取搜索关键词：标签行 + 标题 + 正文前 80 字
+    lines = content.split("\n")
+    keywords_parts = []
+    # 标签行
+    if lines and lines[0].startswith("#"):
+        for tag in re.findall(r"#(\S+)", lines[0]):
+            keywords_parts.append(tag)
+    # 标题行（第二行或第一行非标签）
+    title_line = ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            title_line = stripped
+            break
+    if title_line:
+        keywords_parts.append(title_line[:50])
+    # 正文关键词（取前 80 字去标点）
+    body_text = "\n".join(lines[1:]) if len(lines) > 1 else ""
+    body_text = re.sub(r"[#\s|*_`>\-\[\]()（）【】「」\"'，。、；：！？·]", "", body_text)[:80]
+    if body_text:
+        keywords_parts.append(body_text[:50])
+
+    if not keywords_parts:
+        return []
+
+    search_query = " ".join(keywords_parts[:3])  # 最多 3 个关键词避免过长
+    try:
+        result = mcp_call("tools/call", {
+            "name": "memo_search",
+            "arguments": {"keywords": search_query, "limit": limit}
+        })
+        if result and "result" in result:
+            text = result["result"]["content"][0]["text"]
+            data = json.loads(text)
+            return data.get("memos", [])
+    except Exception:
+        pass
+    return []
+
+
+def find_best_match(content, existing_memos):
+    """从搜索结果中找最佳匹配：标题/标签/正文重叠度高的。
+
+    返回 (memo_id, relevance_score) 或 (None, 0)。
+    relevance ≥0.9 视为同一笔记，0.5-0.9 为相关素材，<0.5 忽略。
+    """
+    if not existing_memos:
+        return None, 0.0
+
+    # 提取待上传笔记的特征
+    lines = content.split("\n")
+    # 标签
+    upload_tags = set()
+    if lines and lines[0].startswith("#"):
+        upload_tags = set(re.findall(r"#(\S+)", lines[0]))
+    # 标题
+    upload_title = ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            upload_title = stripped
+            break
+    # 正文关键词
+    upload_body = "\n".join(lines[1:]) if len(lines) > 1 else ""
+    upload_keywords = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z]{3,}", upload_body[:200]))
+
+    best_id = None
+    best_score = 0.0
+
+    for memo in existing_memos:
+        memo_content = memo.get("content", "")
+        memo_tags = set()
+        memo_lines = memo_content.split("\n")
+        if memo_lines and memo_lines[0].startswith("#"):
+            memo_tags = set(re.findall(r"#(\S+)", memo_lines[0]))
+        memo_title = ""
+        for line in memo_lines:
+            if line.strip() and not line.strip().startswith("#"):
+                memo_title = line.strip()
+                break
+        memo_body = "\n".join(memo_lines[1:]) if len(memo_lines) > 1 else ""
+        memo_keywords = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z]{3,}", memo_body[:200]))
+
+        # 计算相似度：标签重叠 + 标题包含 + 关键词重叠
+        tag_overlap = len(upload_tags & memo_tags) / max(1, len(upload_tags | memo_tags))
+        title_match = 1.0 if upload_title and upload_title in memo_title else 0.0
+        kw_overlap = len(upload_keywords & memo_keywords) / max(1, len(upload_keywords | memo_keywords))
+
+        # 加权：标签 0.5，标题 0.3，关键词 0.2
+        score = tag_overlap * 0.5 + title_match * 0.3 + kw_overlap * 0.2
+
+        if score > best_score:
+            best_score = score
+            best_id = memo.get("id")
+
+    return best_id, best_score
+
+
 def memo_exists(memo_id, max_retries=2):
     """用 memo_batch_get 确认 memo 是否真实存在于当前 token 账户下。
 
@@ -233,7 +336,7 @@ def save_ids(ids_path, ids):
 
 
 def upload_file(filepath, max_retries=5, update=False,
-                ids=None, ids_path=None, ack=""):
+                ids=None, ids_path=None, ack="", update_id=""):
     """上传单个文件, 返回 (success, memo_id, reason)。
 
     update=True 且 ids 记录中有该文件名 → memo_update 原地更新；否则 memo_create。
@@ -266,22 +369,54 @@ def upload_file(filepath, max_retries=5, update=False,
         lines[0] = re.sub(r"#(\s+)", r"#", lines[0])
         content = "\n".join(lines)
 
-    # 检查3: 防重复——已有 ID 时先校验该 memo 是否真实存在，存在才更新，
-    # 否则（陈旧/失效 id，常见于换 token）回退新建，避免对着不存在的 memo 空转。
+    # 检查3: 防重复——三层去重策略
+    #   3a: 本地 .flomo_ids.json 记录（原有逻辑）
+    #   3b: 内容搜索去重——本地无记录时搜索 flomo 相似笔记，relevance ≥0.9 直接更新
+    #   3c: 兜底 memo_create（仅当 3a/3b 都无匹配时）
     existing = (ids or {}).get(basename)
+    memo_id = None
+    action = None
+
+    # 3a: 本地记录优先
     if existing:
         if memo_exists(existing):
-            log(f"  · 更新中: {basename} (memo id {existing})")
+            log(f"  · 更新中: {basename} (本地记录 memo id {existing})")
             memo_id = update_to_flomo(content, existing, max_retries=max_retries)
-            action = "更新成功" if memo_id else None
+            action = "更新成功(本地记录)" if memo_id else None
         else:
-            log(f"  · 记录 id {existing} 在当前账户不存在，回退新建: {basename}")
-            memo_id = upload_to_flomo(content, max_retries=max_retries)
-            action = "新建成功(旧id失效)" if memo_id else None
-    else:
-        log(f"  · 上传中: {basename} (flomo MCP)")
+            log(f"  · 记录 id {existing} 在当前账户不存在，转入内容搜索去重: {basename}")
+            existing = None  # 失效记录，进入内容搜索
+
+    # 3b: 内容搜索去重（本地无有效记录时）——所有候选均需人工判断
+    if not memo_id:
+        log(f"  · 搜索相似笔记去重: {basename}")
+        similar = search_similar_notes(content, limit=5)
+        if similar:
+            best_id, score = find_best_match(content, similar)
+            if best_id:
+                log(f"  · 发现相似笔记 (relevance={score:.2f}): {basename}")
+                log(f"    候选 memo_id: {best_id}")
+                log(f"    请人工判断：是更新该笔记(memo_update)，还是新建？")
+                log(f"    [自动化环境无法交互，默认按新笔记处理；交互式运行请手动指定 --update-id <memo_id>]")
+                # 人工指定 --update-id 时，直接使用该 id 更新
+                if update_id and update_id == best_id:
+                    if memo_exists(best_id):
+                        log(f"  · 人工确认更新: {basename} → memo_update {best_id}")
+                        memo_id = update_to_flomo(content, best_id, max_retries=max_retries)
+                        action = f"人工确认更新(relevance={score:.2f})" if memo_id else None
+                    else:
+                        log(f"  · 指定的 memo_id {best_id} 在当前账户不存在，按新笔记处理")
+                # 自动化环境默认不更新，避免假阳性误更新
+                # 交互式可通过 --update-id 指定要更新的 memo_id
+            elif best_id and score >= 0.5:
+                log(f"  · 发现相关笔记 (relevance={score:.2f})，供参考: {basename}")
+
+    # 3c: 兜底新建
+    if not memo_id:
+        log(f"  · 上传中: {basename} (flomo MCP memo_create)")
         memo_id = upload_to_flomo(content, max_retries=max_retries)
         action = "上传成功" if memo_id else None
+
     if memo_id:
         if ids is not None:
             ids[basename] = memo_id
@@ -303,6 +438,8 @@ def main():
     parser.add_argument("--ack", default="",
                         help="人工判读确认合规的参考文献条目号（逗号分隔），透传违规引用检查放行"
                              "（多词英文平台/站点名责任者如 'Startup Archive' 不适用个人作者规范）")
+    parser.add_argument("--update-id", default="",
+                        help="人工指定要更新的 memo_id（内容搜索发现相似笔记时使用，避免假阳性自动更新）")
     args = parser.parse_args()
 
     path = os.path.join(ROOT, args.path) if not os.path.isabs(args.path) else args.path
@@ -313,7 +450,7 @@ def main():
         ids = load_ids(ids_path)
         log(f"== 单文件上传: {path} ==")
         success, memo_id, reason = upload_file(path, args.max_retries,
-                                              args.update, ids, ids_path, ack=args.ack)
+                                              args.update, ids, ids_path, ack=args.ack, update_id=args.update_id)
         status = "✓" if success else "✗"
         log(f"{status} {os.path.basename(path)}: {reason}")
         if memo_id:
@@ -328,7 +465,7 @@ def main():
         for fname in files:
             fpath = os.path.join(path, fname)
             success, memo_id, reason = upload_file(fpath, args.max_retries,
-                                                   args.update, ids, ids_path, ack=args.ack)
+                                                   args.update, ids, ids_path, ack=args.ack, update_id=args.update_id)
             status = "✓" if success else "✗"
             log(f"{status} {fname}: {reason}")
             if memo_id:

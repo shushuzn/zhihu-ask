@@ -52,30 +52,25 @@ def parse_note_file(filepath):
     if "#索引" in tags or os.path.basename(filepath).startswith("00_"):
         note_type = "index"
 
-    # 提取来源 (GB/T 格式, 支持 [1] [2] 编号)
+    # 提取参考文献 (GB/T 7714-2015 格式, [1] [2] 编号条目；文献段以「参考文献:」或「## 参考文献」开头)
     sources = []
-    source_match = re.search(r"^来源:\s*\n(.*?)(?:^来源类型:|\Z)", text, re.M | re.S)
+    source_match = re.search(r"(?:^参考文献[:：]?|^#{1,6}\s*参考文献)\s*\n(.*?)\Z", text, re.M | re.S)
     if source_match:
         raw = source_match.group(1).strip()
         # 提取 [1] xxx [2] xxx 格式
         sources = re.findall(r"\[\d+\]\s*(.+)", raw)
         # 兜底: 如果没有 [1] 格式, 按行提取
         if not sources:
-            sources = [s.strip() for s in raw.split("\n") if s.strip() and not s.strip().startswith("来源")]
+            sources = [s.strip() for s in raw.split("\n")
+                       if s.strip() and not re.match(r"^参考文献[:：]?\s*$", s.strip())]
 
-    # 提取来源类型
-    source_type = ""
-    type_match = re.search(r"^来源类型:\s*(.+)$", text, re.M)
-    if type_match:
-        source_type = type_match.group(1).strip()
-
-    # 提取正文 (去掉第一行标签和来源信息)
+    # 提取正文 (去掉第一行标签和参考文献信息)
     content = text
     # 去掉第一行 (标签行)
     content = re.sub(r"^#[^\n]+\n", "", content, count=1, flags=re.M)
-    content = re.sub(r"^来源:.*\n(?:.*\n)*?(?=^来源类型:|^$|\Z)", "", content, flags=re.M)
-    content = re.sub(r"^来源类型:.*\n", "", content, flags=re.M)
-    content = re.sub(r"^复用范围:.*\n(?:.*\n)*?(?=^$|\Z)", "", content, flags=re.M)
+    content = re.sub(r"^参考文献[:：]?\s*\n.*\Z", "", content, flags=re.M | re.S)
+    # 剥离非规定字段行（来源/概念——来源统一在文末参考文献区著录）
+    content = re.sub(r"^[ \t]*\*{0,2}(?:来源|概念)\*{0,2}[ \t]*[:：][^\n]*\n?", "", content, flags=re.M)
     content = content.strip()
 
     return {
@@ -83,7 +78,7 @@ def parse_note_file(filepath):
         "tags": tags,
         "content": content,
         "sources": sources,
-        "source_type": source_type,
+        "source_type": "",
         "meta": {},
         "filepath": filepath,
     }
@@ -121,12 +116,10 @@ def build_report_from_index(index_note, all_notes):
             if current_section:
                 sections.append(current_section)
             current_section = {"title": line[3:], "notes": []}
-        elif line.startswith("→"):
-            # 提取笔记引用, 如 "#01: 标题" 或 "笔记#01: 标题"
-            match = re.search(r"#(\d+)", line)
-            if match:
-                note_num = match.group(1)
-                # 查找对应笔记: 编号在文件名中
+        elif line.startswith("→") or "→" in line:
+            # 组装顺序行（"02 → 03 → 04" 或 "→ #01"），提取全部编号引用笔记
+            for m in re.finditer(r"(\d+)", line):
+                note_num = m.group(1)
                 for nid, note in all_notes.items():
                     if note_num in nid:
                         current_section["notes"].append(note)
@@ -162,16 +155,9 @@ def assemble_report(sections, slug):
                 lines.append(f"> {note['content']}")
                 lines.append("")
             else:
-                # 模块化笔记内容直接使用，来源统一在参考文献区著录
+                # 模块化笔记内容直接使用，来源统一在文末「## 参考文献」区著录
                 lines.append(note.get("content", ""))
                 lines.append("")
-
-                # 添加来源引用
-                if note.get("sources"):
-                    lines.append("**参考来源:**")
-                    for src in note["sources"]:
-                        lines.append(f"- {src}")
-                    lines.append("")
 
         # 标记需要补过渡段的位置
         if i < len(sections) - 1:

@@ -35,7 +35,7 @@ def expect(label, got, must_be):
 
 
 # ---- 模板内容（保护链路执行核心） ----
-expect("tpl+ 调用 git_protect", "python tools/git_protect.py" in igh.HOOK_TEMPLATE, True)
+expect("tpl+ 调用 git_protect", "python3 tools/git_protect.py" in igh.HOOK_TEMPLATE, True)
 expect("tpl+ 失败退出", "exit 1" in igh.HOOK_TEMPLATE, True)
 expect("tpl+ 成功退出", "exit 0" in igh.HOOK_TEMPLATE, True)
 expect("tpl+ 勿手动编辑标记", "勿手动编辑" in igh.HOOK_TEMPLATE, True)
