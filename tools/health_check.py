@@ -99,6 +99,7 @@ REQUIRED_FILES = [
     "tools/report_to_docx.py",
     "tools/report_to_flomo.py",
     "tools/research_start.py",
+    "tools/run_util.py",
     "tools/syllogism_check.py",
     "tools/tdx_query.py",
     "tools/wechat_search.py",

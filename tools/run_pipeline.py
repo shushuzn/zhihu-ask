@@ -28,16 +28,22 @@ import sys
 import json
 import urllib.request
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS = os.path.join(ROOT, "tools")
-PY = sys.executable
+# tools/run_util.py 抽取的 ROOT/TOOLS/PY + run/capture：需同时兼容
+# 直接运行（python tools/run_pipeline.py）与被测导入（tests 经 sys.path.insert(0, tools) 导 run_pipeline）。
+try:
+    from tools.run_util import ROOT, TOOLS, PY
+except ModuleNotFoundError:
+    from run_util import ROOT, TOOLS, PY  # 被测导入时 tools 不在包路径
 
-# 控制台编码容错：Windows 下 stdout 默认 gbk，整条流水线会打印含 gbk 不可编码字符
-# 的输出（² / 希腊字母 / emoji）。quality_check 已是 encoding="utf-8",errors="replace"；
-# run_pipeline 作为顶层驱动需同样配置，否则打印子工具捕获的 utf-8 输出仍会中断。
 try:
     from tools.console_encoding import setup as _ce
     _ce()
+except ModuleNotFoundError:
+    try:
+        from console_encoding import setup as _ce
+        _ce()
+    except Exception:
+        pass
 except Exception:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -64,13 +70,10 @@ except Exception as e:
     print(f"[提示] J-Space集成模块加载异常：{e}")
 
 
-def run(cmd, check=True, label=""):
-    print(f"\n─── {label or cmd} ───")
-    r = subprocess.run([PY] + cmd, cwd=ROOT)
-    if check and r.returncode != 0:
-        print(f"[阻断] 步骤失败（退出码 {r.returncode}），请修复后重试。")
-        sys.exit(r.returncode)
-    return r.returncode
+try:
+    from tools.run_util import run  # 抽取至 run_util；保留模块级 run 供 test 的 mock.patch("run_pipeline.run") 钩子继续生效
+except ModuleNotFoundError:
+    from run_util import run
 
 
 # 出网受限特征（异常文本）：超时 / DNS 失败 / 反爬 403——与「死链 404/5xx」本质不同，

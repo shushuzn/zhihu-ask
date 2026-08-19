@@ -16,7 +16,6 @@
 
 import argparse
 import os
-import subprocess
 import sys
 
 try:
@@ -29,18 +28,10 @@ except Exception:
     except (AttributeError, ValueError):
         pass
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS = os.path.join(ROOT, "tools")
-PY = sys.executable
-
-
-def run(cmd, label):
-    print(f"\n─── {label} ───")
-    r = subprocess.run([PY] + cmd, cwd=ROOT)
-    if r.returncode != 0:
-        print(f"[阻断] {label} 失败（退出码 {r.returncode}）。")
-        sys.exit(r.returncode)
-    return r.returncode
+try:
+    from tools.run_util import ROOT, TOOLS, run
+except ModuleNotFoundError:
+    from run_util import ROOT, TOOLS, run
 
 
 def main():

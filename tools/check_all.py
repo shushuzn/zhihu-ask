@@ -38,7 +38,10 @@ except Exception:
     except (AttributeError, ValueError):
         pass
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT  # 统一路径入口（避免 ROOT 样板漂移）
+except ModuleNotFoundError:
+    from run_util import ROOT
 RESEARCH = os.path.join(ROOT, "research")
 
 # 质量检查的「提示级」命中：需人工过目但不判硬失败（不影响质量列 OK）。
@@ -96,13 +99,13 @@ def conclusion_ok(text):
     return True
 
 def run(cmd):
-    """运行工具并返回 (exit_code, stdout)。"""
+    """运行工具并返回 (exit_code, stdout)——捕获模式：委托至 run_util.capture。"""
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=120)
-        return r.returncode, r.stdout
-    except Exception as e:
-        return -1, str(e)
+        from tools.run_util import capture as _cap  # 单次导入，不污染模块级路径入口
+    except ModuleNotFoundError:
+        from run_util import capture as _cap
+    rc, out = _cap(cmd)
+    return rc, out
 
 def run_self_tests():
     """运行工具回归测试套件（tests/run_all.py）。

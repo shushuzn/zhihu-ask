@@ -47,20 +47,21 @@ except Exception:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel_state as cs
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT  # 统一路径入口
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 
 PROGRESS_FILE = ".progress.json"
 
 def run(cmd):
-    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
-    out = (r.stdout or "").strip()
-    err = (r.stderr or "").strip()
-    if out:
-        print(out)
-    if r.returncode != 0:
-        print("STDERR:", err)
-        return False
-    return True
+    """捕获模式执行子命令（与 check_all 的 run 同形：返回 bool 成功标志）。"""
+    try:
+        from tools.run_util import capture  # 与 run_pipeline/maintain 共用同一执行入口
+    except ModuleNotFoundError:
+        from run_util import capture
+    rc, out = capture(cmd)
+    return rc == 0
 
 def validate_config(cfg, min_kw):
     """对应 SOP A.1/A.2：配置校验与边界条件。返回 (errors, warnings)。"""
