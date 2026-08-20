@@ -27,30 +27,10 @@ from tools.qc_math import *
 from tools.qc_image import *
 from tools.check_latex_syntax import check_latex_syntax
 
-def resolve_target(argv, tool_name, extra_usage=""):
-    """解析 --file / --slug（互为别名）。
-
-    质检工具此前参数不统一（本工具与 check_report_structure 只认 --file，
-    check_progress 只认 --slug），调用时极易传错而报"用法"。
-    此处双向兼容：--slug <slug> 等价于 --file research/<slug>/report.md。
-    """
-    filepath = None
-    if "--file" in argv:
-        idx = argv.index("--file")
-        if idx + 1 < len(argv):
-            filepath = argv[idx + 1]
-    if not filepath and "--slug" in argv:
-        idx = argv.index("--slug")
-        if idx + 1 < len(argv):
-            root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            filepath = os.path.join(root, "research", argv[idx + 1], "report.md")
-
-    if not filepath or not os.path.exists(filepath):
-        print(f"用法: python tools/{tool_name} (--file <文件> | --slug <slug>){extra_usage}")
-        if filepath:
-            print(f"  [错误] 文件不存在: {filepath}")
-        sys.exit(1)
-    return filepath
+try:
+    from tools.report_target import resolve_report_target as resolve_target
+except ModuleNotFoundError:
+    from report_target import resolve_report_target as resolve_target  # 被测导入时 tools 不在包路径
 
 def main():
     argv = sys.argv[1:]

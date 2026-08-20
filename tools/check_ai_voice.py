@@ -91,24 +91,10 @@ COMMON_QUOTED_WORDS = [
 ]
 
 
-def resolve_target(argv, tool_name, extra_usage=""):
-    """解析 --file / --slug（互为别名），与 quality_check.py 一致。"""
-    filepath = None
-    if "--file" in argv:
-        idx = argv.index("--file")
-        if idx + 1 < len(argv):
-            filepath = argv[idx + 1]
-    if not filepath and "--slug" in argv:
-        idx = argv.index("--slug")
-        if idx + 1 < len(argv):
-            root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            filepath = os.path.join(root, "research", argv[idx + 1], "report.md")
-    if not filepath or not os.path.exists(filepath):
-        print(f"用法: python tools/{tool_name} (--file <文件> | --slug <slug>){extra_usage}")
-        if filepath:
-            print(f"  [错误] 文件不存在: {filepath}")
-        sys.exit(1)
-    return filepath
+try:
+    from tools.report_target import resolve_report_target as resolve_target
+except ModuleNotFoundError:
+    from report_target import resolve_report_target as resolve_target  # 被测导入时 tools 不在包路径
 
 
 def read_file(filepath):

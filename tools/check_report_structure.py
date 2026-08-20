@@ -33,28 +33,18 @@ except Exception:
 REQUIRED_TOP = []  # 无顶层内容章节：结论无标题、### 小节直接平铺，仅参考文献为顶层
 REQUIRED_REF = "## 参考文献"
 
+try:
+    from tools.report_target import resolve_report_target as _resolve_report_target
+except ModuleNotFoundError:
+    from report_target import resolve_report_target as _resolve_report_target  # 被测导入时 tools 不在包路径
+
+
 def resolve_target(argv):
     """解析 --file / --slug（互为别名，与其余质检工具参数口径统一）。
 
     --slug <slug> 等价于 --file research/<slug>/report.md。
     """
-    filepath = None
-    if "--file" in argv:
-        idx = argv.index("--file")
-        if idx + 1 < len(argv):
-            filepath = argv[idx + 1]
-    if not filepath and "--slug" in argv:
-        idx = argv.index("--slug")
-        if idx + 1 < len(argv):
-            root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            filepath = os.path.join(root, "research", argv[idx + 1], "report.md")
-
-    if not filepath or not os.path.exists(filepath):
-        print("用法: python tools/check_report_structure.py (--file <report.md> | --slug <slug>)")
-        if filepath:
-            print(f"  [错误] 文件不存在: {filepath}")
-        sys.exit(1)
-    return filepath
+    return _resolve_report_target(argv, "check_report_structure.py")
 
 
 def check_structure(lines):

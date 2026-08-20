@@ -88,6 +88,7 @@ REQUIRED_FILES = [
     "tools/qc_title.py",
     "tools/console_encoding.py",
     "tools/find_phrase.py",
+    "tools/report_target.py",
     "tools/flomo_upload_full.py",
     "tools/rag_build.py",
     "tools/rag_search.py",
