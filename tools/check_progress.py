@@ -151,6 +151,8 @@ def check_report_channels(slug_dir, slug):
             empty 须有文件或 note 含"无有效素材"；skip 须有 note；F done 须有 note）。
       反向：存在的 gathered 文件 → 须被 channels_done 登记为 done/empty。
       完整性：结构化模式下六通道（F/E/A/B/C/P）均须声明。
+      必拉全文：当 P 通道含 arxiv 命中时（gathered_arxiv.md ≥200字节），须已落盘
+            arxiv_html.md（全文 HTML）与 arxiv_text.md（文本化），校核以全文为准。
     若无结构化声明，则回退到旧版文件启发式（向后兼容，不破坏既有成品）。
     """
     cd = load_channels_done(slug_dir)
@@ -269,6 +271,29 @@ def check_report_channels(slug_dir, slug):
     # 4) report.md 承接（落报告硬门禁，与已执行通道证据一致）
     if report_size < MIN_REPORT_BYTES:
         blocked.append(("report", f"report.md 缺失或过小（{report_size}字节），硬数据未落正文"))
+    # 4b) 必拉全文（学术科研 P0 且 P 通道含 arxiv 命中时生效）：
+    #     gathered_arxiv.md 有命中（≥200字节）→ 认为存在 arXiv 主题，须已落盘 arxiv_html.md
+    #     与 arxiv_text.md，供阶段 3 以全文为准做论证完整性校验。非 arXiv 主题不判。
+    try:
+        arxiv_gathered = os.path.join(slug_dir, "gathered_arxiv.md")
+        if os.path.exists(arxiv_gathered) and os.path.getsize(arxiv_gathered) >= MIN_MATERIAL_BYTES:
+            text = open(arxiv_gathered, encoding="utf-8", errors="ignore").read()
+            if re.search(r"arxiv\.org/abs/[0-9]+\.[0-9]+", text, re.I) and "（无有效素材）" not in text:
+                cd_p = (cd.get("P") or {}) if isinstance(cd, dict) else {}
+                # F 复用分支不强制必拉全文（权威源为 flomo，还原后以 flomo 为准）
+                is_reuse = False
+                cd_f = (cd.get("F") or {}) if isinstance(cd, dict) else {}
+                if isinstance(cd_f, dict):
+                    note_f = (cd_f.get("note") or "")
+                    is_reuse = "复用" in note_f or "命中同题" in note_f
+                if not is_reuse:
+                    for fn in ("arxiv_html.md", "arxiv_text.md"):
+                        fp = os.path.join(slug_dir, fn)
+                        if not os.path.exists(fp) or os.path.getsize(fp) < MIN_MATERIAL_BYTES:
+                            blocked.append(("P", f"必拉全文：{fn} 缺失/过小（arXiv 主题须落盘全文 HTML 与文本化，以全文为准核验）——请运行 python tools/arxiv_fetch.py --slug {slug}"))
+                            break
+    except Exception:
+        pass
 
     if blocked:
         for ch, msg in blocked:

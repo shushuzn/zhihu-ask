@@ -109,6 +109,7 @@ REQUIRED_FILES = [
     "tools/wechat_search.py",
     "tools/arxiv_search.py",
     "tools/arxiv_daily.py",
+    "tools/arxiv_fetch.py",
     "tools/preprint_search.py",
     "tools/web_search.py",
     "tools/wechat_publish.py",
