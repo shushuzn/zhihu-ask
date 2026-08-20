@@ -26,7 +26,10 @@ except Exception:
     except (AttributeError, ValueError):
         pass
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 HOOK_PATH = os.path.join(ROOT, ".git", "hooks", "pre-commit")
 
 HOOK_TEMPLATE = """#!/bin/sh

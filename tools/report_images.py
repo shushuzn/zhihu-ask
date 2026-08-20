@@ -55,7 +55,10 @@ import re
 import sys
 import urllib.request
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 
 DEFAULT_AI_PROMPTS = [
     {

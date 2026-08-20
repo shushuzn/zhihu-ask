@@ -44,7 +44,10 @@ except Exception:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel_state as cs
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 TEMPLATES = os.path.join(ROOT, "templates")
 RESEARCH = os.path.join(ROOT, "research")
 PLAN = os.path.join(ROOT, "plan.md")

@@ -36,7 +36,10 @@ import sys
 import tempfile
 import urllib.request
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 
 # 外网出口检测（沙箱 Bash 通常无 egress，图片下载等外网动作需先确认）
 try:

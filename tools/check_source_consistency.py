@@ -27,7 +27,10 @@ except Exception:
     except (AttributeError, ValueError):
         pass
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 
 REF_HEAD_RE = re.compile(r"^#{1,6}\s*\u53c2\u8003\u6587\u732e")
 ENTRY_RE = re.compile(r"^\[(\d+)\]\s+(.+)")

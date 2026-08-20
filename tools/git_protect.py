@@ -35,7 +35,10 @@ from health_check import REQUIRED_FILES as _REQUIRED_FILES
 
 KEY_FILES = _REQUIRED_FILES + ["skills/zhihu-ask-research/SKILL.md"]
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 
 def staged_files():
     """返回暂存区文件列表（git diff --cached --name-only）"""

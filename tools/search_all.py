@@ -39,8 +39,10 @@ except Exception:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel_state as cs
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS = os.path.join(ROOT, "tools")
+try:
+    from tools.run_util import ROOT, TOOLS
+except ModuleNotFoundError:
+    from run_util import ROOT, TOOLS  # 被测导入时 tools 不在包路径
 PY = sys.executable
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 

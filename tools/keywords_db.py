@@ -43,7 +43,10 @@ except Exception:
 
 import knowledge_store as ks
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from tools.run_util import ROOT
+except ModuleNotFoundError:
+    from run_util import ROOT  # 被测导入时 tools 不在包路径
 DEFAULT_KEYWORDS_MD = os.path.join(ROOT, "docs", "KEYWORDS.md")
 
 
