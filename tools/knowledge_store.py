@@ -57,6 +57,22 @@ CREATE TABLE IF NOT EXISTS keyword_entries (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_keyword_entries_section ON keyword_entries(section_id);
+-- arXiv 日更增量归档（math 等全量拉取的每日批次，去重键为 arxiv_id）
+CREATE TABLE IF NOT EXISTS arxiv_daily (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    arxiv_id TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    authors TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT '',
+    published_date TEXT NOT NULL DEFAULT '',
+    abs_url TEXT NOT NULL DEFAULT '',
+    pdf_url TEXT NOT NULL DEFAULT '',
+    summary TEXT NOT NULL DEFAULT '',
+    fetched_at TEXT NOT NULL,
+    source_file TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_arxiv_daily_date ON arxiv_daily(published_date);
+CREATE INDEX IF NOT EXISTS idx_arxiv_daily_category ON arxiv_daily(category);
 """
 
 
@@ -262,5 +278,74 @@ def search_keywords(conn, query):
         "WHERE e.content LIKE ? OR s.title LIKE ? "
         "ORDER BY s.sort_order, e.sort_order",
         (like, like),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# ---------- arXiv 日更归档 ----------
+
+
+def upsert_arxiv_daily(conn, papers):
+    """批量写入/去重日更论文（以 arxiv_id 去重，已存在则忽略）。
+
+    ``papers``: 可迭代的映射，每项至少含 ``arxiv_id``/``title``；其余字段
+    ``authors``/``category``/``published_date``/``abs_url``/``pdf_url``/``summary``
+    推断时若缺则置空。返回新增条数。
+    """
+    rows = []
+    for p in papers:
+        aid = (p.get("arxiv_id") or p.get("id") or "").strip()
+        if not aid:
+            continue
+        rows.append((
+            aid,
+            (p.get("title") or "").strip(),
+            (p.get("authors") or "").strip(),
+            (p.get("category") or "").strip(),
+            (p.get("published_date") or p.get("date") or "").strip(),
+            (p.get("abs_url") or p.get("link") or "").strip(),
+            (p.get("pdf_url") or p.get("pdf") or "").strip(),
+            (p.get("summary") or p.get("abstract") or "").strip(),
+        ))
+    if not rows:
+        return 0
+    before = conn.execute("SELECT COUNT(*) FROM arxiv_daily").fetchone()[0]
+    conn.executemany(
+        "INSERT OR IGNORE INTO arxiv_daily "
+        "(arxiv_id, title, authors, category, published_date, abs_url, pdf_url, summary, fetched_at, source_file) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)",
+        [r + ("",) for r in rows],  # source_file 占位，调用方可覆盖
+    )
+    conn.commit()
+    after = conn.execute("SELECT COUNT(*) FROM arxiv_daily").fetchone()[0]
+    return after - before
+
+
+def list_arxiv_daily(conn, *, date=None, category=None, limit=50, offset=0):
+    """按日期/分类分页列出日更论文（按 published_date/id 倒序）。"""
+    clauses, params = [], []
+    if date:
+        clauses.append("published_date = ?")
+        params.append(date)
+    if category:
+        clauses.append("category LIKE ?")
+        params.append(f"%{category}%")
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    rows = conn.execute(
+        f"SELECT arxiv_id, title, authors, category, published_date, abs_url, pdf_url "
+        f"FROM arxiv_daily{where} ORDER BY published_date DESC, id DESC LIMIT ? OFFSET ?",
+        (*params, limit, offset),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def search_arxiv_daily(conn, query, limit=20):
+    """对日更论文标题/摘要做 LIKE 检索（与 RAG / 全库关键词检索一并使用）。"""
+    like = f"%{query}%"
+    rows = conn.execute(
+        "SELECT arxiv_id, title, authors, category, published_date FROM arxiv_daily "
+        "WHERE title LIKE ? OR summary LIKE ? "
+        "ORDER BY published_date DESC, id DESC LIMIT ?",
+        (like, like, limit),
     ).fetchall()
     return [dict(r) for r in rows]

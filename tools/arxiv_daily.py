@@ -218,6 +218,35 @@ def main():
             content = ax.format_gathered(entries, f"daily:{args.categories or 'all'} {args.query or ''}".strip())
         else:
             content = f"# ArXiv 日更\n> 检索：{args.categories or 'all'} {args.query}\n> 命中：{len(entries)} 条\n"
+        # 落 SQL（--raw 降级路径同样归档）
+        try:
+            import knowledge_store as ks
+
+            conn = ks.connect()
+            ks.init_db(conn)
+            cats = _normalize_categories(args.categories)
+            cat_prefix = cats[0].split(".")[0] if cats else ""
+            sql_papers = []
+            for e in entries:
+                aid = ""
+                for k in ("link", "pdf"):
+                    u = e.get(k, "")
+                    m = re.search(r"/abs/([^/\s]+)", u) or re.search(r"/pdf/([^/\s]+)", u)
+                    if m:
+                        aid = m.group(1).strip()
+                        break
+                if not aid:
+                    aid = e.get("title", "")[:40]
+                sql_papers.append({
+                    "arxiv_id": aid, "title": e.get("title", ""), "authors": e.get("authors", ""),
+                    "category": cat_prefix, "published_date": e.get("date", ""),
+                    "abs_url": e.get("link", ""), "pdf_url": e.get("pdf", ""), "summary": e.get("summary", ""),
+                })
+            added = ks.upsert_arxiv_daily(conn, sql_papers)
+            print(f"[SQL] 日更归档: 新增 {added} / 去重后 {len(entries)} 条", file=sys.stderr)
+            conn.close()
+        except Exception as e:
+            print(f"[SQL] 日更归档跳过（{type(e).__name__}: {e}）", file=sys.stderr)
         if args.out:
             os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
             with open(args.out, "w", encoding="utf-8") as f:
@@ -239,6 +268,43 @@ def main():
             pass
         label = f"daily:{args.categories or 'all'} {args.query or ''}".strip()
         content = ax.format_gathered(entries, label) if ax is not None else text
+        # 落 SQL：每日批次去重归档（以 arxiv_id 去重），便于 SQL 检索与追溯
+        try:
+            import knowledge_store as ks  # 与 arxiv_daily 同处 tools 包
+            from datetime import datetime
+
+            conn = ks.connect()
+            ks.init_db(conn)
+            # 推断分类前缀（取首个分类，如 math.* → math）
+            cats = _normalize_categories(args.categories)
+            cat_prefix = cats[0].split(".")[0] if cats else ""
+            sql_papers = []
+            for e in entries:
+                # arxiv id 从 link/pdf 中提取（abs/xxx 或 cat:* 全站流亦可）
+                aid = ""
+                for k in ("link", "pdf"):
+                    u = e.get(k, "")
+                    m = re.search(r"/abs/([^/\s]+)", u) or re.search(r"/pdf/([^/\s]+)", u)
+                    if m:
+                        aid = m.group(1).strip()
+                        break
+                if not aid:
+                    aid = e.get("title", "")[:40]
+                sql_papers.append({
+                    "arxiv_id": aid,
+                    "title": e.get("title", ""),
+                    "authors": e.get("authors", ""),
+                    "category": cat_prefix,
+                    "published_date": e.get("date", ""),
+                    "abs_url": e.get("link", ""),
+                    "pdf_url": e.get("pdf", ""),
+                    "summary": e.get("summary", ""),
+                })
+            added = ks.upsert_arxiv_daily(conn, sql_papers)
+            print(f"[SQL] 日更归档: 新增 {added} / 去重后 {len(entries)} 条", file=sys.stderr)
+            conn.close()
+        except Exception as e:
+            print(f"[SQL] 日更归档跳过（{type(e).__name__}: {e}）", file=sys.stderr)
         if args.out:
             os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
             with open(args.out, "w", encoding="utf-8") as f:
