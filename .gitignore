@@ -49,3 +49,6 @@ Thumbs.db
 # j-space 控制器状态（不入库）
 .jspace/
 jspace_operations.log
+
+# Onlook 代理会话本地缓存（不入库）
+.omo/
