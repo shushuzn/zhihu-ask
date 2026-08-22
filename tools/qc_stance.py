@@ -127,10 +127,15 @@ def check_impl_residue(body):
         stripped = re.sub(r"[《「『][^》」』]*[》」』]", "", line)
         stripped = re.sub(r"[\u201c\u2018][^\u201d\u2019]*[\u201d\u2019]", "", stripped)
         stripped = re.sub(r'"[^"]*"', "", stripped)
-        # 裸 Python（大小写不敏感，词边界）——成品正文禁泄露实现语言
+        # 裸 Python（大小写不敏感，词边界）——成品正文禁泄露实现语言；
+        # 例外：报告主题本身含 Python 时（如 Lean/Python FFI、Python 生态等事实内容），不误报——
+        # 仅当 Python 指代作者实现过程（验证/脚本/跑）才属残留
         if re.search(r"(?i)\bpython\b", stripped):
-            issues.append((i, "实现过程残留", "Python（成品正文禁泄露实现语言）", line.strip()[:60]))
-            continue
+            if re.search(r"(?i)Python", stripped) and re.search(r"(FFI|生态|优先|模块)", stripped):
+                pass  # 事实内容（FFI/生态等同行出现），豁免
+            else:
+                issues.append((i, "实现过程残留", "Python（成品正文禁泄露实现语言）", line.strip()[:60]))
+                continue
         for w in IMPL_RESIDUE_WORDS:
             if w in stripped:
                 issues.append((i, "实现过程残留", w, line.strip()[:60]))
