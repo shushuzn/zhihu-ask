@@ -7,7 +7,7 @@ description: 知乎深度回答研究流程（唯一权威流程标准）。用�
 
 ## 概述
 
-研究流水线: 问题接收 → flomo 查重(命中已有笔记→复用还原, 不做标记不更新) → 多通道检索 → 写笔记 → 写索引 → 组装报告(前须过时终核 3.4) → 质检八件套 → 上传/更新笔记(4.4.3 按终核结论同步)。
+研究流水线: 问题接收 → 多通道检索 → 写笔记 → 写索引 → 组装报告 → 质检八件套。
 
 报告为**纯事实陈述、零立场**，正文按 GB/T 7714-2015 顺序编码制在引用处标注 [n]。
 
@@ -74,10 +74,10 @@ research/<slug>/
 
 **硬规则:**
 1. 首行必须是 3 个 tag: `#维度1 #维度2 #主题/xxx`
-2. 参考文献段段名为「参考文献:」（不再用「来源:」），条目须按 GB/T 7714-2015 著录；且参考文献每条 [n] 须在正文以 [n] 引用、正文每个 [n] 引用须有对应条目——编号一一对应，不能少不能多（由 `quality_check.py` 笔记模式 `check_citation_correspondence` 与 `check_gbt_refs.py` 笔记模式在 flomo 上传前拦截）
-3. 标记纪律：笔记内禁止 `#`/`*` 标题标记——`##`/`###`/`####` 等 markdown 标题行一律禁止，标题用纯文本；仅首行 tag 行允许 `#`（如 `#技术 #AI`），body 内不得出现 `#` 标题行；`*` 强调亦禁止。由 `quality_check.py` 笔记模式 `check_title_asterisk` 与 `check_title_hash` 在 flomo 上传前拦截（命中即阻断上传）
-4. 索引笔记(00_index.md)和报告(report.md)禁止上传 flomo
-5. 笔记上传前必须跑质检: `python tools/quality_check.py --file notes/xx.md`, 通过后再上传
+2. 参考文献段段名为「参考文献:」（不再用「来源:」），条目须按 GB/T 7714-2015 著录；且参考文献每条 [n] 须在正文以 [n] 引用、正文每个 [n] 引用须有对应条目——编号一一对应，不能少不能多（由 `quality_check.py` 笔记模式 `check_citation_correspondence` 与 `check_gbt_refs.py` 笔记模式拦截）
+3. 标记纪律：笔记内禁止 `#`/`*` 标题标记——`##`/`###`/`####` 等 markdown 标题行一律禁止，标题用纯文本；仅首行 tag 行允许 `#`（如 `#技术 #AI`），body 内不得出现 `#` 标题行；`*` 强调亦禁止。由 `quality_check.py` 笔记模式 `check_title_asterisk` 与 `check_title_hash` 拦截（命中即阻断）
+4. 索引笔记(00_index.md)为本地索引，不作单独校验
+5. 笔记上传前必须跑质检: `python tools/quality_check.py --file notes/xx.md`
 6. **单篇独立可读**:
    - 每篇笔记自含出处：正文首次提到来源材料（论文/文章）时写全题名与出处（如"arXiv:2608.11313《…》（YYYY-MM-DD，作者）"），不得只写"本文/该文/前作"
    - 不依赖其他笔记：禁止"见笔记 02""如前文所述"等跨笔记指代；每条笔记是完整自足的单元
@@ -106,22 +106,20 @@ research/<slug>/
 1. 接收问题。知乎链接先 `web_fetch` 抓取；失败（403/登录墙）则请用户粘贴标题或描述。
 2. **J-Space introspection sweep**：在回答前执行 `modules/introspection.md` 的 PRE-ANSWER SWEEP，检查是否已形成答案，防止直接作答。识别两个已形成的判断或疑问（如"这是概念性问题"、"需要机制解释"）。
 3. 拆解问题：主概念、关键实体、隐含前提、真实诉求；评估阅读价值（增量信息/反常识点）。
-4. 搜 flomo 查重：`python tools/flomo_search.py --keywords "主题词"`（判读与命中处理见阶段 1 通道 F）。
-5. 搜本地 RAG：`python tools/rag_search.py "<主概念>"`（SQLite 索引，改动 docs 后先 `rag_build.py`）。
-6. 判定查询类型：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
-7. 关键词≥6 组（不足提示，不阻塞）。
-8. 初始化（脚本）：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ F 通道 flomo 查重（第一步阻断门禁）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
-9. J-Space 初始化：在研究目录执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" note --goal "研究问题：<问题摘要>" --next "执行阶段 1 六通道检索"` 初始化认知工作空间 ledger。
+4. 搜本地 RAG：`python tools/rag_search.py "<主概念>"`（SQLite 索引，改动 docs 后先 `rag_build.py`）。
+5. 判定查询类型：深度优先（五视角逐项）/ 广度优先（多子议题各按五视角）/ 直接查询（一轮即可）。
+6. 关键词≥6 组（不足提示，不阻塞）。
+7. 初始化（脚本）：`python tools/run_pipeline.py --config tools/start.json`（或 `research_start.py`）——自动完成：目录初始化（plan/report/process_notes/notes/ + `.progress.json`，含领域档位与通道计划、E/C 环境级 skip 预登记）→ 公众号 A 通道初检落盘 → 打印 agent 待办清单。
+8. J-Space 初始化：在研究目录执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" note --goal "研究问题：<问题摘要>" --next "执行阶段 1 五通道检索"` 初始化认知工作空间 ledger。
 
-### 阶段 1 · 信息检索（六通道 F/E/A/B/C/P）
+### 阶段 1 · 信息检索（五通道 E/A/B/C/P）
 
-**执行顺序**：**F → E → A → B → C → P**，六通道全部执行并登记后过 **阶段 1 门禁**。
+**执行顺序**：**E → A → B → C → P**，五通道全部执行并登记后过 **阶段 1 门禁**。
 
-**领域优先级矩阵（F/B 为通用 P0）**：
+**领域优先级矩阵（B 为通用 P0）**：
 
 | 通道 | 学术科研 | 科技产业 | 财经时政 | 登记方式 |
 |---|---|---|---|---|
-| F flomo 查重 | P0（最先·阻断） | P0 | P0 | 人工判读结论后 mark_channel 登记 |
 | B Web | P0 | P0 | P0 | `web_search.py --out gathered_web.md` 落盘自动登记 |
 | P 预印本聚合（arxiv/bioRxiv/浪淘沙/PSSXiv） | P0 | P2 | P2 | `preprint_search.py --platform all` 落盘自动登记 |
 | C 领域连接器（企查查/通达信/智慧芽） | P1 | P0 | P0 | 未配置：环境级自动 skip；已配置手动登记 |
@@ -129,9 +127,8 @@ research/<slug>/
 | E ima | P1 | P1 | P1 | 未配置：环境级自动 skip；已配置手动登记 |
 
 **检索通道（按主题领域分档，替代一刀切 P0）：**
-- **内部搜索优先层**（阶段 0 步骤 4-5 + search_all.py 内置）：flomo_search + rag_search 必须在外部检索前执行。内部命中 ≥5 条 → 外部检索可聚焦补充视角（减少公众号 A 通道）；内部命中 ≥2 条 → 外部正常执行；内部命中 <2 条 → 外部全量执行。search_all.py 已内置此逻辑。
-- **统一入口**：启动后跑 `python tools/search_all.py --config tools/start.json`——先执行内部搜索优先层（flomo+rag），再并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记；F 判读登记仍人工。
-- **F (flomo 查重, P0 通用)**：`memo_search` 查是否已有本主题笔记（中英双查纪律见下）。
+- **内部搜索**（search_all.py 内置）：rag_search 在外部检索前执行。
+- **统一入口**：启动后跑 `python tools/search_all.py --config tools/start.json`——先执行内部搜索（rag），再并行执行 B/A/P 三通道（B 多查询并行），各自落盘自动登记。
 - **B (Web, P0 通用)**：`web_search` / `tools/web_search.py`。
 - **P (arxiv)**：`tools/arxiv_search.py`（落盘 gathered_arxiv.md 登记通道 P）。
 - **P (预印本聚合, 含 arxiv, 学术科研 P0 / 科技产业·财经时政 P2)**：`tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 --count 5 --out research/<slug> --slug <slug>`——arxiv→gathered_arxiv.md + bioRxiv（生物医学）/ 浪淘沙（中文跨学科）/ PSSXiv（哲学社会科学）→gathered_preprints.md；两文件同属通道 P，一次性登记。学术/数学/AI 主题另需：主论文 **HTML 全文直抓**（`arxiv.org/html/<id>v1` → 落盘 `arxiv_html.md` + 文本化 `arxiv_text.md`）+ 相关预印本元数据核验（`id_list=` API）。平台命中与主题无关时在素材文件内注明判读结论，不计入。
@@ -139,24 +136,7 @@ research/<slug>/
 - **A (公众号, 财经时政 P0 / 科技产业 P1 / 学术科研 P2)**：`tools/wechat_search.py`。
 - **E (ima, P1, 未配置时初始化自动登记 skip，无需逐篇检查)**：`search_knowledge` 逐库检索。
 
-**领域分档**：学术科研类（数学/物理/生物医学/哲学社科/AI 理论）→ P 为 P0；科技产业类（AI 应用/半导体/机器人/3D 生成）→ C 为 P0、P 为 P2；财经时政类（股票/宏观/政策/民生）→ A/C 为 P0、P 为 P2。执行纪律：仍须登记全部六通道执行态（P0 缺失须补足、P1 无命中记"无有效素材"、P2 记 skip）；**环境级未配置连接器的通道（ima E / 领域连接器 C 默认未配置）由初始化自动登记 skip，无需逐篇手动检查**（连接器接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 调整）。
-
-#### 1.1 F flomo 查重（第一步，阻断；命中复用分支见 1.1.3）
-
-- **1.1.1 执行查重（必做，最先执行；中英双查纪律）**：`python tools/flomo_search.py --keywords "<主题词>" --limit 10`（或 WorkBuddy `memo_search`）——**必须双轮**：① 中文主题词；② **英文标题核心词/编号**（arXiv/英文论文主题用论文标题核心词与编号如 `2608.xxxxx`；公众号文章用标题关键词）——单一语言关键词会漏掉 flomo 内另一种语言标题的已有笔记（2608.13559 漏检复盘，2026-08-16）。两轮合并判读，命中登记到 1.1.2。
-- **1.1.2 判读 relevance**：
-  - **≥0.9（本主题已有笔记）** → 进入 1.1.3「复用 + 过时检查」；
-  - **0.5–0.9（主题相近）** → 命中笔记可作参考素材（须有符合 GB/T 7714-2015 的参考文献，`check_flomo_note_refs.py` 检测；不合规/没有 → 联网找对应来源 → 找不到则不可用），正常检索；**引用其内容前须核对时效**（过时内容不引用）；
-  - **<0.5（含命中但判定不相关的假阳性）** → 无本主题笔记，正常检索（新建）。
-- **1.1.3 已有笔记复用（必做，不得跳过；过时终核在 3.4、更新动作在 4.4.3，本阶段不做任何标记）**：
-  - ① **拉取全文**：`python tools/flomo_search.py --keywords "<主题词>" --limit 50 --full`（或 `memo_batch_get`）拉取命中笔记全文；
-  - ② **忠实还原**：本地 `notes/` 缺失或疑似旧版本时，按拉回全文**忠实还原本地笔记文件**（仅解除平台转义，不重写内容、不新建主题），flomo 端不动；**权威源为 flomo**——本地文件与 flomo 原文内容等价即视为还原成功，还原本身不构成更新；本地文件若比 flomo 新（本地刚改写且未上传），保留本地版本并在 plan.md 注明。
-  - ③ **初步观察（仅记录提示，不作为待办标记）**：来源论文/文章是否有新版本（arXiv API 查 `updated` 字段与版本列表）、是否已知有新信息，随 1.1.4 写入 F 通道 note，供 4.4.3 终核参考。
-- **1.1.4 记录与登记**：判读结论（命中情况 / 复用决定 / 初步观察提示）写入 `research/<slug>/plan.md` 步骤 0 行；`python tools/mark_channel.py --slug <slug> --channel F --status done --note "memo_search 已执行：<命中概述>；判读：<复用/参考/正常检索>；过时终核在 3.4、更新同步在 4.4.3"`。
-
-**flomo 笔记引用规则**：命中的笔记若用作素材，必须有符合 GB/T 7714-2015 的参考文献；不合规或没有 → 联网找对应来源；找不到 → 该笔记不可用。检测：`python tools/check_flomo_note_refs.py --keywords "<主题词>"`。
-
-**旧笔记过时更新（命中时必做）**：新信息推翻旧笔记表述时，旧笔记过时句必须原地更新（如"尚无定论""待观察""未发布"被证实/证伪后补结局或改写），不得只新增而让新旧自相矛盾。时机：过时终核在阶段 3 末（3.4，写报告前，结论写 process_notes）；更新动作在阶段 4（4.4.3：本地改写后 `note_upload.py <文件>.md --update` 按 .flomo_ids.json memo_update 覆盖原 id，禁止新建多版本）。更新后的旧笔记与新增笔记一并质检上传。
+**领域分档**：学术科研类（数学/物理/生物医学/哲学社科/AI 理论）→ P 为 P0；科技产业类（AI 应用/半导体/机器人/3D 生成）→ C 为 P0、P 为 P2；财经时政类（股票/宏观/政策/民生）→ A/C 为 P0、P 为 P2。执行纪律：仍须登记全部五通道执行态（P0 缺失须补足、P1 无命中记"无有效素材"、P2 记 skip）；**环境级未配置连接器的通道（ima E / 领域连接器 C 默认未配置）由初始化自动登记 skip，无需逐篇手动检查**（连接器接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 调整）。
 
 #### 1.2 E ima 检索（P1）
 连接器未配置 → 环境级自动 skip（无需逐篇检查）；已配置 → `search_knowledge` 逐库检索（候选库取全、每库 ≥2 个关键词），全部无命中记"通道 E 无有效素材"。
@@ -193,11 +173,10 @@ python tools/run_pipeline.py --slug <slug> --check-phase phase1
 
 1. **J-Space capacity check**：在开始多视角收集前，执行 `modules/capacity.md` 的 drill：命名当前舞台上的1-2个核心想法。如果超过2个，将多余想法写入 ledger 的 Open 字段。
 2. 五视角逐项覆盖 (A公众号/B Web/C领域/D争议/E反方)；每视角至少一轮检索。
-3. 搜 flomo 补充同类笔记：`python tools/flomo_search.py --tag "主题/slug"`。
-4. 补充新笔记到 `notes/`。
-5. 校验：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷（P0 补检索）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
-6. 撰写模块化笔记（必做）：检索完成后撰写 `notes/*.md`（扁平目录、首行标签 `#维度1 #维度2 #主题/slug`；每篇含标签行 + 标题 + 正文 + 参考文献 GB/T 7714-2015）；写 `notes/00_index.md` 索引（`#索引`，以 `## 问题/历史/证明/结论/缺口` 串联各笔记）。阶段 1 判读为复用时，复用笔记已还原进本目录（不重写），与新建笔记一并构成笔记集。
-7. **J-Space 接缝审计**：阶段 2 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录笔记完成状态，更新 ledger。
+3. 补充新笔记到 `notes/`。
+4. 校验：子问题与视角清单逐一对照，有子问题未被任一视角覆盖即为缺陷（P0 补检索）；补后仍无 → 结论标注"该子问题无公开素材"。直接查询跳过本阶段。
+5. 撰写模块化笔记（必做）：检索完成后撰写 `notes/*.md`（扁平目录、首行标签 `#维度1 #维度2 #主题/slug`；每篇含标签行 + 标题 + 正文 + 参考文献 GB/T 7714-2015）；写 `notes/00_index.md` 索引（`#索引`，以 `## 问题/历史/证明/结论/缺口` 串联各笔记）。
+6. **J-Space 接缝审计**：阶段 2 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录笔记完成状态，更新 ledger。
 
 ### 阶段 3 · 交叉验证与量化
 
@@ -208,12 +187,6 @@ python tools/run_pipeline.py --slug <slug> --check-phase phase1
 - 算式按需但必写：有计算价值的内容算式必须写、融入叙述，禁止凑数硬造也禁止该写不写；有计算价值的算式须经 Python 验证。
 - 数据不可得 → 标注"待核实"。
 - 决策点（用户审批）：关键数字缺失导致结论悬空且无法推断时，暂停询问用户。
-- **3.4 复用笔记最终过时核对（仅当阶段 1 判读为复用已有笔记时必做；在材料收集齐备后、4.1 撰写报告前执行）**：
-  - **web_fetch 验证（必做）**：每条复用笔记的关键事实声明，须 `web_fetch` 对应原始来源 URL 验证（实体名、数字、日期）。**禁止仅凭 flomo 笔记内容写入报告**——flomo 是内部摘要，可能含二手/三手来源，必须回溯一手来源。
-  - 对照阶段 1–3 收集的全部材料，对每条复用笔记逐条复核（来源论文/文章是否有新版本、是否有新结果推翻笔记表述如"尚无定论/待观察/未发布"被证实/证伪）。
-  - **确有过时 → 立即在本地笔记文件中改写**（补结局/改写过时句子，不新建多版本），使 4.1 报告引用的一律是已校正内容。
-  - **终核结论（逐条：过时/未过时 + 依据 + 改写记录 + web_fetch 验证 URL）写入 `process_notes.md` 留痕**，作为 4.4.3 同步动作的依据。
-  - 写报告若引用还原笔记内容，必须先经本步终核。
 - **J-Space 接缝审计**：阶段 3 完成后执行 `python "C:\Users\35234\.workbuddy\skills\J-Space-Cognition-Suite\scripts\jspace.py" seam` 记录验证完成状态，更新 ledger。
 
 ### 阶段 4 · 报告生成、自检与沉淀
@@ -231,10 +204,10 @@ python tools/check_progress.py --slug <slug> --require phase4沉淀_done
 完成各阶段后用`--mark`更新状态：`--mark phase2_done` / `--mark phase3_done` / `--mark phase4沉淀_done`。
 
 #### 4.1 撰写 report.md
-按 `templates/research_report_TEMPLATE.md` 产出：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。报告内容以阶段 1–3 收集材料为准；复用笔记的内容若被引用，须已经 3.4 终核。
+按 `templates/research_report_TEMPLATE.md` 产出：结论（≤300 字）→ 关键事实与数据（事实叙述+分析表格）→ 参考文献；公式一律 LaTeX，正文 [n] 引注，参考文献区禁 LaTeX。报告内容以阶段 1–3 收集材料为准。
 
 #### 4.2 脚本收尾（八件套门禁）
-`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（见下 8 道，硬伤与提示级均阻断）→ `report_to_docx.py` → `report_to_flomo.py`（本地存档）→ `check_all.py` 全库体检。
+`python tools/run_pipeline.py --slug <slug>` 一键执行——自动清理工作区 → 质检八件套门禁（见下 8 道，硬伤与提示级均阻断）→ `report_to_docx.py` → `check_all.py` 全库体检。
 
 **八件套明细**：
 1. `check_report_structure` — 结构校验
@@ -255,10 +228,7 @@ python tools/check_progress.py --slug <slug> --require phase4沉淀_done
 
 #### 4.4 沉淀（必做）
 - **4.4.1 关键词回填**：有效关键词写 SQLite 关键词库（`keywords_db.py --add`）+ `--export docs/KEYWORDS.md` 同步。
-- **4.4.2 经验记录**：写 `research/<slug>/process_notes.md`（检索与踩坑记录，含 3.4 终核结论）。
-- **4.4.3 笔记上传/同步（按 .flomo_ids.json 记录分流；复用笔记的过时结论以 3.4 终核为准）**：
-  - **新建笔记（`.flomo_ids.json` 无记录的文件）**：逐条上传 `python tools/note_upload.py research/<slug>/notes/<文件名>.md`（无记录 → memo_create 并补记 id）。**禁止**对含已记录文件的目录跑无 `--update` 的整目录上传（工具对已记录文件也会 memo_create，造成重复笔记）；
-  - **复用笔记（`.flomo_ids.json` 有记录的文件）**：按 3.4 终核结论执行——**判为过时（3.4 已改写本地文件）** → `python tools/note_upload.py research/<slug>/notes/<文件名>.md --update` 按记录用 `memo_update` 覆盖原 id（禁止新建多版本），同步 3.4 的改写结果；**终核未过时** → 不动（不执行任何上传/更新命令）。终核结论与改写记录已在 3.4 写入 `process_notes.md` 留痕。
+- **4.4.2 经验记录**：写 `research/<slug>/process_notes.md`（检索与踩坑记录）。
 
 #### 4.5 用户验收（决策点）
 交付前用户验收；被拒（AI 味/质量）则按 STYLE_GUIDE 重写后重新提交（重写后须重跑 4.2 门禁）。用户 24h 未验收 → 再次提醒，交付物保留待查看。
@@ -298,19 +268,6 @@ python tools/check_progress.py --slug <slug> --require phase4沉淀_done
 - 报告为**纯事实陈述**：不设结论、不表立场、不贴标签、不给建议、不替读者判断；立场中立为硬性检查项。
 - 报告禁止 A 股行情信息（股票代号/股价/涨跌幅/市值等，quality_check 拦截）；需产业背景用公司名+产业事实表述。
 - 未经用户明确同意，不执行推送、强推、改仓库可见性等操作。
-
-## flomo 搜索用法
-
-```bash
-# 按关键词搜
-python tools/flomo_search.py --keywords "AI 编程"
-
-# 按标签搜
-python tools/flomo_search.py --tag "AI编程"
-
-# 组合搜
-python tools/flomo_search.py --tag "AI编程" --keywords "定价"
-```
 
 ## GB/T 7714-2015 来源格式
 

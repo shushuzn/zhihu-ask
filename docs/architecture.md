@@ -17,11 +17,8 @@ flowchart TB
         P0a --> P0b --> P0c --> P0d --> P0e --> P0f
     end
 
-    subgraph P1["阶段 1 · 六通道信息检索（F→E→A→B→C→P）"]
+    subgraph P1["阶段 1 · 五通道信息检索（E→A→B→C→P）"]
         direction TB
-
-        F["🔍 F · flomo 查重（最先）<br/>flomo_search.py memo_search MCP<br/>≥0.9 复用/更新 · 0.5~0.9 参考<br/>&lt;0.5 正常检索<br/>check_flomo_note_refs 素材合规检测<br/>旧笔记过时信息原地更新"]
-        F -->|"查重结果记录 plan.md"| GATE
 
         subgraph E["E · ima 知识库（P1，未配置记 skip）"]
             E1["E1 经验检索 search_knowledge_base"]
@@ -55,7 +52,7 @@ flowchart TB
         C --> GATE
         P --> GATE
 
-        GATE["✅ 门禁 check_progress --require report_channels<br/>mark_channel.py 六通道登记<br/>done / empty / skip + note<br/>（A/P 自动 · F/E/B/C 手动）<br/>声明态 ⊕ 证据双向校验"]
+        GATE["✅ 门禁 check_progress --require report_channels<br/>mark_channel.py 五通道登记<br/>done / empty / skip + note<br/>（A/P 自动 · E/B/C 手动）<br/>声明态 ⊕ 证据双向校验"]
     end
 
     subgraph N["📝 模块化笔记（检索完成后撰写，报告的直接素材）"]
@@ -89,11 +86,10 @@ flowchart TB
     end
 
     subgraph OUTPUT["📤 产出与沉淀"]
-        O1["notes/*.md 逐条质检上传 flomo<br/>note_upload.py（00_index/报告禁止）<br/>--update 原地更新"]
-        O2["report.docx（report_to_docx.py）<br/>flomo_full.md 本地存档<br/>（report_to_flomo.py 不上传）"]
+        O2["report.docx（report_to_docx.py）"]
         O3["ai_cover.png（report_images.py）<br/>纯抽象视觉 · 三重复检"]
         O4["公众号草稿（按需 wechat_publish.py）<br/>latex_unicode 转可读文本"]
-        O5["SQLite 关键词库回填（keywords_db.py --add）<br/>--export KEYWORDS.md · process_notes.md<br/>plan.md 索引回填 · flomo 笔记更新"]
+        O5["SQLite 关键词库回填（keywords_db.py --add）<br/>--export KEYWORDS.md · process_notes.md<br/>plan.md 索引回填"]
     end
 
     subgraph FINAL["✅ 收尾"]
@@ -105,7 +101,7 @@ flowchart TB
     subgraph DOCS["📚 规则与支撑"]
         D1["docs/：SOP · TOOLS<br/>STYLE_GUIDE · CONVENTIONS<br/>KEYWORDS · TEMPLATE_INDEX"]
         D2["templates/：research_report_TEMPLATE<br/>research_plan_TEMPLATE · note_TEMPLATE<br/>process_notes_TEMPLATE"]
-        D3["channel_state.py 通道单一真相源<br/>F/E/A/B/C/P · 素材文件映射"]
+        D3["channel_state.py 通道单一真相源<br/>E/A/B/C/P · 素材文件映射"]
     end
 
     %% Flow
@@ -114,10 +110,10 @@ flowchart TB
     P1 --> N
     N --> P2
     P2 --> P3
-    P3 -->|"全部通过"| O1 & O2 & O3 & O4 & O5
+    P3 -->|"全部通过"| O2 & O3 & O4 & O5
     P3 -->|"硬伤 → 迭代"| F2
     F2 -->|"补检索/深化"| P1
-    O1 & O2 & O3 & O4 & O5 --> F1
+    O2 & O3 & O4 & O5 --> F1
     F3 -.->|"会话启动"| P0
 
     %% Data connections
@@ -139,7 +135,7 @@ flowchart TB
     class P2 phase
     class P3 phase
     class USER input
-    class O1,O2,O3,O4,O5 output
+    class O2,O3,O4,O5 output
     class DOCS,FINAL data
     class GATE gate
     class N note
@@ -155,7 +151,7 @@ flowchart LR
         WS["web_search.py<br/>ddgs / bing / tavily / openalex / crossref"]
         WF["web_fetch.py<br/>Jina → 直连 → 代理 三级降级"]
         GIT["git（SSH）"]
-        MCP["flomo MCP / 智慧芽<br/>通达信 / 企查查 / ima"]
+        MCP["智慧芽<br/>通达信 / 企查查 / ima"]
     end
 
     subgraph net["网络出口"]
@@ -178,7 +174,6 @@ flowchart LR
     subgraph apis["外部服务"]
         TV["api.tavily.com"]
         CR["api.crossref.org"]
-        FL["flomoapp.com MCP"]
         GH["github.com（SSH）"]
         JI["r.jina.ai（经代理）"]
         PX["patsnap · tdx · qcc"]
@@ -194,7 +189,7 @@ flowchart LR
 
     CN --> BD & ZH & TX & TTO
     ARX --> AX
-    API --> TV & CR & FL & GH & JI & PX
+    API --> TV & CR & GH & JI & PX
 
     classDef ok fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     classDef warn fill:#fff3e0,stroke:#e65100,color:#e65100
@@ -203,5 +198,5 @@ flowchart LR
     class CN,ARX,API ok
     class BD ok
     class ZH warn
-    class AX,TV,CR,FL,GH,JI,PX ok
+    class AX,TV,CR,GH,JI,PX ok
 ```

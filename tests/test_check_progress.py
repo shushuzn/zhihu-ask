@@ -1,7 +1,7 @@
 """check_progress.py --require report_channels 双向交叉校验回归测试。
 
 覆盖：① 无结构化登记时回退旧文件启发式（正向/反向）；② 结构化模式下
-正向（声明→证据）、反向（证据→声明）、完整性（六通道）、report.md 承接
+正向（声明→证据）、反向（证据→声明）、完整性（五通道）、report.md 承接
 四类拦截。每条用例独立造临时 slug 目录，互不污染。
 
 运行：python tests/test_check_progress.py
@@ -67,23 +67,21 @@ cleanup(d)
 
 # ---- 结构化：完整一致 → 通过 ----
 d, s = build("ok1", channels_done={
-    "F": {"status": "skip", "note": "flomo 无本主题"},
     "E": {"status": "skip", "note": "ima 未连接"},
     "A": {"status": "done", "note": "命中 10"},
     "B": {"status": "done", "note": "官方来源"},
     "C": {"status": "done", "note": "企查查+通达信+智慧芽"},
     "P": {"status": "skip", "note": "预印本不适用"},
-        "P": {"status": "skip", "note": "预印本不适用"},
 }, files={
     "gathered_wechat.md": 300, "gathered_web.md": 300,
-    "gathered_c.md": 300, "gathered_arxiv.md": 300,
+    "gathered_c.md": 300,
 }, report_bytes=700)
-expect("struct- 六通道声明完整一致→通过", cp.check_report_channels(d, s), 0)
+expect("struct- 五通道声明完整一致→通过", cp.check_report_channels(d, s), 0)
 cleanup(d)
 
 # ---- 完整性：缺声明通道 P → 阻塞 ----
 d, s = build("miss1", channels_done={
-    "F": {"status": "skip", "note": "x"}, "E": {"status": "skip", "note": "x"},
+    "E": {"status": "skip", "note": "x"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "done", "note": "x"},
 }, files={
@@ -94,7 +92,6 @@ cleanup(d)
 
 # ---- 环境级未配置通道：缺 E/C 声明不阻塞（初始化自动 skip，跨研究共享） ----
 d, s = build("envskip", channels_done={
-    "F": {"status": "done", "note": "memo_search 已执行，无同主题已有笔记"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "P": {"status": "done", "note": "x"},
 }, files={
@@ -105,7 +102,7 @@ cleanup(d)
 
 # ---- 正向：A done 但素材缺失 → 阻塞 ----
 d, s = build("fwd1", channels_done={
-    "F": {"status": "skip", "note": "x"}, "E": {"status": "skip", "note": "x"},
+    "E": {"status": "skip", "note": "x"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "done", "note": "x"},
 }, files={"gathered_web.md": 300, "gathered_c.md": 300, "gathered_arxiv.md": 300},
@@ -113,47 +110,9 @@ d, s = build("fwd1", channels_done={
 expect("forward+ A done但无素材→阻塞", cp.check_report_channels(d, s), 1)
 cleanup(d)
 
-# ---- 正向：F done 缺 note → 阻塞 ----
-d, s = build("fwd2", channels_done={
-    "F": {"status": "done"}, "E": {"status": "skip", "note": "x"},
-    "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
-    "C": {"status": "done", "note": "x"},
-}, files={
-    "gathered_wechat.md": 300, "gathered_web.md": 300,
-    "gathered_c.md": 300, "gathered_arxiv.md": 300,
-}, report_bytes=700)
-expect("forward+ F done缺note→阻塞", cp.check_report_channels(d, s), 1)
-cleanup(d)
-
-# ---- 正向：F done 但 note 未记录实际 flomo 查重工具 → 阻塞 ----
-d, s = build("fwd2b", channels_done={
-    "F": {"status": "done", "note": "查重完成，无同主题笔记"},
-    "E": {"status": "skip", "note": "x"},
-    "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
-    "C": {"status": "done", "note": "x"},
-}, files={
-    "gathered_wechat.md": 300, "gathered_web.md": 300,
-    "gathered_c.md": 300, "gathered_arxiv.md": 300,
-}, report_bytes=700)
-expect("forward+ F done未记录memo_search→阻塞", cp.check_report_channels(d, s), 1)
-cleanup(d)
-
-# ---- 正向：F done 且 note 记录 memo_search → 放行 ----
-d, s = build("fwd2c", channels_done={
-    "F": {"status": "done", "note": "flomo memo_search 查重完成，无同主题笔记"},
-    "E": {"status": "skip", "note": "x"},
-    "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
-    "C": {"status": "done", "note": "x"}, "P": {"status": "done", "note": "x"},
-}, files={
-    "gathered_wechat.md": 300, "gathered_web.md": 300,
-    "gathered_c.md": 300, "gathered_arxiv.md": 300,
-}, report_bytes=700)
-expect("forward+ F done记录memo_search→放行", cp.check_report_channels(d, s), 0)
-cleanup(d)
-
 # ---- 反向：存在素材但 channels_done 未登记 → 阻塞 ----
 d, s = build("rev1", channels_done={
-    "F": {"status": "skip", "note": "x"}, "E": {"status": "skip", "note": "x"},
+    "E": {"status": "skip", "note": "x"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "done", "note": "x"},
 }, files={
@@ -165,7 +124,7 @@ cleanup(d)
 
 # ---- report.md 承接：声明齐全但 report 过小 → 阻塞 ----
 d, s = build("rep1", channels_done={
-    "F": {"status": "skip", "note": "x"}, "E": {"status": "skip", "note": "x"},
+    "E": {"status": "skip", "note": "x"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "done", "note": "x"},
 }, files={
@@ -178,7 +137,7 @@ cleanup(d)
 # ---- P0 领域校验（领域矩阵工具化）----
 # 学术科研领域：P 为 P0，skip 且 note 无原因 → 阻塞
 d, s = build("p0skip", channels_done={
-    "F": {"status": "skip", "note": "无本主题"}, "E": {"status": "skip", "note": "未连接"},
+    "E": {"status": "skip", "note": "未连接"},
     "A": {"status": "skip", "note": "学术无公众号"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "skip", "note": "未配置"}, "P": {"status": "skip", "note": "没查"},
 }, files={"gathered_web.md": 300}, report_bytes=700, domain="物理/宇宙学/流体动力学")
@@ -187,7 +146,7 @@ cleanup(d)
 
 # P0 skip 但 note 说明"未连接" → 放行
 d, s = build("p0ok", channels_done={
-    "F": {"status": "skip", "note": "无本主题"}, "E": {"status": "skip", "note": "未连接"},
+    "E": {"status": "skip", "note": "未连接"},
     "A": {"status": "skip", "note": "学术无公众号"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "skip", "note": "未配置"}, "P": {"status": "skip", "note": "平台未连接"},
 }, files={"gathered_web.md": 300}, report_bytes=700, domain="物理/宇宙学/流体动力学")
@@ -196,7 +155,7 @@ cleanup(d)
 
 # 财经时政领域：P 为 P2（skip 正常），A/C 为 P0
 d, s = build("finp2", channels_done={
-    "F": {"status": "skip", "note": "无本主题"}, "E": {"status": "skip", "note": "未连接"},
+    "E": {"status": "skip", "note": "未连接"},
     "A": {"status": "done", "note": "x"}, "B": {"status": "done", "note": "x"},
     "C": {"status": "done", "note": "x"}, "P": {"status": "skip", "note": "无预印本生态"},
 }, files={"gathered_wechat.md": 300, "gathered_web.md": 300, "gathered_c.md": 300},

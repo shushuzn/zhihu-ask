@@ -32,9 +32,8 @@ try:
 except ModuleNotFoundError:
     from run_util import ROOT  # 被测导入时 tools 不在包路径
 
-CHANNEL_ORDER = ["F", "E", "A", "B", "C", "P"]
+CHANNEL_ORDER = ["E", "A", "B", "C", "P"]
 CHANNEL_NAMES = {
-    "F": "flomo 查重",
     "E": "ima 知识库",
     "A": "公众号",
     "B": "Web",
@@ -59,7 +58,7 @@ def file_to_channel():
     """生成 gathered 文件 → (通道字母, 通道名) 统一映射（含多文件通道展开）。
 
     check_progress 等工具据此推导证据校验映射，消除各工具手写
-    第三份通道清单导致的维护漂移。F 通道无 gathered 文件，不在此映射。
+    第三份通道清单导致的维护漂移。
     """
     m = {}
     for ch, fname in CHANNEL_FILE.items():
@@ -237,7 +236,7 @@ def mark(slug, channel, status, note=None):
 
 # ---------- 领域分类与通道优先级计划（矩阵工具化） ----------
 
-# 领域类型 → 通道优先级（P0/P1/P2）。F 查重与 B Web 为通用 P0，不列出。
+# 领域类型 → 通道优先级（P0/P1/P2）。B Web 为通用 P0，不列出。
 DOMAIN_PRIORITY = {
     "学术科研": {"P": "P0", "C": "P1", "A": "P2", "E": "P1"},
     "科技产业": {"P": "P2", "C": "P0", "A": "P1", "E": "P1"},
@@ -311,7 +310,7 @@ def classify_domain(domain):
 def channel_plan(domain_type):
     """返回领域类型的通道优先级计划：[(通道, 优先级, 通道名), ...]（含通用 P0）。"""
     pri = DOMAIN_PRIORITY.get(domain_type, DOMAIN_PRIORITY["科技产业"])
-    plan = [("F", "P0", CHANNEL_NAMES["F"]), ("B", "P0", CHANNEL_NAMES["B"])]
+    plan = [("B", "P0", CHANNEL_NAMES["B"])]
     for ch in ("E", "A", "C", "P"):
         plan.append((ch, pri.get(ch, "P2"), CHANNEL_NAMES[ch]))
     return plan

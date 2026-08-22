@@ -53,8 +53,8 @@ except ModuleNotFoundError:
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import channel_state as cs
 
-VALID_CHANNELS = set(cs.CHANNEL_ORDER)              # F/E/A/B/C/P
-VALID_CHANNELS_STR = "/".join(cs.CHANNEL_ORDER)     # F/E/A/B/C/P
+VALID_CHANNELS = set(cs.CHANNEL_ORDER)              # E/A/B/C/P
+VALID_CHANNELS_STR = "/".join(cs.CHANNEL_ORDER)     # E/A/B/C/P
 
 # 旧通道表述（应已全部迁移，残留即矛盾）
 OBSOLETE_CHANNEL_PATTERNS = [
@@ -62,9 +62,9 @@ OBSOLETE_CHANNEL_PATTERNS = [
     (r"登记\s*D(?!\w)", "旧通道 D 登记（arxiv 已归入 P）"),
     (r"arxiv\s*D(?!\w)", "旧 arxiv D 表述（arxiv 已归入 P）"),
     (r"七通道", "七通道表述（现为六通道）"),
-    (r"六通道（F/E/A/B/C/D）", "旧六通道清单（现为 F/E/A/B/C/P）"),
-    (r"F/E/A/B/C/D(?:/P)?", "旧通道清单 F/E/A/B/C/D（现为 F/E/A/B/C/P）"),
-    (r"F→E→A→B→C→D|F->E->A->B->C->D", "旧执行顺序（现为 F→E→A→B→C→P）"),
+    (r"六通道（F/E/A/B/C/D）", "旧六通道清单（现为 E/A/B/C/P）"),
+    (r"F/E/A/B/C/D(?:/P)?", "旧通道清单 F/E/A/B/C/D（现为 E/A/B/C/P）"),
+    (r"F→E→A→B→C→D|F->E->A->B->C->D", "旧执行顺序（现为 E→A→B→C→P）"),
     (r"A–D|A-D", "旧 A–D 通道范围（现为 A/B/C/P）"),
     (r"A/B/C/D(?!\s*/?\s*P)", "旧通道范围 A/B/C/D（现为 A/B/C/P）"),
     (r"ABD", "旧 ABD 通道组合（现为 A/B/P）"),
@@ -74,13 +74,7 @@ OBSOLETE_CHANNEL_PATTERNS = [
 # 引用 tools/xxx.py 的模式
 TOOL_REF_RE = re.compile(r"tools/([a-z_]+\.py)")
 
-# flomo 查重对象：必须是「笔记」，不得再出现「报告」作为查重对象。
-# flomo 查重对象必须是笔记；成品报告不上传 flomo。
-FLOMO_NOTE_DEDUP_OLD = [
-    (r"flomo 已有报告查重|flomo 已有报告", "flomo 查重对象应为笔记（成品报告不上传 flomo）"),
-    (r"查重命中已有报告|复用已有报告|已有本报告完整版|已有本报告\)", "flomo 查重对象应为笔记（成品报告不上传 flomo）"),
-    (r"本主题报告|同主题成品报告|查是否已有本报告", "flomo 查重对象应为笔记（成品报告不上传 flomo）"),
-]
+
 
 # 模板占位符
 PLACEHOLDER_RE = re.compile(r"\{\{([^{}]+)\}\}")
@@ -119,10 +113,6 @@ def scan_files(target):
 # 历史裁定的旧表述关键词（裁定已并入对应规则文档；涉及文档残留旧表述即矛盾）
 # 格式：{"规则名": {"旧表述": ["旧表述正则/子串", ...], "涉及文件": ["文件名", ...]}}
 LEGACY_PHRASE_PATTERNS = {
-    "flomo 笔记可作素材但须国标来源": {
-        "old": ["不作参考资料", "一律不作为参考", "仅作查重判断"],
-        "files": ["SOP.md", "research_plan_TEMPLATE.md"],
-    },
     "报告参考文献区禁止 LaTeX": {
         "old": [r"参考文献.*\$[^$]*\$"],
         "files": ["research_report_TEMPLATE.md"],
@@ -137,7 +127,7 @@ LEGACY_PHRASE_PATTERNS = {
 def check_legacy_phrases(files):
     """硬伤：历史裁定的旧表述，在涉及文档中残留 → 与当前规则矛盾。
 
-    flomo 素材规则矛盾（SOP 旧表述 vs SKILL 新裁定）暴露了
+    素材规则矛盾（SOP 旧表述 vs SKILL 新裁定）暴露了
     "裁定分散、改裁漏同步"问题——本检查把旧表述同步机器化。
     """
     issues = []
@@ -253,35 +243,6 @@ def check_obsolete_channels(files):
     return issues
 
 
-def check_flomo_note_dedup_phrasing(files):
-    """硬伤：项目文件把 flomo 查重对象写成「报告」，应为「笔记」。
-
-    成品报告不上传 flomo；F 通道 memo_search 查的是本主题已有笔记。
-    此检查防止模板/文档/技能再次出现“已有报告查重/本主题报告”等旧表述。
-    """
-    issues = []
-    for fp in files:
-        # 检查器自身豁免（规则定义文本含旧表述字样，属说明性）
-        if os.path.basename(fp) in ("check_consistency.py",):
-            continue
-        try:
-            with open(fp, encoding="utf-8") as f:
-                lines = f.read().splitlines()
-        except OSError:
-            continue
-        try:
-            rel = os.path.relpath(fp, ROOT)
-        except ValueError:
-            rel = os.path.basename(fp)  # 跨盘（C:/D:）时退化为文件名
-        for i, line in enumerate(lines, 1):
-            for pat, label in FLOMO_NOTE_DEDUP_OLD:
-                if re.search(pat, line):
-                    issues.append((i, "硬伤", label,
-                                   f"{rel}: {line.strip()[:60]}（flomo 查重对象应为笔记）"))
-                    break
-    return issues
-
-
 def check_placeholder_supported(files):
     """硬伤：templates/ 的 {{占位符}} 若非生成器支持且非填写型 → 矛盾。
 
@@ -390,7 +351,6 @@ def check(target="all"):
     hard += check_legacy_phrases(files)
     hard += check_tool_refs(files)
     hard += check_obsolete_channels(files)
-    hard += check_flomo_note_dedup_phrasing(files)
     hard += check_stale_dates(files)
     hard += check_placeholder_supported(files)
     warn += check_argparse_docstring(files)

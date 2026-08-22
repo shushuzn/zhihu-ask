@@ -25,12 +25,12 @@ zhihu-ask/
 │   ├── architecture.md            # 流水线架构图（mermaid 源码 + 渲染 PNG）
 │   ├── architecture_render.html   # 架构图 SVG 渲染源（render_svg.py 生成 PNG）
 │   └── render_svg.py              # 架构图渲染脚本（playwright）
-├── tools/                         # 44 个工具（详见 docs/TOOLS.md 测试登记表）
+├── tools/                         # 工具（详见 docs/TOOLS.md 测试登记表）
 │   ├── research_start.py          # 研究启动器（初始化 + 领域判定 + 公众号初检）
 │   ├── run_pipeline.py            # 一键流水线（启动 + 收尾八件套门禁编排）
 │   ├── init_research.py           # 研究目录初始化（plan/report/process_notes/notes/.progress.json）
 │   ├── iter_research.py           # 多轮迭代研究（round_notes.md）
-│   ├── channel_state.py           # 通道单一真相源（F/E/A/B/C/P + 素材文件映射）
+│   ├── channel_state.py           # 通道单一真相源（E/A/B/C/P + 素材文件映射）
 │   ├── mark_channel.py            # 通道完成态登记（done/empty/skip + note）
 │   ├── check_progress.py          # 阶段/轮次/落报告门禁校验
 │   ├── check_all.py               # 全库体检（九列汇总）
@@ -42,13 +42,8 @@ zhihu-ask/
 │   ├── check_consistency.py       # 矛盾与废话检查（项目自检）
 │   ├── clean_workspace.py         # 工作区缓存/临时文件清理
 │   ├── maintain.py                # 一键维护：清理+回归+一致性+git status
-│   ├── check_flomo_note_refs.py   # flomo 笔记素材合规检测
 │   ├── health_check.py            # 项目健康自检（会话启动）
 │   ├── note_assemble.py           # 模块化笔记组装 report_draft 骨架
-│   ├── note_upload.py             # 笔记逐条质检上传 flomo（--update 原地更新）
-│   ├── flomo_search.py            # flomo 检索（查重）
-│   ├── flomo_upload_full.py       # flomo 单条完整版上传（绕过客户端拦截）
-│   ├── report_to_flomo.py         # 报告转 flomo 格式存档（本地，不上传）
 │   ├── report_to_docx.py          # 报告转 Word（公式转 OMML）
 │   ├── report_images.py           # AI 概念图封面生成
 │   ├── web_search.py              # Web 多引擎搜索（ddgs/bing/tavily/openalex/crossref + curl 兜底）
@@ -79,22 +74,21 @@ zhihu-ask/
 ## 使用流程
 
 1. **初始化研究**：写 `tools/start.json`（question/domain/slug/priority/keywords/days），执行 `python tools/research_start.py --config tools/start.json`——自动创建 `research/<slug>/`（plan.md/report.md/process_notes.md/notes/ + .progress.json）、判定领域档位（学术科研/科技产业/财经时政 → 通道优先级）、公众号初检；也可用 `python tools/run_pipeline.py --config tools/start.json` 一并打印 agent 待办清单。
-2. **六通道检索**（顺序 F→E→A→B→C→P，优先级按领域矩阵，`skills/zhihu-ask-research/SKILL.md`）：**统一并行入口 `python tools/search_all.py --config tools/start.json`** 一次执行 B/A/P 三通道（B 多查询并行、通道级并行，各自落盘自动登记）；F 查重结论由主代理人工判读后 `mark_channel.py` 登记。
-   - F flomo 查重（最先）：`flomo_search.py`；≥0.9 复用/更新、0.5~0.9 参考（须 GB/T 合规，`check_flomo_note_refs.py`）、<0.5 正常检索；旧笔记过时信息原地更新
+2. **五通道检索**（顺序 E→A→B→C→P，优先级按领域矩阵，`skills/zhihu-ask-research/SKILL.md`）：**统一并行入口 `python tools/search_all.py --config tools/start.json`** 一次执行 B/A/P 三通道（B 多查询并行、通道级并行，各自落盘自动登记）。
    - E ima（P1，未配置记 skip）· A 公众号（`wechat_search.py`，分档）· B Web（`web_search.py` 多引擎 + `web_fetch.py` 三级降级，P0 通用）· C 领域连接器（通达信/企查查/智慧芽，分档）· P 学术预印本（`preprint_search.py --platform all` 四平台，分档）
-   - 素材落盘 `gathered_*.md`；通道完成态登记（A/B/P 落盘自动，F/E/B/C 用 `mark_channel.py`；E/C 未配置环境级自动 skip）；门禁 `check_progress.py --require report_channels`
+   - 素材落盘 `gathered_*.md`；通道完成态登记（A/B/P 落盘自动，E/B/C 用 `mark_channel.py`；E/C 未配置环境级自动 skip）；门禁 `check_progress.py --require report_channels`
 3. **模块化笔记**：检索完成后撰写 `notes/*.md`（扁平目录、首行标签：`#维度1 #维度2 #主题/slug`；索引笔记 `00_index.md` 用 `#索引`；每篇含标签行+标题+正文+来源 GB/T+来源类型）；`00_index.md` 以 `## 问题/历史/证明/结论/缺口` 串联；`note_assemble.py --slug` 按索引组装 `report_draft.md` 骨架。
 4. **产出 report.md**：默认一轮成稿；结论 ≤300 字符、首行无"结论"字样；公式一律 LaTeX；正文 [n] 引注；概念主体、独立组织、无过程字样；存在无法核实的内容或数据口径缺口时追加轮次（`iter_research.py`）。
 5. **算式按需但必写**：有计算价值的内容算式必须写、融入小节叙述；数学/证明类给完整论证链（定理-引理-证明）；禁止凑数硬造也禁止该写不写。
-6. **收尾门禁**：`python tools/run_pipeline.py --slug <slug>` 自动编排八件套——check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity（作者/题名联网核验；403/000 反爬自动 WebFetch 降级复核；词面差异误报可 `--ack <n1,n2,...>` 人工确认放行，判读理由留痕）→ check_consistency → check_progress（轮次+落报告），随后生成 `report.docx`（report_to_docx.py）与 `flomo_full.md` 本地存档（report_to_flomo.py，不上传），并跑 `check_all.py` 全库体检。
-7. **产出与沉淀**：按 SOP 4.4.3 分流同步笔记——新建笔记逐条 `note_upload.py <文件>.md` 上传（memo_create，索引/报告禁止上传），复用笔记按 3.4 终核结论 `--update` memo_update 覆盖原 id（禁止对含已记录文件的目录跑无 `--update` 整目录上传，避免重复创建）；`report_images.py` 生成 AI 概念图封面 `ai_cover.png`（纯抽象视觉、合规/主题/构图三重复检）；按需 `wechat_publish.py` 推送公众号草稿；有效关键词写入 SQLite 关键词库（`tools/keywords_db.py --add`）并 `--export docs/KEYWORDS.md` 同步、写 `process_notes.md`。
+6. **收尾门禁**：`python tools/run_pipeline.py --slug <slug>` 自动编排八件套——check_report_structure → quality_check → check_ai_voice → check_gbt_refs → check_citation_validity（作者/题名联网核验；403/000 反爬自动 WebFetch 降级复核；词面差异误报可 `--ack <n1,n2,...>` 人工确认放行，判读理由留痕）→ check_consistency → check_progress（轮次+落报告），随后生成 `report.docx`（report_to_docx.py）并跑 `check_all.py` 全库体检。
+7. **产出与沉淀**：`report_images.py` 生成 AI 概念图封面 `ai_cover.png`（纯抽象视觉、合规/主题/构图三重复检）；按需 `wechat_publish.py` 推送公众号草稿；有效关键词写入 SQLite 关键词库（`tools/keywords_db.py --add`）并 `--export docs/KEYWORDS.md` 同步、写 `process_notes.md`。
 8. **验收与收尾**：用户验收通过后 `python tools/run_pipeline.py --slug <slug> --backfill` 回填 `plan.md` 索引为已完成；git 提交并推送（仅公开文件；research/ 与 plan.md 不入库；pre-commit hook 拦截内部文件）。
 
 ## 环境与配置
 
 | 配置项 | 用途 | 位置 / 方式 |
 |---|---|---|
-| flomo MCP | 查重、笔记上传、素材合规检测 | WorkBuddy 连接器管理中配置；未配置时查重/上传跳过 |
+
 | Agnes API key | AI 概念图封面生成 | 环境变量 `AGNES_API_KEY`；凭证不入项目文件与日志 |
 | TAVILY_API_KEY | web_search tavily 引擎（免费层 1000 次/月） | 环境变量或项目根 `.env`（`tools/env_loader.py` 加载）；未配置自动跳过 |
 | git 提交身份 | 提交时以 `-c user.name/user.email` 临时指定 | 或通过 `git config --global` 配置 |
@@ -106,7 +100,7 @@ zhihu-ask/
 
 ## 交付物约定
 
-每次研究固定产出：研究计划（plan.md）、研究报告（report.md）、模块化笔记（notes/*.md + 00_index）、经验笔记（process_notes.md）、配图（ai_cover.png）及 flomo 上传记录。
+每次研究固定产出：研究计划（plan.md）、研究报告（report.md）、模块化笔记（notes/*.md + 00_index）、经验笔记（process_notes.md）、配图（ai_cover.png）。
 
 **报告结构规范**：
 
@@ -119,7 +113,7 @@ zhihu-ask/
 ## 关键约定
 
 - 领域连接器：通达信代码先 `tdx_lookup_stock` 查码；企查查先锁定实体、多候选须用户确认；智慧芽专利+论文各一次调用。
-- flomo 查重命中已有笔记（relevance ≥0.9）不重复研究：本地目录缺失时拉取笔记只补新信息；命中的 flomo 条目可作参考素材，但须有符合 GB/T 7714-2015 的参考文献（`check_flomo_note_refs.py` 检测）。
+
 - 参考文献学术纪律（`docs/CONVENTIONS.md`）：作者/题名须与注册库（CrossRef/arXiv）核验一致，佚名误用、编造作者、死链均为硬伤（`check_citation_validity.py` 联网核验，`check_all.py` 全库体检「违规引」列强制）。
 - ima 隐私分级：素材库、研究计划与问题原文禁止上云；凭证存于 `~/.config/ima/`。
 - 研究流程细节见 `skills/zhihu-ask-research/SKILL.md`。

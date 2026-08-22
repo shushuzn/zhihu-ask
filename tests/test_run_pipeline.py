@@ -1,9 +1,9 @@
-"""run_pipeline.py 回归测试：流水线门禁顺序与清单（9 项）。
+"""run_pipeline.py 回归测试：流水线门禁顺序与清单（8 项）。
 
 覆盖：
-- agent_todos：slug/query 替换、六通道步骤齐全、无占位符残留、
+- agent_todos：slug/query 替换、五通道步骤齐全、无占位符残留、
   query=None 时替换为空
-- finish：收尾门禁执行顺序（结构→质量→轮次→落报告→docx→flomo）——
+- finish：收尾门禁执行顺序（结构→质量→轮次→落报告→docx）——
   顺序/缺步回归会静默跳过 SOP 硬门禁
 - bootstrap：WECHAT_ARTICLE_SEARCH_SCRIPTS 未设时预警 + research_start 调用
 - main：无参数报错退出
@@ -45,7 +45,7 @@ out = buf.getvalue()
 expect("acl+ slug 替换", "my-slug" in out, True)
 expect("acl+ query 替换", "formal proof" in out, True)
 expect("acl+ 无占位符残留", "<slug>" not in out and "<query>" not in out, True)
-for step in ("通道 F", "通道 E", "通道 B", "通道 C", "通道 P", "preprint_search.py", "mark_channel.py"):
+for step in ("通道 E", "通道 B", "通道 C", "通道 P", "preprint_search.py", "mark_channel.py"):
     expect(f"acl+ 步骤 {step}", step in out, True)
 
 buf = io.StringIO()
@@ -68,7 +68,7 @@ with mock.patch("run_pipeline.run", side_effect=fake_run), \
 expect("fin+ 门禁顺序（含前置校验）",
        "clean_workspace.py" in calls and "check_report_structure.py" in calls and "quality_check.py" in calls and
        "check_ai_voice.py" in calls and "check_gbt_refs.py" in calls and "check_citation_validity.py" in calls and
-       "check_consistency.py" in calls and "report_to_docx.py" in calls and "report_to_flomo.py" in calls, True)
+       "check_consistency.py" in calls and "report_to_docx.py" in calls, True)
 
 # ---- bootstrap：环境变量预警 + research_start 调用 ----
 bootstrap_calls = []
@@ -86,9 +86,6 @@ with (
     out = buf.getvalue()
 expect("boot+ 未设环境变量预警", "WECHAT_ARTICLE_SEARCH_SCRIPTS" in out, True)
 expect("boot+ 调用 research_start", any("research_start.py" in c[0] for c in bootstrap_calls), True)
-flomo_calls = [c for c in bootstrap_calls if "flomo_search.py" in c[0]]
-expect("boot+ flomo 查重执行（不带 --slug——查重结论人工判读后 mark_channel 登记）",
-       len(flomo_calls) >= 1 and all("--slug" not in c for c in flomo_calls), True)
 
 # ---- mark_plan_done：plan.md 索引回填 ----
 plan_dir = testutil.mktestdir(prefix="tplan_")

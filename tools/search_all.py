@@ -3,9 +3,7 @@
 
 按领域优先级并行执行多通道检索（B Web / A 公众号 / P 预印本），各自落盘
 research/<slug>/gathered_*.md 并自动登记通道（A/B/P 落盘即自动登记；
-E/C 未配置为环境级 skip）。F 查重为人工判读门禁，由 run_pipeline --config
-启动时执行（flomo_gate），本工具不重复运行；查重结论由主代理判读后
-mark_channel 登记。
+E/C 未配置为环境级 skip）。
 
 用法：
   python tools/search_all.py --config tools/start.json
@@ -53,40 +51,21 @@ def load_config(path):
 
 
 def run_internal_search(slug, keywords, max_results=5):
-    """内部搜索优先层：flomo + rag，返回命中数和关键词列表。
-    
+    """内部搜索：rag，返回命中数和关键词列表。
+
     返回 dict: {
-        "flomo_hits": int,  # flomo 命中数
-        "rag_hits": int,    # rag 命中数
-        "total": int,       # 总命中
-        "keywords": list,   # 可用于外部搜索的补充关键词
+        "rag_hits": int,
+        "total": int,
+        "keywords": list,
     }
     """
-    result = {"flomo_hits": 0, "rag_hits": 0, "total": 0, "keywords": list(keywords)}
+    result = {"rag_hits": 0, "total": 0, "keywords": list(keywords)}
 
-    # 1. flomo_search（内部知识库）
-    try:
-        r = subprocess.run(
-            [PY, os.path.join(TOOLS, "flomo_search.py"),
-             "--keywords", " ".join(keywords[:3]), "--limit", str(max_results)],
-            cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=30)
-        # 统计命中数
-        for line in (r.stdout or "").splitlines():
-            m = re.search(r"找到 (\d+) 条笔记", line)
-            if m:
-                result["flomo_hits"] = int(m.group(1))
-                break
-    except Exception:
-        pass
-
-    # 2. rag_search（项目文档 RAG）
     try:
         r = subprocess.run(
             [PY, os.path.join(TOOLS, "rag_search.py"), " ".join(keywords[:3]), "-k", "3"],
             cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=30)
-        # 统计命中数
         for line in (r.stdout or "").splitlines():
             m = re.search(r"(\d+) 条结果", line)
             if m:
@@ -95,25 +74,7 @@ def run_internal_search(slug, keywords, max_results=5):
     except Exception:
         pass
 
-    result["total"] = result["flomo_hits"] + result["rag_hits"]
-
-    # 3. 如果内部搜索命中丰富，提取补充关键词用于外部搜索
-    if result["total"] >= 3:
-        # 从 flomo 命中中提取 tag 作为补充关键词
-        try:
-            r = subprocess.run(
-                [PY, os.path.join(TOOLS, "flomo_search.py"),
-                 "--keywords", " ".join(keywords[:2]), "--limit", "3"],
-                cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                timeout=30)
-            for line in (r.stdout or "").splitlines():
-                tags = re.findall(r"#(\S+)", line)
-                for t in tags:
-                    if t not in result["keywords"] and len(t) > 1:
-                        result["keywords"].append(t)
-        except Exception:
-            pass
-
+    result["total"] = result["rag_hits"]
     return result
 
 
@@ -214,26 +175,12 @@ def main():
     dtype = cs.classify_domain(domain)
     plan = {ch: p for ch, p, _ in cs.channel_plan(dtype)}
     print(f"领域档位：{dtype}（domain={domain or '未填'}）")
-    print(f"通道计划：F/B P0 通用；A={plan.get('A')} C={plan.get('C')} P={plan.get('P')} E={plan.get('E')}")
+    print(f"通道计划：B P0 通用；A={plan.get('A')} C={plan.get('C')} P={plan.get('P')} E={plan.get('E')}")
 
-    # 内部搜索优先层：flomo + rag
-    print("\n─── 内部搜索优先层 ───")
+    print("\n─── 内部搜索 ───")
     internal = run_internal_search(slug, keywords)
-    print(f"flomo 命中：{internal['flomo_hits']} 条")
     print(f"rag 命中：{internal['rag_hits']} 条")
     print(f"内部总命中：{internal['total']} 条")
-
-    # 根据内部搜索结果调整外部检索策略
-    if internal["total"] >= 5:
-        print("内部搜索命中丰富，外部检索可聚焦补充视角")
-        # 保留 B/P，减少 A（公众号学术科研 P2）
-        skip_preprints_final = args.skip_preprints
-    elif internal["total"] >= 2:
-        print("内部搜索有一定命中，外部检索正常执行")
-        skip_preprints_final = args.skip_preprints
-    else:
-        print("内部搜索命中较少，外部检索全量执行")
-        skip_preprints_final = args.skip_preprints
 
     print(f"\n并行检索：B（{len(keywords)} 组查询 × {args.parallel} 并行）+ A + P 同时执行\n")
 
@@ -258,8 +205,6 @@ def main():
 
     print(f"\n落盘检查：research/{slug}/gathered_web.md（B，自动登记）· gathered_wechat.md（A，自动登记）"
           + (f" · gathered_arxiv.md/gathered_preprints.md（P，自动登记）" if not args.skip_preprints else ""))
-    print("待办：F 查重判读登记（run_pipeline 启动时已执行 memo_search，结论人工判读后"
-          "mark_channel --channel F --status done --note \"memo_search 已执行：…\"）")
     if failed:
         print(f"[失败] 通道崩溃：{', '.join(failed)}，请单独重跑对应命令排查。")
         sys.exit(1)

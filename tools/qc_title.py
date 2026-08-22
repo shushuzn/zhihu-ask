@@ -71,7 +71,7 @@ def check_empty_section_title(body):
     return issues
 
 def check_title_asterisk(body):
-    """检测标题/小标题行使用 * 作为标题标记（flomo 笔记规范：标题一律纯文本，禁止 #/* 标记）。
+    """检测标题/小标题行使用 * 作为标题标记（笔记规范：标题一律纯文本，禁止 #/* 标记）。
 
     命中两类：
     1. markdown 标题行（以 # 开头）含 *（如 "**## 标题**" "*### 小标题*" "## 标题 *强调*"）；
@@ -99,11 +99,11 @@ def check_title_asterisk(body):
     return issues
 
 def check_title_hash(body):
-    """检测笔记标题行使用 # markdown 标题标记（flomo 笔记规范：仅首行 tag 行允许 #，
+    """检测笔记标题行使用 # markdown 标题标记（笔记规范：仅首行 tag 行允许 #，
     大小标题一律用纯文本，禁止 #/##/### 层级标记）。
 
     命中：任何以 # 开头后接空白的标题行（如 "## 标题" "### 小标题" "# 标题"）。
-    不匹配：首行 tag 行 "#技术 #AI"（# 后直接跟非空白字符，是 flomo 标签，非标题行）。
+    不匹配：首行 tag 行 "#技术 #AI"（# 后直接跟非空白字符，是标签，非标题行）。
     """
     issues = []
     for i, line in enumerate(body.splitlines(), 1):

@@ -112,11 +112,11 @@ expect("note+ 二次不传保留旧note", prog["data"]["channels_done"]["A"]["no
 cleanup(d)
 
 # ---- 多通道共存 ----
-d, s = make_slug({"stage": "phase1_done", "data": {"channels_done": {"F": {"status": "skip", "note": "x"}}}})
+d, s = make_slug({"stage": "phase1_done", "data": {"channels_done": {"E": {"status": "skip", "note": "x"}}}})
 cs.mark(s, "A", "done", note="y")
 _, prog = cs.load(s)
 cd = prog["data"]["channels_done"]
-expect("multi+ 多通道共存", cd.get("F", {}).get("note"), "x")
+expect("multi+ 多通道共存", cd.get("E", {}).get("note"), "x")
 expect("multi+ 新通道写入", cd.get("A", {}).get("note"), "y")
 cleanup(d)
 
@@ -125,10 +125,10 @@ m = cs.file_to_channel()
 expect("map+ arxiv文件归P", m.get("gathered_arxiv.md", (None,))[0], "P")
 expect("map+ preprints文件归P", m.get("gathered_preprints.md", (None,))[0], "P")
 expect("map+ wechat归A", m.get("gathered_wechat.md", (None,))[0], "A")
-expect("map+ 六通道全覆盖", sorted({v[0] for v in m.values()}), ["A", "B", "C", "E", "P"])
+expect("map+ 五通道全覆盖", sorted({v[0] for v in m.values()}), ["A", "B", "C", "E", "P"])
 expect("files+ P双文件", sorted(cs.files_for("P")), ["gathered_arxiv.md", "gathered_preprints.md"])
 expect("files+ A单文件", cs.files_for("A"), ["gathered_wechat.md"])
-expect("files+ F无文件", cs.files_for("F"), [])
+expect("files+ F无文件(已移除)", cs.files_for("F"), [])
 
 # ---- 领域分类与通道计划 ----
 expect("dtype+ 数学→学术科研", cs.classify_domain("数学/概率论/测度论"), "学术科研")
@@ -143,7 +143,7 @@ expect("plan+ 学术科研 A为P2", p_acad.get("A"), "P2")
 p_fin = {ch: p for ch, p, _ in cs.channel_plan("财经时政")}
 expect("plan+ 财经时政 A为P0", p_fin.get("A"), "P0")
 expect("plan+ 财经时政 P为P2", p_fin.get("P"), "P2")
-expect("plan+ 通用P0含F/B", all(p_acad.get(c) == "P0" for c in ("F", "B")), True)
+expect("plan+ 通用P0含B", all(p_acad.get(c) == "P0" for c in ("B",)), True)
 
 # ---- 环境级未配置通道（自动 skip，跨研究共享） ----
 import os as _os
@@ -176,13 +176,13 @@ def _worker_mark_cmd(slug, channel):
 
 d_c, s_c = make_slug({"stage": "phase1_done", "data": {}})
 procs = [_sp.Popen(_worker_mark_cmd(s_c, ch), cwd=ROOT,
-                   stdout=_sp.PIPE, stderr=_sp.PIPE) for ch in ("F", "A", "B", "P")]
+                   stdout=_sp.PIPE, stderr=_sp.PIPE) for ch in ("E", "A", "B", "P")]
 rcs = [p.wait(timeout=60) for p in procs]
 expect("conc+ 4 并发 mark 全成功", rcs, [0, 0, 0, 0])
 p_c, prog_c = cs.load(s_c)
 cd_c = (prog_c or {}).get("data", {}).get("channels_done", {})
 expect("conc+ 文件仍为合法 JSON 且 4 通道齐",
-       (prog_c is not None and all(ch in cd_c for ch in ("F", "A", "B", "P"))),
+       (prog_c is not None and all(ch in cd_c for ch in ("E", "A", "B", "P"))),
        True)
 expect("conc- 无锁残留", not os.path.exists(p_c + ".lock"), True)
 cleanup(d_c)

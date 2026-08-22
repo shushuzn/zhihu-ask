@@ -281,7 +281,7 @@ expect("para- 已分点不提示", has(qc.check_para_points_eligible(listed_para
 table_para = "# 结论\n\n| 列1 | 列2 |\n|---|---|\n| a | b |"
 expect("para- 表格段不提示", has(qc.check_para_points_eligible(table_para), "长段落建议分点"), False)
 
-# ---- 标题禁止用 * 标记（flomo 笔记上传质检，笔记模式 check_title_asterisk）----
+# ---- 标题禁止用 * 标记（笔记模式 check_title_asterisk）----
 aster_body = ("# 技术 #AI #主题/x\n\n"
              "## 正常标题\n\n"
              "### 正常小标题\n\n"
@@ -297,7 +297,7 @@ expect("aster+ **## 标题** 命中", has(qc.check_title_asterisk(aster_bad), "�
 expect("aster+ *小标题* 命中", has(qc.check_title_asterisk("*小标题用星号*\n"), "标题用*标记"), True)
 expect("aster+ ### 含* 命中", has(qc.check_title_asterisk("### 标题含 *强调* 也命中\n"), "标题用*标记"), True)
 
-# ---- 标题禁止用 # 标记（flomo 笔记上传质检，笔记模式 check_title_hash）----
+# ---- 标题禁止用 # 标记（笔记模式 check_title_hash）----
 hash_body = ("#技术 #AI #主题/x\n\n"          # 首行 tag 行，# 后无空白，不命中
              "笔记标题纯文本\n\n"
              "正文段落不加 # 标题。\n\n"

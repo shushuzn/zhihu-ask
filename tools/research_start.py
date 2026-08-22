@@ -261,13 +261,8 @@ def main():
         "keyword_count": len(keywords),
     })
 
-    print("\n==> [阶段1 待办] 其余通道（执行顺序 F查重 → E → A → B → C → P；全部完成后才可写报告）")
-    print("  0. flomo 已有笔记查重（执行顺序最先，**阻断门禁**）：必须先实际运行")
-    print("     `python tools/flomo_search.py --keywords \"<问题主题词>\" --limit 10`，")
-    print("     并把执行结果（含 memo_search/flomo_search 证据）写入 .progress.json 的 F note；")
-    print("     未执行或执行失败则阻断，禁止进入后续通道；relevance ≥0.9 复用/更新已有笔记、不重复新建，")
-    print("     0.5-0.9 参考素材，<0.5 正常研究")
-    print("  1. 通道 E（ima，执行顺序第一）：主代理直执连接器工具——search_knowledge_base 定位库")
+    print("\n==> [阶段1 待办] 其余通道（执行顺序 E → A → B → C → P；全部完成后才可写报告）")
+    print("  0. 通道 E（ima，执行顺序第一）：主代理直执连接器工具——search_knowledge_base 定位库")
     print("     + search_knowledge 库内检索（E1 经验 + E2 订阅库素材，落盘 gathered_ima.md），")
     print("     候选库见 docs/IMA_LIBRARIES.md；连接器未连接则跳过")
     lib_hints = get_ima_library_hints(domain)
@@ -278,10 +273,10 @@ def main():
             print(f"     [{gname}] 候选库（{len(libs)} 个）: {'、'.join(shown)}{tail}")
     else:
         print(f"     （未在 docs/IMA_LIBRARIES.md 匹配到领域「{domain}」的订阅库分组，检索时人工选库）")
-    print("  2. 通道 A（公众号，按领域优先级）：tools/wechat_search.py 检索，落盘 gathered_wechat.md")
-    print("  3. 通道 B（Web，P0 通用）：官方数据/研报/新闻，落盘 gathered_web.md")
-    print("  4. 通道 C（领域数据源，按领域优先级）：finance 插件 / 通达信 / 企查查 / 智慧芽；不适用则记录")
-    print("  5. 通道 P（学术预印本聚合，arxiv 已归入本通道）：tools/preprint_search.py --platform all")
+    print("  1. 通道 A（公众号，按领域优先级）：tools/wechat_search.py 检索，落盘 gathered_wechat.md")
+    print("  2. 通道 B（Web，P0 通用）：官方数据/研报/新闻，落盘 gathered_web.md")
+    print("  3. 通道 C（领域数据源，按领域优先级）：finance 插件 / 通达信 / 企查查 / 智慧芽；不适用则记录")
+    print("  4. 通道 P（学术预印本聚合，arxiv 已归入本通道）：tools/preprint_search.py --platform all")
     print("     --keywords \"<主题词>\" --days 30 --count 5 --out research/<slug> --slug <slug>")
     print("     ——arxiv→gathered_arxiv.md + bioRxiv/浪淘沙/PSSXiv→gathered_preprints.md，一次性登记通道 P")
     print("  ⚠️ 红线：E/A/B/C/P 全部通道执行完毕（命中或记录无素材/不适用/跳过）后才可进入阶段 2 写报告；")
@@ -291,8 +286,6 @@ def main():
     print("  b. 阶段3 交叉验证：来源类型标注（笔记内）；小点叙述化不单行、小节数量不设上限")
     print("  c. 阶段4 产出 report.md（适用通道全部完成后再写）")
     print("  d. 沉淀（必做）：有效关键词写入 SQLite 关键词库（tools/keywords_db.py --add），再 --export 同步 docs/KEYWORDS.md；写 process_notes.md；回填 plan.md 索引为已完成")
-    print("  e. 笔记上传 flomo（必做，不询问）：python tools/note_upload.py research/<slug>/notes/ 逐条质检后上传；索引笔记与报告禁止上传（工具自动拦截）")
-    print("     （隐私边界：报告/索引禁止上传 flomo，flomo_full.md 仅本地存档；素材库/plan.md 仅存本地；笔记上传走 note_upload.py；flomo 未配置则跳过并在 process_notes 记录）")
     print(f"  e. 进度已记录于 research/{slug}/{PROGRESS_FILE}，供闭环追溯")
 
     for p in (tmp_init,

@@ -26,7 +26,6 @@
 
 ## 必做收尾
 
-- **flomo 上传（模块化笔记，报告与索引禁止上传）**：{{逐条上传笔记 id，如 01=xxx、02=xxx…；索引笔记(00_index.md)与报告(report.md/report_draft.md)禁止上传（note_upload.py 自动拦截）}}
 - **KEYWORDS 回填**：{{新增领域 / 关键词数}}（SQLite 主存储：`python tools/keywords_db.py --add ...`，再 `--export docs/KEYWORDS.md` 同步可读文件）
 - **plan.md 索引**：{{已完成（N 轮迭代）}}
 - **git 推送**：{{commit hash，推送内容}}

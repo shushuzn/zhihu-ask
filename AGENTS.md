@@ -9,8 +9,6 @@ python3 tests/run_all.py
 
 # 单个测试模块
 python3 tests/test_quality.py
-python3 tests/test_flomo_note_refs.py
-python3 tests/test_check_flomo_note_refs.py
 python3 tests/test_gbt_refs.py
 python3 tests/test_citation_validity.py
 # ... 其他 test_*.py
@@ -31,10 +29,6 @@ python3 tools/check_gbt_refs.py --file research/<slug>/notes/01_xxx.md
 # 引用有效性检查
 python3 tools/check_citation_validity.py --file research/<slug>/report.md
 
-# Flomo 笔记参考文献检测（含联网搜索补全）
-python3 tools/check_flomo_note_refs.py --file research/<slug>/notes/01_xxx.md
-python3 tools/check_flomo_note_refs.py --keywords "主题词"
-
 # 全库体检
 python3 tools/check_all.py --slug <slug>
 ```
@@ -45,7 +39,7 @@ python3 tools/check_all.py --slug <slug>
 python3 tools/research_start.py --config tools/start.json
 
 # 标记通道完成
-python3 tools/mark_channel.py --slug <slug> --channel F --status done --note "..."
+python3 tools/mark_channel.py --slug <slug> --channel E --status done --note "..."
 
 # 检查进度
 python3 tools/check_progress.py --slug <slug> --require report_channels
@@ -56,16 +50,9 @@ python3 tools/note_assemble.py --slug <slug>
 # 生成 Word 文档
 python3 tools/report_to_docx.py --slug <slug>
 
-# 生成 flomo 归档格式
-python3 tools/report_to_flomo.py --slug <slug> --out research/<slug>/flomo_full.md
-
 # 关键词沉淀
 python3 tools/keywords_db.py --add --content "xxx" --section "大模型推理"
 python3 tools/keywords_db.py --export docs/KEYWORDS.md
-
-# 笔记上传 flomo
-export FLOMO_MCP_TOKEN=fmcp_xxx
-python3 tools/note_upload.py research/<slug>/notes/01_xxx.md
 
 # 完整流水线
 python3 tools/run_pipeline.py --slug <slug>
@@ -86,7 +73,6 @@ python3 tools/health_check.py
 ```
 
 ## 关键环境变量
-- `FLOMO_MCP_TOKEN`：flomo MCP 访问令牌（每次上传/检索前需 `export`）
 - `ZHIHU_ASK_VENV_PY`：可选，指定隔离 venv 的 Python 解释器（默认 `./venv/bin/python`）
 
 ## 规范约束（硬性拦截）

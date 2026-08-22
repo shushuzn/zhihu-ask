@@ -4,7 +4,7 @@
 
 把「阶段 0→4」中可由脚本确定的环节串起来，带 checkpoint 与质检门禁，
 并明确标出必须由 agent 介入的步骤（Web 检索 / ima E 通道 / 企查查·通达信·智慧芽
-C 通道 / arxiv 的 WebFetch 降级流程 / flomo 上传 / AI 封面）。
+C 通道 / arxiv 的 WebFetch 降级流程 / AI 封面）。
 
 设计原则：脚本只做确定性动作 + 质检门禁；涉及外网检索与主观写作的步骤交 agent，
 由本工具打印可复制的命令清单。每段失败即阻断，不带着错误继续。
@@ -13,7 +13,7 @@ C 通道 / arxiv 的 WebFetch 降级流程 / flomo 上传 / AI 封面）。
   # 1) 启动一次新研究（阶段 0-1 的初始化 + 公众号 A 通道）
   python tools/run_pipeline.py --config tools/start.json
 
-  # 2) 报告写好后的收尾（结构/质量/去AI腔/国标/违规引用/矛盾/轮次/落报告 八件套门禁 + docx + flomo 格式化 + 全库体检）
+  # 2) 报告写好后的收尾（结构/质量/去AI腔/国标/违规引用/矛盾/轮次/落报告 八件套门禁 + docx + 全库体检）
   python tools/run_pipeline.py --slug <slug>
 
   # 3) 一步到位：启动 + 收尾（中间需 agent 自行完成检索与写作）
@@ -166,43 +166,8 @@ def banner(title):
     print("=" * 60)
 
 
-def flomo_gate(config):
-    """F 通道查重：第一步、阻断门禁。
-
-    必须在任何后续检索/写作之前实际调用 flomo_search.py。
-    只有查重执行成功（含“无命中”）才放行；MCP 失败或无关键词直接阻断。
-    """
-    banner("阶段 0 前置 · F 通道 flomo 查重（阻断）")
-    try:
-        with open(config, encoding="utf-8") as f:
-            cfg = json.load(f)
-    except Exception as e:
-        print(f"[阻断] 无法读取 config 以提取查重关键词：{e}")
-        sys.exit(1)
-    question = (cfg.get("question") or "").strip()
-    keywords = cfg.get("keywords") or []
-    if isinstance(keywords, list) and keywords:
-        # 查重词取首个主题词组：flomo MCP 对超长 query 返回空响应，
-        # JSON 解析失败（"Expecting value: line 1 column 1"）阻断初始化；
-        # 短主题词（如"第一性原理 马斯克 定义"）正常
-        keywords = str(keywords[0]).strip()
-    else:
-        keywords = ""
-    query = keywords or question[:60]
-    if not query:
-        print("[阻断] config 中缺少 question/keywords，无法执行 flomo 查重。")
-        sys.exit(1)
-    run([os.path.join(TOOLS, "flomo_search.py"), "--keywords", query, "--limit", "10"],
-        label="flomo_search（F 通道查重，第一步阻断）")
-    print("[通过] flomo 查重已实际执行；查重结论（复用/更新/参考/正常检索，含假阳性甄别）由主代理"
-          "人工判读并用 mark_channel 登记通道 F，不做自动登记。")
-
-
 def bootstrap(config):
     banner("阶段 0-1 · 初始化 + 公众号 A 通道")
-    # F 通道查重必须是第一步，且作为阻断门禁：
-    # 未实际执行 flomo_search 不得进入后续任何检索/写作。
-    flomo_gate(config)
     # 出口探测：提前告知当前环境的外网能力（arxiv 直连 / WebFetch 降级判断依据）
     try:
         subprocess.run([PY, os.path.join(TOOLS, "net_check.py")], cwd=ROOT)
@@ -227,7 +192,7 @@ def bootstrap(config):
                 # 使用上下文管理器简化目录切换
                 with jspace_context(slug):
                     jspace_call("note", f"--goal=研究问题：{question[:100]}", 
-                               "--next=执行阶段 1 六通道检索")
+                               "--next=执行阶段 1 五通道检索")
                 
         except Exception as e:
             print(f"[提示] J-Space 初始化异常（非阻断）：{e}")
@@ -239,44 +204,39 @@ def agent_todos(slug, query):
     banner("需 agent 介入的检索与写作步骤（脚本无法自动化）")
     print("请逐项完成，再运行收尾：python tools/run_pipeline.py --slug " + slug)
     print("""
-1) 通道 F 查重：已由启动阶段 flomo_gate 实际执行并阻断校验；
-   查重结论由主代理人工判读（relevance ≥0.9 复用/更新、0.5~0.9 参考、<0.5 正常检索；
-   命中但判定不相关的假阳性按 <0.5 处理），然后用
-   `python tools/mark_channel.py --slug <slug> --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"`
-   登记通道 F（note 须含 memo_search 证据，供 report_channels 门禁）
-2) 通道 E（ima）：连接器已连接时两级检索并落盘 gathered_ima.md
-3) 通道 B（Web）：web_search / web_fetch 拿官方数据、研报、新闻
-4) 通道 C 必做：企查查 get_company_by_query / 通达信 tdx_lookup_stock /
+1) 通道 E（ima）：连接器已连接时两级检索并落盘 gathered_ima.md
+2) 通道 B（Web）：web_search / web_fetch 拿官方数据、研报、新闻
+3) 通道 C 必做：企查查 get_company_by_query / 通达信 tdx_lookup_stock /
                  智慧芽 patsnap_search（专利+论文各一次）
-5) 通道 P（学术预印本聚合，arxiv 已归入本通道，统一入口一条命令）：
-      python tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 \
-          --count 5 --out research/<slug> --slug <slug>
+4) 通道 P（学术预印本聚合，arxiv 已归入本通道，统一入口一条命令）：
+       python tools/preprint_search.py --platform all --keywords "<主题词>" --days 30 \
+           --count 5 --out research/<slug> --slug <slug>
    （arxiv → gathered_arxiv.md、bioRxiv/浪淘沙/PSSXiv → gathered_preprints.md，
      检索完成后一次性自动登记通道 P；若 arxiv 直连被 429 限流需 WebFetch 降级，
      单独走 tools/arxiv_search.py --query "<query>" --print-web-prompt 路径，落盘后同样登记通道 P）
-6) 阶段 2-3：五视角收集，写入 report.md
-7) 登记各通道完成态（落报告纪律条目级）：
+5) 阶段 2-3：五视角收集，写入 report.md
+6) 登记各通道完成态（落报告纪律条目级）：
      通道 A（--output 落盘 gathered_wechat.md）与通道 P（--out 落盘 gathered_arxiv.md /
      gathered_preprints.md）写盘时**自动登记**，无需手动；
-     其余 F/E/B/C 须手动登记：
-      python tools/mark_channel.py --slug <slug> --channel <F|E|B|C> --status <done|empty|skip> [--note ...]
-   收尾门禁 check_progress --require report_channels 据此对六通道做「声明态 ⊕ 证据」双向交叉校验。
+     其余 E/B/C 须手动登记：
+      python tools/mark_channel.py --slug <slug> --channel <E|B|C> --status <done|empty|skip> [--note ...]
+   收尾门禁 check_progress --require report_channels 据此对五通道做「声明态 ⊕ 证据」双向交叉校验。
 """.replace("<slug>", slug).replace("<query>", query or ""))
 
 
 def check_phase1_complete(slug):
-    """校验阶段1是否完成：六通道全部登记且report_channels门禁通过。
-    
+    """校验阶段1是否完成：五通道全部登记且report_channels门禁通过。
+
     必须在进入阶段2（撰写结构化笔记）前调用。
     """
     print("\n─── 阶段1完成校验（阶段2前置） ───")
-    
-    # 校验report_channels门禁：六通道声明态 ⊕ 证据双向交叉校验
+
+    # 校验report_channels门禁：五通道声明态 ⊕ 证据双向交叉校验
     r = run([os.path.join(TOOLS, "check_progress.py"), "--slug", slug, "--require", "report_channels"],
             label="check_progress report_channels", check=False)
     if r != 0:
-        print("[阻断] 阶段1未完成：六通道未全部登记或报告纪律不达标。")
-        print("  请先完成阶段1的所有通道检索（F→E→A→B→C→P），并用mark_channel登记。")
+        print("[阻断] 阶段1未完成：五通道未全部登记或报告纪律不达标。")
+        print("  请先完成阶段1的所有通道检索（E→A→B→C→P），并用mark_channel登记。")
         print("  完成后运行: python tools/check_progress.py --slug " + slug + " --require report_channels")
         sys.exit(1)
     
@@ -385,8 +345,7 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     if r != 0:
         print("[阻断] 阶段4沉淀未完成，禁止进入收尾门禁。")
         print("  请先完成：1) 关键词回填（keywords_db.py --add）；")
-        print("           2) 经验记录（写入 process_notes.md）；")
-        print("           3) 笔记上传（note_upload.py）。")
+        print("           2) 经验记录（写入 process_notes.md）。")
         sys.exit(1)
     
     # J-Space 接缝审计（极简原生调用）
@@ -434,7 +393,7 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     # 出网受限（URL 超时/反爬 403）时自动回退 --offline（联网核验豁免分支），
     # 死链 404/5xx 等真实内容问题仍照常阻断。
     _run_citation_gate(slug, offline, ack, skip_title_match)
-    # 来源一致性检查：报告关键事实与来源内容比对（禁止 flomo 链接、实体一致性）。
+    # 来源一致性检查：报告关键事实与来源内容比对（实体一致性）。
     _run_source_gate(slug, offline)
     # 矛盾与废话门禁：硬伤与提示级命中均阻断（工具默认严格阻断）。
     # check_consistency 是项目级检查，不接受 --slug。
@@ -466,9 +425,6 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
     # 产出
     run([os.path.join(TOOLS, "report_to_docx.py"), "--slug", slug],
         label="report_to_docx")
-    run([os.path.join(TOOLS, "report_to_flomo.py"), "--slug", slug,
-         "--out", "flomo_full.md"],
-        label="report_to_flomo (格式化，未上传)")
 
     # 发布前全库体检（信息性，不阻断；当前 slug 的硬门禁已在上方八件套完成）
     # 使用 --quick 跳过重复的工具自测/项目自检，只输出后续提示。
@@ -480,8 +436,6 @@ def finish(slug, offline=False, ack=None, skip_source_voice=False, skip_title_ma
 
     banner("agent 待办（收尾人工步骤）")
     print(f"""
-- flomo 笔记上传/同步（按 .flomo_ids.json 分流，SOP 4.4.3）：新建逐条上传；复用笔记按 3.4 终核结论，
-  过时 → python tools/note_upload.py research/{slug}/notes/<文件名>.md --update（memo_update 覆盖原 id）。
 - plan.md 索引回填（用户验收通过后执行，SOP 4.6.1）：
   python tools/run_pipeline.py --slug {slug} --backfill
 - AI 封面图：配置 AGNES_API_KEY 后

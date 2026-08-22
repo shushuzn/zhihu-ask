@@ -5,10 +5,10 @@
 ## 0. 执行硬限制（跨会话最高约束）
 
 1. **不猜测含糊指令**：「优化 / 精简 / 自动化 / 改进」等词，先给出具体改动清单、影响面与可回滚性，经用户确认后执行。
-2. **不碰既定规则**：凭证读取方式（只从环境变量）、通道登记方式（F 人工判读登记 / A、B、P 落盘自动登记 / E、C 环境级 skip）、文档结构、报告红线（纯事实陈述、禁过程性标注、缺口只落 process_notes 与索引笔记）——照做，不加个人"改进"。
+2. **不碰既定规则**：凭证读取方式（只从环境变量）、通道登记方式（A、B、P 落盘自动登记 / E、C 环境级 skip）、文档结构、报告红线（纯事实陈述、禁过程性标注、缺口只落 process_notes 与索引笔记）——照做，不加个人"改进"。
 3. **不私自加兜底 / 自动化**：任何降级链、兜底、自动登记，先论证必要性并征得确认。
 4. **改错立即回滚**：判断错误当场还原，不留尾巴。
-5. **研究严格走 SOP 六通道 + 门禁**：门禁报错先人工判读——真违规修内容，工具误报改工具（先给改动清单与影响面，经确认后执行）；禁止任何"凑过"行为：为消除命中而改正文塞词、删引用、`--force` 跳过质检，均属绕过门禁。
+5. **研究严格走 SOP 五通道 + 门禁**：门禁报错先人工判读——真违规修内容，工具误报改工具（先给改动清单与影响面，经确认后执行）；禁止任何"凑过"行为：为消除命中而改正文塞词、删引用、`--force` 跳过质检，均属绕过门禁。
 
 ## 1. PowerShell 中文乱码（最高优先级）
 
@@ -97,7 +97,6 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 - **连接状态**：ima 连接器（ima-mcp）经 WorkBuddy 侧边栏「更多 → ima知识库」OAuth 授权；连接器管理页显示 connected 即可用。未连接时通道 E 由初始化**环境级自动登记 skip**（跨研究共享，无需逐篇手动检查）；连接器接入后设 `ZHIHU_ASK_UNCONFIGURED_CHANNELS`（如 `"C"`）或置空（全部已配置）恢复手动登记。
 - **检索**：主代理直执连接器工具（`search_knowledge_base` 搜库 / `search_knowledge` 库内检索），与本地 `rag_search.py`（SQLite BM25）互补；ima 无 CLI，不涉及乱码问题。
 - **凭证**：连接器方案无需凭证。脚本化（OpenAPI）才需 Client ID + API Key（https://ima.qq.com/agent-interface 生成，仅显示一次），存 `~/.config/ima/` 或环境变量；**凭证不入项目文件、不入日志**，泄露后引导在 agent-interface 撤销重建。
-- **flomo MCP Token**：`FLOMO_MCP_TOKEN` **只从环境变量读取**（tools/flomo_search.py 与 note_upload.py 读 `os.environ`，不读 `.env`）。曾硬编码在 flomo_search.py 并进入公开仓库——**须在 flomo 后台撤销旧 token 重建**，新 token 只放环境变量，绝不写入代码/文档/日志。
 - **隐私边界（写入硬性管控）**：读取无限制；写入（import_urls / add_knowledge）仅限公开级内容——docs/、templates/、脱敏经验与词库；已定稿 report.md 须用户逐篇确认；gathered 素材、plan.md、问题原文禁止写入。ima 为云服务，与「research/ 仅存本地」红线冲突的内容一律不上云。
 - **参考**：能力盘点与分级矩阵见 `docs/IMA_INTEGRATION.md`。
 
@@ -114,7 +113,7 @@ gh repo edit shushuzn/zhihu-ask --description $desc
 ## 8. 执行纪律
 
 - **初始化必传 --domain**：`init_research.py` 初始化研究时显式传 `--domain "领域 / 二级"`（如 `--domain "产业经济 / 制造业 / 国际经贸"`）；不传则 plan 索引领域为「其他」、后续须手动 sed 修正（今日 6+ 次踩坑）。未传时工具已打印警告。
-- **DeferExecuteTool 调用格式**：`toolName` 为顶层参数、`params` 只放目标工具参数——禁止把 `toolName` 写进 `params` 内部（今日 4 次报 "toolName is required"）。例：`DeferExecuteTool({toolName: "mcp__flomo__memo_create", params: {content: "..."}})`。
+
 - **编辑报告小节后立即质检**：编辑小节后立即跑 `python tools/quality_check.py --file research/<slug>/report.md`——小点须叙述化（bullet 单行会被拦截）、段落 ≤4-5 行，先查再继续，避免积压多处在收尾时集中修。
 - **结论先留余量**：结论按 ≤300 字上限写时先压到 280 左右再补充事实，避免反复删减。
 - **参考文献链接必须与条目一一对应**：写参考文献时禁止用论文自身链接占位代替背景文献（如把 König 的 M₂₃ 辫群轨道论文、ACT DR6 的 α-Starobinsky 论文、RLSVR 的背景文献全部写成 arXiv:2608.08538 / 2608.06071 / 2607.23802）。背景文献的真实链接须从 `gathered_arxiv.md` 的「标题→链接」映射表逐条取用（该表由 arxiv_search 落盘，标题与链接一一对应）；宁缺勿错——找不到对应链接的条目删掉，不写伪链接。

@@ -25,7 +25,7 @@
 说明：
 - 图片 URL 需公网可访问（report_images.py --url-base 部署的 CloudStudio 静态托管）；
   下载失败时图片位置保留 alt（URL）文本，不中断转换。
-- 转换只做格式映射，不增删任何文字（同 report_to_flomo 的一字不改原则）。
+- 转换只做格式映射，不增删任何文字（一字不改原则）。
 """
 
 import argparse

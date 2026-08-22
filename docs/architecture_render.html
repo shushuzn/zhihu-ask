@@ -80,17 +80,17 @@
 
   <!-- ============ Phase 1 ============ -->
   <rect x="60" y="380" width="2080" height="560" rx="12" fill="#f7fafc" stroke="#1e3a5f" stroke-width="2"/>
-  <text x="80" y="415" fill="#0d47a1" font-size="20" font-weight="bold">阶段 1 · 六通道信息检索（F → E → A → B → C → P）</text>
+  <text x="80" y="415" fill="#0d47a1" font-size="20" font-weight="bold">阶段 1 · 五通道信息检索（E → A → B → C → P）</text>
 
   <!-- F -->
   <rect x="90" y="440" width="300" height="180" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
-  <text x="240" y="470" text-anchor="middle" fill="#4a148c" font-size="15" font-weight="bold">F · flomo 查重（最先）</text>
-  <text x="240" y="495" text-anchor="middle" fill="#4a148c" font-size="12">flomo_search.py memo_search</text>
-  <text x="240" y="518" text-anchor="middle" fill="#6a1b9a" font-size="11">≥0.9 复用/更新 ｜ 0.5~0.9 参考</text>
-  <text x="240" y="538" text-anchor="middle" fill="#6a1b9a" font-size="11">&lt;0.5 正常检索</text>
-  <text x="240" y="561" text-anchor="middle" fill="#6a1b9a" font-size="11">check_flomo_note_refs 素材合规</text>
-  <text x="240" y="584" text-anchor="middle" fill="#6a1b9a" font-size="11">旧笔记过时信息原地更新</text>
-  <text x="240" y="610" text-anchor="middle" fill="#c62828" font-size="12" font-weight="bold">▸ 执行顺序最先</text>
+  <text x="240" y="470" text-anchor="middle" fill="#4a148c" font-size="15" font-weight="bold">E · ima 知识库（P1）</text>
+  <text x="240" y="495" text-anchor="middle" fill="#4a148c" font-size="12">E1 经验检索</text>
+  <text x="240" y="518" text-anchor="middle" fill="#6a1b9a" font-size="11">E2 逐库 search_knowledge</text>
+  <text x="240" y="538" text-anchor="middle" fill="#6a1b9a" font-size="11">候选库取全 · ≥2 关键词/库</text>
+  <text x="240" y="561" text-anchor="middle" fill="#6a1b9a" font-size="11">→ gathered_ima.md</text>
+  <text x="240" y="584" text-anchor="middle" fill="#6a1b9a" font-size="11">未连接记 skip</text>
+  <text x="240" y="610" text-anchor="middle" fill="#c62828" font-size="12" font-weight="bold"></text>
 
   <text x="400" y="535" fill="#1e3a5f" font-size="18">→</text>
 
@@ -152,8 +152,8 @@
   <!-- Gate -->
   <rect x="90" y="650" width="950" height="80" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
   <text x="565" y="678" text-anchor="middle" fill="#b71c1c" font-size="15" font-weight="bold">✅ 门禁 check_progress --require report_channels</text>
-  <text x="565" y="700" text-anchor="middle" fill="#c62828" font-size="11">mark_channel.py 六通道登记（done / empty / skip + note）</text>
-  <text x="565" y="720" text-anchor="middle" fill="#c62828" font-size="10">A/P 落盘自动登记 · F/E/B/C 手动登记 ｜ 声明态 ⊕ 证据双向校验</text>
+  <text x="565" y="700" text-anchor="middle" fill="#c62828" font-size="11">mark_channel.py 五通道登记（done / empty / skip + note）</text>
+  <text x="565" y="720" text-anchor="middle" fill="#c62828" font-size="10">A/P 落盘自动登记 · E/B/C 手动登记 ｜ 声明态 ⊕ 证据双向校验</text>
 
   <rect x="1100" y="650" width="1010" height="80" rx="8" fill="#e3edfa" stroke="#3f51b5" stroke-width="1.5"/>
   <text x="1605" y="678" text-anchor="middle" fill="#1a237e" font-size="14" font-weight="bold">💾 素材库文件（各通道命中即落盘）</text>
@@ -283,8 +283,8 @@
   <text x="680" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">轮次 auto + 落报告</text>
 
   <rect x="830" y="1620" width="420" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
-  <text x="1040" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">report_to_docx / report_to_flomo</text>
-  <text x="1040" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">report.docx · flomo_full.md（仅存档）</text>
+  <text x="1040" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">report_to_docx</text>
+  <text x="1040" y="1660" text-anchor="middle" fill="#607d8b" font-size="10">report.docx</text>
 
   <rect x="1270" y="1620" width="420" height="50" rx="6" fill="#f7fafc" stroke="#5c6bc0" stroke-width="1"/>
   <text x="1480" y="1640" text-anchor="middle" fill="#1a237e" font-size="11">check_all 全库体检</text>
@@ -310,10 +310,10 @@
   <text x="80" y="1925" fill="#e65100" font-size="20" font-weight="bold">📤 产出与沉淀</text>
 
   <rect x="90" y="1950" width="320" height="110" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
-  <text x="250" y="1985" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">模块化笔记上传 flomo</text>
-  <text x="250" y="2010" text-anchor="middle" fill="#6a1b9a" font-size="11">note_upload.py 逐条质检后上传</text>
-  <text x="250" y="2032" text-anchor="middle" fill="#6a1b9a" font-size="11">00_index / report 禁止上传</text>
-  <text x="250" y="2054" text-anchor="middle" fill="#6a1b9a" font-size="11">--update 原地更新旧笔记</text>
+  <text x="250" y="1985" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">知识沉淀</text>
+  <text x="250" y="2010" text-anchor="middle" fill="#6a1b9a" font-size="11">KEYWORDS 回填</text>
+  <text x="250" y="2032" text-anchor="middle" fill="#6a1b9a" font-size="11">process_notes 记录</text>
+  <text x="250" y="2054" text-anchor="middle" fill="#6a1b9a" font-size="11">plan.md 索引回填</text>
 
   <rect x="440" y="1950" width="270" height="110" rx="8" fill="#fbe9e7" stroke="#6d4c41" stroke-width="1.5"/>
   <text x="575" y="1985" text-anchor="middle" fill="#4e342e" font-size="13" font-weight="bold">ai_cover.png</text>
@@ -371,7 +371,7 @@
   <rect x="1410" y="2315" width="620" height="75" rx="6" fill="#ede7f6" stroke="#7b1fa2" stroke-width="1"/>
   <text x="1720" y="2345" text-anchor="middle" fill="#4a148c" font-size="13" font-weight="bold">数据与配置</text>
   <text x="1720" y="2367" text-anchor="middle" fill="#6a1b9a" font-size="11">channel_state.py 通道单一真相源</text>
-  <text x="1720" y="2385" text-anchor="middle" fill="#6a1b9a" font-size="11">.progress.json · .flomo_ids.json</text>
+  <text x="1720" y="2385" text-anchor="middle" fill="#6a1b9a" font-size="11">.progress.json</text>
 
   <!-- Legend -->
   <rect x="60" y="2430" width="2080" height="60" rx="8" fill="#fafafa" stroke="#bdbdbd" stroke-width="1"/>
@@ -379,7 +379,7 @@
   <rect x="80" y="2465" width="14" height="14" rx="2" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1"/>
   <text x="102" y="2476" fill="#37474f" font-size="12">必做通道 / 成功路径</text>
   <rect x="240" y="2465" width="14" height="14" rx="2" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1"/>
-  <text x="262" y="2476" fill="#37474f" font-size="12">flomo / 知识库</text>
+  <text x="262" y="2476" fill="#37474f" font-size="12">知识库</text>
   <rect x="410" y="2465" width="14" height="14" rx="2" fill="#ffebee" stroke="#c62828" stroke-width="1"/>
   <text x="432" y="2476" fill="#37474f" font-size="12">门禁 / 阻断</text>
   <rect x="560" y="2465" width="14" height="14" rx="2" fill="#e3edfa" stroke="#3f51b5" stroke-width="1"/>

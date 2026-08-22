@@ -7,9 +7,8 @@
 | 分组 | 工具 |
 |---|---|
 | 研究生命周期 | `init_research.py` · `research_start.py` · `iter_research.py` · `run_pipeline.py` · `note_assemble.py` |
-| 通道检索 | `web_search.py`（B）· `web_fetch.py`（三级降级抓取）· `arxiv_search.py`（P）· `preprint_search.py`（P：arxiv/bioRxiv/浪淘沙/PSSXiv）· `wechat_search.py`（A）· `flomo_search.py`（F 查重） |
-| 素材引用校验 | `check_flomo_note_refs.py`（flomo 笔记须有参考文献；无→联网找→找不到不可用） |
-| 数据落库 / 转换 | `report_to_docx.py` · `report_to_flomo.py` · `report_images.py` · `latex_unicode.py` |
+| 通道检索 | `web_search.py`（B）· `web_fetch.py`（三级降级抓取）· `arxiv_search.py`（P）· `preprint_search.py`（P：arxiv/bioRxiv/浪淘沙/PSSXiv）· `wechat_search.py`（A） |
+| 数据落库 / 转换 | `report_to_docx.py` · `report_images.py` · `latex_unicode.py` |
 | 质检门禁 | `quality_check.py` · `check_report_structure.py` · `check_ai_voice.py` · `check_gbt_refs.py` · `check_citation_validity.py` · `check_consistency.py` · `check_progress.py` · `check_all.py` |
 | 通道登记 | `mark_channel.py` · `channel_state.py`（共用核心） |
 | 知识库 | `rag_build.py` · `rag_search.py` · `knowledge_store.py` · `keywords_db.py` |
@@ -24,30 +23,29 @@
 
 | 模块（项数） | 覆盖 | 模块（项数） | 覆盖 |
 |---|---|---|---|
-| test_quality (125) | quality_check 全部规则正/负断言 | test_research_start (27) | config 校验 / 进度合并 / ima 提示 |
-| test_check_progress (14) | report_channels 双向交叉门禁 | test_install_git_hooks (10) | hook 装/卸行为 |
-| test_channel_state (43) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (23) | 收尾门禁顺序 / plan 回填 / mark_plan_done |
+| test_quality (166) | quality_check 全部规则正/负断言 | test_research_start (27) | config 校验 / 进度合并 / ima 提示 |
+| test_check_progress (11) | report_channels 双向交叉门禁 | test_install_git_hooks (10) | hook 装/卸行为 |
+| test_channel_state (47) | 通道登记纯函数 + 环境级未配置 | test_run_pipeline (23) | 收尾门禁顺序 / plan 回填 / mark_plan_done |
 | test_wechat_norm (31) | 消费端防御 / 自动登记 A / 路径归一化 | test_syllogism_check (22) | 三段论纯逻辑 |
 | test_arxiv_automark (5) | 落盘自动登记 P | test_report_images (19) | 锚点插入 / 图表冒烟 |
 | test_arxiv_query (23) | OR 语义提示 / curl 兜底四态 | test_ai_voice (18) | 两级检出 + 负例 + 参考文献区豁免 |
-| test_report_structure (21) | 五类结构规则 | test_latex_unicode (13) | LaTeX→Unicode |
-| test_report_to_flomo (26) | convert_text / pick_tags | test_note_upload (21) | 上传质检链 / 拦截 |
+| test_report_structure (23) | 五类结构规则 | test_latex_unicode (13) | LaTeX→Unicode |
+| test_report_to_docx (23) | md→docx 转换契约 | test_web_fetch (31) | 抓取降级 |
 | test_git_protect (15) | 提交保护分流逻辑 | test_web_search (52) | 解析纯函数 + B 自动登记 + 多查询并行 |
-| test_internal_files (31) | 内部文件红线单一真相源 | test_check_flomo_note_refs (29) | 笔记参考文献判定 |
-| test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_citation_validity (44) | 违规引用核验（含 WebFetch 降级 / bigram 切词 / --ack） |
-| test_check_all (25) | 体检工具纯函数 | test_consistency (28) | 项目矛盾/废话检查 |
+| test_internal_files (31) | 内部文件红线单一真相源 | test_citation_validity (48) | 违规引用核验 |
+| test_init_research (47) | slug / CLI / 模板替换 / 索引 / 初始进度 | test_check_all (25) | 体检工具纯函数 |
 | test_rag_build (23) | is_indexable / chunks | test_clean_workspace (8) | 清理路径收集 |
 | test_rag_search (29) | tokenize / bm25 / highlight | test_env_loader (16) | .env 加载 |
-| test_knowledge_store (17) | 关键词库 roundtrip | test_gbt_refs (23) | 国标著录 |
-| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_flomo_search (4) | token 只从环境变量读取 |
-| test_report_to_docx (41) | md→docx 转换契约 | test_web_fetch (20) | 抓取降级 |
+| test_knowledge_store (17) | 关键词库 roundtrip | test_gbt_refs (25) | 国标著录 |
+| test_health_check (26) | REQUIRED_FILES 一致性守护 | test_search_all (13) | search_all 命令构造 |
 | test_iter_research (27) | 轮次推进 / 归档 | test_preprint_search (31) | 四平台聚合 |
-| test_net_check (9) | 外网出口探测 | test_search_all (13) | search_all 命令构造 / slug 校验 |
+| test_net_check (9) | 外网出口探测 | test_wechat_norm (31) | 平台自适应 |
+| test_consistency (24) | 项目矛盾/废话检查 | | |
 
 **纪律**：修改任一被测工具后先跑 `python tests/run_all.py` 确认无回归再提交；运行器取子进程输出**最后一个** `TOTAL: PASS=.. FAIL=..` 为权威结果（防嵌套输出干扰）。
 ## init_research.py — 研究目录初始化
 
-**作用**：一键创建新研究——生成 plan/report/process_notes（从模板填充问题/日期/领域/slug，元信息行供 report_to_flomo 解析标签）、落盘 `.progress.json`（stage/round/domain，含环境级 E/C skip 预登记）、创建 `notes/` 目录及模板、在 plan.md 索引表登记一行。
+**作用**：一键创建新研究——生成 plan/report/process_notes（从模板填充问题/日期/领域/slug）、落盘 `.progress.json`（stage/round/domain，含环境级 E/C skip 预登记）、创建 `notes/` 目录及模板、在 plan.md 索引表登记一行。
 
 **用法**（PowerShell 中文走 --config）：
 ```bash
@@ -55,7 +53,7 @@ python tools/init_research.py --config tools/init.json   # config 参考 tools/i
 # 或直接传参：--question "标题" --domain "领域" --slug <slug> --priority <级别>
 ```
 
-**注意**：slug 须英文小写短横线；config 用完即删（gitignore 已忽略）；元信息行领域/slug 已实填勿改回占位符（否则 flomo 标签兜底错误）；走 `research_start.py` 时 .progress.json 合并更新（保留 round）。
+**注意**：slug 须英文小写短横线；config 用完即删（gitignore 已忽略）；元信息行领域/slug 已实填勿改回占位符；走 `research_start.py` 时 .progress.json 合并更新（保留 round）。
 ## note_assemble.py — 模块化笔记组装工具
 
 **作用**：从 `notes/` 目录读取索引笔记和普通笔记，自动组装成报告骨架。
@@ -76,21 +74,6 @@ python tools/note_assemble.py --slug <slug> --output custom.md  # 指定输出�
 
 **输出**：`research/<slug>/report_draft.md`
 
-## flomo_search.py — flomo 笔记搜索
-
-**作用**：flomo MCP 搜索笔记（关键词/标签），用于阶段 0 查重、阶段 1 补充、阶段 4 写索引前盘点。
-
-**用法**：
-```bash
-python tools/flomo_search.py --keywords "AI 编程"                  # 关键词搜索
-python tools/flomo_search.py --tag "AI编程" --keywords "定价"       # 组合搜
-python tools/flomo_search.py --keywords "定价" --full              # 拉完整正文（memo_batch_get）
-python tools/flomo_search.py --keywords "主题词"                  # 查重（结论人工判读后用 mark_channel 登记 F）h 证据）
-```
-
-**要点**：
-- **凭证**：Token 只从环境变量 `FLOMO_MCP_TOKEN` 读取（不读 .env，见 docs/CONVENTIONS.md）；此前硬编码进公开仓库，**须在 flomo 后台撤销旧 token 重建**。
-- **F 查重为人工判读门禁**：工具只执行 memo_search 并输出结果，不做自动登记（自动登记会把「已执行查重」与「查重结论」混为一谈，假阳性会漏判）；结论由主代理判读（≥0.9 复用——过时终核在 SOP 3.4、更新同步在 4.4.3、0.5~0.9 参考、<0.5 正常检索，命中但判定不相关按 <0.5 处理）后用 `mark_channel --channel F --status done --note "memo_search 已执行：命中 N 条；判读结论…"` 登记。nnel.py` 补充/覆盖 note。
 ## research_start.py — 一键研究启动器
 
 **作用**：把「启动一次知乎问题研究」压缩为一条命令，并落地 SOP 附录 A 的执行级逻辑。自动完成：配置校验（question/slug 必填、关键词下限提示）→ 初始化研究目录（阶段 0）→ 公众号检索并落盘素材库 `research/<slug>/gathered_wechat.md`（阶段 1 通道 A）→ 素材库非空校验 → 记录阶段进度 `.progress.json`（含 `domain` 字段，供 `check_progress --require_round auto` 按领域判定最低轮次）→ 打印后续步骤（阶段 2-4 上下文，其中通道 E 提示按领域从 `docs/IMA_LIBRARIES.md` 列出候选订阅库）。
@@ -135,14 +118,14 @@ python tools/iter_research.py --slug <slug> --round 2  # 指定目标轮次
 
 ## run_pipeline.py — 一键研究流水线驱动
 
-**作用**：把「阶段 0→4」中可由脚本确定的环节串起来，带 checkpoint 与质检门禁，并明确标出必须由 agent 介入的步骤（Web 检索 / ima E 通道 / 企查查·通达信·智慧芽 C 通道 / arxiv 的 WebFetch 降级流程 / flomo 上传 / AI 封面）。脚本只做确定性动作 + 质检门禁；外网检索与主观写作交 agent，由工具打印可复制命令清单。每段失败即阻断。
+**作用**：把「阶段 0→4」中可由脚本确定的环节串起来，带 checkpoint 与质检门禁，并明确标出必须由 agent 介入的步骤（Web 检索 / ima E 通道 / 企查查·通达信·智慧芽 C 通道 / arxiv 的 WebFetch 降级流程 / AI 封面）。脚本只做确定性动作 + 质检门禁；外网检索与主观写作交 agent，由工具打印可复制命令清单。每段失败即阻断。
 
 **用法**：
 ```bash
 # 启动一次新研究（阶段 0-1 初始化 + 公众号 A 通道），随后打印 agent 待办清单
 python tools/run_pipeline.py --config tools/start.json
 
-# 报告写好后的收尾（自动清理工作区 + 质检门禁 + docx + flomo 格式化 + 全库体检提示）
+# 报告写好后的收尾（自动清理工作区 + 质检门禁 + docx + 全库体检提示）
 python tools/run_pipeline.py --slug <slug>
 
 # 一步到位：启动 + 收尾（中间需 agent 自行完成检索与写作）
@@ -155,11 +138,11 @@ python tools/run_pipeline.py --slug <slug> --offline
 python tools/run_pipeline.py --slug <slug> --ack 2,5,8
 ```
 
-**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置；F 查重执行但结论由主代理人工判读后 mark_channel 登记，重自动登记通道 F）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx → report_to_flomo**（仅格式化，未上传）→ 门禁全过后**自动回填 plan.md 索引"已完成"** → 打印 agent 待办（笔记上传 / AI 封面 / 发布前 `check_all.py`）。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。`--ack <n1,n2,...>` 透传 `check_citation_validity.py --ack`——人工判读确认合规的条目跳过其「正文与题名疑似不符」提示（门禁输出注明人工确认，判读理由须逐条说明，见 `docs/CONVENTIONS.md` §8）。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
+**说明**：`--config` 触发 `research_start.py`（会预警 `WECHAT_ARTICLE_SEARCH_SCRIPTS` 未设置）；`--slug` 触发 **clean_workspace → 质检八件套 → report_to_docx** → 门禁全过后打印后续提示。`--offline` 让违规引用门禁以 `check_citation_validity.py --offline` 运行，适合当前无外网环境；联网核验仍建议在外网环境补跑。`--ack <n1,n2,...>` 透传 `check_citation_validity.py --ack`——人工判读确认合规的条目跳过其「正文与题名疑似不符」提示（门禁输出注明人工确认，判读理由须逐条说明，见 `docs/CONVENTIONS.md` §8）。收尾前的 Web/ima/C/arxiv 检索与 report.md 写作由 agent 完成。
 
 ## search_all.py — 统一并行检索入口（B/A/P 三通道）
 
-**作用**：启动研究后（`run_pipeline --config`，F 查重门禁已执行），一条命令**并行**执行 B Web / A 公众号 / P 预印本检索，各自落盘 `gathered_*.md` 并**自动登记通道**（A/B/P 落盘即登记；E/C 环境级 skip）。F 判读登记仍人工（见 SKILL 阶段 1）。
+**作用**：启动研究后（`run_pipeline --config`），一条命令**并行**执行 B Web / A 公众号 / P 预印本检索，各自落盘 `gathered_*.md` 并**自动登记通道**（A/B/P 落盘即登记；E/C 环境级 skip）。
 
 **用法**：
 ```bash
@@ -174,7 +157,7 @@ python tools/search_all.py --slug <slug> --parallel 2 --skip-preprints   # 调�
 
 ## quality_check.py — 正文质量自动检查
 
-**作用**：把报告模板中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等；"证明"按组合词匹配——"足以证明/这证明"算立场，"收入/纳税/实验证明"为名词/事实用法不误报）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）、模板占位符残留（`{{...}}`）、**过程性字样**（成品报告禁止"R1-R9/第 N 轮/本轮/上一轮/**通道 X**（检索通道标记）"等迭代/流程过程标记；URL 字母段与技术名词"迭代/更新"与"电离通道"等技术含义不误报）、**标题含括号**（标题不带来源/口径说明）、**提示性套话**（"判断权留给读者/留给你"等元话语提示词；结论用事实映射句式）、**AI 腔句式**（"不是…是/而是…"转折、之所以…是因为、随着…发展、在此背景下、在 XX 时代、可以看出）、**分级词括注**（正文禁止"（一手/二手/推算）"等数据强度括注；"日本二手设备"物理含义与"单一手段"相邻字不误报）、**证据分级词**（正文禁止"证据较强/证据中等/证据强度"）、**交叉引用校验**（检测旧式“见 2.x 节”编号引用；无编号小节的标题引用由人工核对）、**内部标识检测**（成品报告禁止"flomo 笔记/内部笔记/信号笔记/gathered_"等内部工具与流程标识，及六通道检索过程痕迹词"智慧芽/企查查/通达信/产业无对应/无适用主体/无约定主题布局"——C 通道无命中是内部研究记录，只落 process_notes 不写正文；"公众号/媒体/新闻"等正文来源词不误报）、**A 股行情信息**（正文禁止股票代号如 603986、股价/现价/涨跌幅/总市值/PE(TTM) 等行情字段，check_stock_info 拦截；"兑现价值"等正常词语不误报）、**事实规模**（小节内 bullet 单行报"小点未叙述化"——小点须写成连贯叙述段，表格是唯一允许的列表形式；小节数量不设上限）、**段落长度**（叙述段 >5 行报"段落过长"）、**AI 概念图禁令**（check_cover_ban：ai_*.png 禁止插入正文，封面仅作独立文件 ai_cover.png）、参考文献标注（参考文献区链接行不得带分级标注）、**参考文献区禁止 LaTeX**（GB/T 7714 著录为纯文本格式，$...$ 会破坏著录结构且 docx 转换器不做 OMML 转换；数学符号在参考文献区用 Unicode/文字，如 λ₁、10⁶；报告与笔记均适用）、结构完整性（必须有 `## 参考文献` 章节含 [标题](url) 链接或纯文本标题条目、正文无"待补充/TODO"等未决标记）。研究问题/多维分析已融入小节（无独立章节），相关旧检查已随结构演进移除。
+**作用**：把报告模板中的「去 AI 味 + 立场中立」检查落地为自动扫描。检测立场词（我认为/应该/总之等；"证明"按组合词匹配——"足以证明/这证明"算立场，"收入/纳税/实验证明"为名词/事实用法不误报）、框架词（先说结论/总结一下等）、评价词（太猛/离谱等）、感叹号/反问句、无来源数字（启发式）、模板占位符残留（`{{...}}`）、**过程性字样**（成品报告禁止"R1-R9/第 N 轮/本轮/上一轮/**通道 X**（检索通道标记）"等迭代/流程过程标记；URL 字母段与技术名词"迭代/更新"与"电离通道"等技术含义不误报）、**标题含括号**（标题不带来源/口径说明）、**提示性套话**（"判断权留给读者/留给你"等元话语提示词；结论用事实映射句式）、**AI 腔句式**（"不是…是/而是…"转折、之所以…是因为、随着…发展、在此背景下、在 XX 时代、可以看出）、**分级词括注**（正文禁止"（一手/二手/推算）"等数据强度括注；"日本二手设备"物理含义与"单一手段"相邻字不误报）、**证据分级词**（正文禁止"证据较强/证据中等/证据强度"）、**交叉引用校验**（检测旧式“见 2.x 节”编号引用；无编号小节的标题引用由人工核对）、**内部标识检测**（成品报告禁止"内部笔记/信号笔记/gathered_"等内部工具与流程标识，及通道检索过程痕迹词"智慧芽/企查查/通达信/产业无对应/无适用主体/无约定主题布局"——C 通道无命中是内部研究记录，只落 process_notes 不写正文；"公众号/媒体/新闻"等正文来源词不误报）、**A 股行情信息**（正文禁止股票代号如 603986、股价/现价/涨跌幅/总市值/PE(TTM) 等行情字段，check_stock_info 拦截；"兑现价值"等正常词语不误报）、**事实规模**（小节内 bullet 单行报"小点未叙述化"——小点须写成连贯叙述段，表格是唯一允许的列表形式；小节数量不设上限）、**段落长度**（叙述段 >5 行报"段落过长"）、**AI 概念图禁令**（check_cover_ban：ai_*.png 禁止插入正文，封面仅作独立文件 ai_cover.png）、参考文献标注（参考文献区链接行不得带分级标注）、**参考文献区禁止 LaTeX**（GB/T 7714 著录为纯文本格式，$...$ 会破坏著录结构且 docx 转换器不做 OMML 转换；数学符号在参考文献区用 Unicode/文字，如 λ₁、10⁶；报告与笔记均适用）、结构完整性（必须有 `## 参考文献` 章节含 [标题](url) 链接或纯文本标题条目、正文无"待补充/TODO"等未决标记）。研究问题/多维分析已融入小节（无独立章节），相关旧检查已随结构演进移除。
 
 **用法**：
 
@@ -330,43 +313,7 @@ python tools/report_to_docx.py --slug <slug> --out x.docx   # 自定义输出名
 
 **注意**：docx 与 report.md 同级存放（单一文件约定）；图片下载失败不中断转换，位置保留 alt（URL）文本并提示。
 
-## report_to_flomo.py — 研究报告 → flomo 格式存档（本地，不上传）
 
-**作用**：把研究报告【完整内容】转换为 flomo 兼容格式（**只转格式、一字不改**），供上传到 flomo 个人笔记。参考 mynews 项目（外部项目，本地路径已省略）的 flomo 集成模式。flomo 仅支持加粗/高亮/下划线/有序/无序列表，不支持标题/引用/代码块/链接/表格，故做机械转换：标题（#）→ 加粗、引用（>）→ 正文、表格行 → 列表（- a / b）、链接 [标题](url) → 标题（url）、图片按来源分流（**公网 URL** `![alt](https://…)` → alt（url），保留地址供追溯；**本地相对路径** `![alt](chart_x.png)` 独占一行时**整行丢弃**——本地路径在 flomo 既不可点也不显示，且报告规范里其后紧跟「图 N｜…」图注行，保留 alt 会与图注重复）、反引号 → 去掉。
-
-**flomo 图片能力（官方文档研究结论）**：flomo 平台**支持图片**——URL Scheme `flomo://create?image_urls=[...]`（最多 9 个公网图片 URL，需 PRO 会员 + flomo 客户端）；存储免费 500M（压缩）/PRO 20G（原图）。但当前接入的 flomo 官方 MCP 的 memo_create/memo_update 无图片参数，故文本版不含图片；未来带图上传可走官方 webhook API（`https://flomoapp.com/iwh/{token}`，需 PRO）或 URL Scheme。
-
-存档内容首行追加 `#知识基座 #一级领域 #二级领域` 标签（分类元信息，非报告内容）。
-
-**用法**：
-
-```bash
-python tools/report_to_flomo.py --slug <slug>                     # 打印完整转换结果
-python tools/report_to_flomo.py --slug <slug> --out flomo_full.md # 写文件（research/<slug>/）
-```
-
-**注意**：
-- **不修改报告内容**：脚本只做格式转换，不摘要、不截断、不改写。
-- **报告/索引禁止上传 flomo**：本工具仅生成本地存档 `flomo_full.md`（不上传）；上传动作由 `note_upload.py` 对模块化笔记逐条执行（上传前自动质检）。
-- **隐私边界**：本工具仅生成本地存档 `flomo_full.md`（报告/索引禁止上传 flomo；上传动作由 note_upload.py 对模块化笔记执行）；素材库（gathered_*）、plan.md 仅存本地 `research/`（与 ima 隐私分级一致，见 docs/CONVENTIONS.md 第 7 节）。
-
-## note_upload.py — 模块化笔记上传 flomo
-
-**作用**：把 `research/<slug>/notes/` 下的模块化笔记逐条质检后上传 flomo；自动拦截违规文件（00_index.md 索引、report.md/report_draft.md 报告）。
-
-**用法**：
-```bash
-python tools/note_upload.py research/<slug>/notes/            # 批量（逐条质检后上传）
-python tools/note_upload.py research/<slug>/notes/01_x.md     # 单条
-python tools/note_upload.py research/<slug>/notes/ --update   # 原地更新已上传 memo
-python tools/note_upload.py research/<slug>/notes/ --max-retries 3   # 调整重试次数
-```
-
-**规则**：
-- 上传前自动跑**双重质检**：`quality_check.py`（**笔记模式**：notes/ 目录自动启用——允许 Unicode 公式、识别「来源:」文献段）+ `check_gbt_refs.py`（**笔记模式**：识别「来源:」段，校验条目空行/编号连续/类型标识/URL 引用日期/悬空引注；笔记文献区是参考来源清单，不查"文献未被引用"），任一不过拒绝上传。
-- **flomo 调用失败自动重试**：网络错误/超长 content 假报 toolName 等一律**重试单条完整版**（默认 5 次 × 间隔 30s，`--max-retries 0` 关闭重试但**仍会尝试 1 次**），禁止分段/精简/测试——对应记忆硬规则"反复重试直到成功"。
-- **`--update` 原地更新**：上传成功把 `{笔记文件名: memo id}` 持久化到 `research/<slug>/.flomo_ids.json`；`--update` 按记录用 `memo_update` 原地更新（id 不变，对应"禁止新建多版本"纪律），无记录的文件回退 `memo_create` 并补记。ids 文件为内部文件（不入 git、不上云）。
-- 质检与上传共用 quality_check 的笔记模式；`--force` 跳过质检（慎用）。
 
 ## wechat_search.py — 微信公众号检索包装（通道 A）
 
@@ -653,13 +600,13 @@ python tools/mark_channel.py --slug <slug> --list
 `--all-skip`：把未登记的通道批量登记为 skip（已登记的保留原状）——适合 E 未连接、P 不适用等常见场景，避免逐个手动登记。
 
 **status 取值**：
-- `done`：通道已执行且产出有效素材（须有对应 `gathered_*.md` ≥200 字节；F 仅需 note 说明查重结论）。
+- `done`：通道已执行且产出有效素材（须有对应 `gathered_*.md` ≥200 字节）。
 - `empty`：通道已执行但零命中（须有 `gathered` 文件或 note 含「无有效素材/无命中」）。
 - `skip`：通道不适用 / 连接器未连接（须有 note 说明原因）。
 
 **校验**：登记后跑 `python tools/check_progress.py --slug <slug> --require report_channels`；声明 `done` 但对应素材文件缺失会提示（先登记后落盘属正常顺序，最终以门禁为准）。
 
-**自动登记**：通道 A（公众号）在 `wechat_search.py` 落盘 `gathered_wechat.md`、通道 P（学术预印本聚合，含 arxiv）在 `arxiv_search.py` / `preprint_search.py` 落盘 `gathered_arxiv.md` / `gathered_preprints.md` 时**自动登记**对应通道（`done`/`empty` 按命中数判定），无需再手动跑本工具——前提是输出路径为标准 `research/<slug>/gathered_*.md`（可显式加 `--slug`）。本工具保留用于：E/F/B/C 通道登记、`--all-skip` 批量 skip、覆盖性重登记、以及 `--list` 查看。核心逻辑在 `tools/channel_state.py`，各工具共用。
+**自动登记**：通道 A（公众号）在 `wechat_search.py` 落盘 `gathered_wechat.md`、通道 P（学术预印本聚合，含 arxiv）在 `arxiv_search.py` / `preprint_search.py` 落盘 `gathered_arxiv.md` / `gathered_preprints.md` 时**自动登记**对应通道（`done`/`empty` 按命中数判定），无需再手动跑本工具——前提是输出路径为标准 `research/<slug>/gathered_*.md`（可显式加 `--slug`）。本工具保留用于：E/B/C 通道登记、`--all-skip` 批量 skip、覆盖性重登记、以及 `--list` 查看。核心逻辑在 `tools/channel_state.py`，各工具共用。
 
 **环境级自动 skip（连接器未配置通道无需逐篇检查）**：本环境未配置连接器的通道（ima E / 领域连接器 C 为默认值）由 `research_start.py` / `init_research.py` 初始化时**自动登记为 skip**（note 注明"环境级默认 skip"），跨研究共享——新建研究后 E/C 已预登记，无需手动检查或 `--all-skip`；`mark_channel.py --list` 会用「（环境级）」标注。连接器接入后用环境变量 `ZHIHU_ASK_UNCONFIGURED_CHANNELS` 覆盖（逗号分隔通道字母，如 "C" 表示仅 C 未配置；空字符串 = 全部已配置），`check_progress` 对未配置通道缺失声明也不阻塞。
 
@@ -700,6 +647,4 @@ python tools/report_images.py --slug <slug> --url-base https://...       # 图�
 
 `research_subagent` 配置的模型不可用（"Model not found"），**主代理直执是当前默认方式**（非降级）：web_search / web_fetch 均由主代理调用，公众号检索走上述包装工具。已实测可行（两份研究均以此完成）。若子代理配置修复，可升级回并行分派。
 
-## flomo 单条完整版上传（tools/flomo_upload_full.py，已弃用）
 
-常规上传走 `note_upload.py`（模块化笔记逐条质检上传，报告/索引禁止上传）；本工具仅当用户明确要求回传某篇历史报告时使用：`python tools/flomo_upload_full.py --slug <slug>`（凭证环境变量 `FLOMO_TOKEN`，绕过客户端对超长 content 的调度层拦截）。

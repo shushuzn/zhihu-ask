@@ -3,7 +3,7 @@
 """来源一致性检查：报告关键事实与来源内容自动比对
 
 检查项：
-1. 参考文献 URL 必须可访问（非 flomo/内部链接）
+1. 参考文献 URL 必须可访问（非内部链接）
 2. 每个 [n] 引用的关键实体须在来源内容中出现
 3. 参考文献题名须与来源实际标题匹配
 4. 正文 [n] 引用与参考文献一一对应
@@ -38,7 +38,6 @@ URL_RE = re.compile(r"https?://[^\s\]\)]+")
 CITE_RE = re.compile(r"\[(\d+)\]")
 
 BANNED_URL_PATTERNS = [
-    (r"v\.flomoapp\.com", "flomo \u7b14\u8bb0\u94fe\u63a5"),
     (r"example\.com", "\u5360\u4f4d\u7b26 URL"),
     (r"localhost", "\u672c\u5730\u5730\u5740"),
 ]

@@ -150,29 +150,12 @@ def test_argparse_doc():
         os.unlink(t)
 
 
-# ---- flomo 查重对象：笔记而非报告 ----
-def test_flomo_note_dedup_phrasing():
-    d = make_tmp_dir()
-    f = os.path.join(d, "x.md")
-    open(f, "w", encoding="utf-8").write(
-        "flomo 已有报告查重：查是否已有本主题报告。\n"
-        "查重命中已有报告时复用已有报告。\n"
-        "报告与索引禁止上传 flomo。\n")
-    issues = cc.check_flomo_note_dedup_phrasing([f])
-    titles = [h[2] for h in issues]
-    expect("flomo+ 已有报告查重拦截", any("flomo 查重对象应为笔记" in t for t in titles), issues)
-    expect("flomo+ 本主题报告拦截", any("flomo 查重对象应为笔记" in t for t in titles), issues)
-    expect("flomo+ 复用已有报告拦截", any("flomo 查重对象应为笔记" in t for t in titles), issues)
-    expect("flomo- 报告禁止上传不拦截", not any("报告禁止上传" in h[3] for h in issues), issues)
-
-
 test_tool_refs()
 test_obsolete_channels()
 test_stale_dates()
 test_placeholders()
 test_banal()
 test_argparse_doc()
-test_flomo_note_dedup_phrasing()
 
 for d in _TMP_DIRS:
     shutil.rmtree(d, ignore_errors=True)

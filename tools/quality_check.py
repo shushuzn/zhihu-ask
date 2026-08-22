@@ -49,11 +49,11 @@ def main():
     all_issues += check_words(body, EVALUATIVE_WORDS, "评价词")
     if note_mode:
         # 笔记模式（笔记用 Unicode、报告用 LaTeX）：
-        # 笔记是内部研究记录（flomo 私人知识库），非发布成品，跳过面向报告成品的
+        # 笔记是内部研究记录，非发布成品，跳过面向报告成品的
         # 规范检查——标题/结论/小节/图片/LaTeX 公式规则不适用笔记；过程性字样
         # （笔记记录检索过程）、元话语自称（笔记引论文的"本文/前作"）、感叹号
         # （Unicode 公式中 k! 阶乘无 $ 保护易误报）均为笔记常态，一并跳过。
-        # 标题禁止用 * 与 # 标记（flomo 上传质检要求，独立于报告标题检查规则）。
+        # 标题禁止用 * 与 # 标记（笔记质检要求，独立于报告标题检查规则）。
         # 笔记仅首行 tag 行允许 #，大小标题一律纯文本，禁止 #/##/### 与 * 标记。
         all_issues += check_title_asterisk(body)
         all_issues += check_title_hash(body)
@@ -88,7 +88,6 @@ def main():
     all_issues += check_ai_phrases(body)
     all_issues += check_judgment_hints(body)
     all_issues += check_internal_refs(body)
-    # Also check full content for flomo URLs in reference section
     all_issues += check_internal_refs(full)
     all_issues += check_grade_paren(body)
     all_issues += check_evidence_grade(body)

@@ -23,9 +23,9 @@
 - --require_round auto 按 .progress.json 的 domain 字段自动判定最低轮次
   （默认统一 → 1；domain 缺失时同样为 1）。
 - --require report_channels 校验「落报告纪律」：结构化的双向交叉校验。
-  若 research/<slug>/.progress.json 的 data.channels_done 已登记六通道执行态（done/empty/skip），
+  若 research/<slug>/.progress.json 的 data.channels_done 已登记五通道执行态（done/empty/skip），
   则双向核对「声明态 ⊕ 证据」：正向（声明→须有对应 gathered 文件/note）、
-  反向（存在的 gathered 文件→须被登记）、完整性（六通道均须声明）、report.md 承接。
+  反向（存在的 gathered 文件→须被登记）、完整性（五通道均须声明）、report.md 承接。
   若未登记 channels_done，则回退旧版文件启发式（向后兼容，不破坏既有成品）。
   检出项需人工确认内容级落地。用 mark_channel.py 登记通道完成态。
 - 当前已知阶段键：
@@ -71,7 +71,6 @@ def domain_min_round(domain):
     return MIN_ROUNDS
 
 # 落报告纪律：已执行通道（有 gathered_*.md 素材）的硬数据须落进 report.md 正文。
-# F 通道（flomo 查重）无 gathered 文件，单独处理，不在此校验。
 # 证据文件→通道映射统一由 channel_state.file_to_channel() 推导，
 # 含 P 通道多文件展开：gathered_arxiv.md 与 gathered_preprints.md 均属通道 P
 CHANNEL_FILE_MAP = cs.file_to_channel()
@@ -82,7 +81,7 @@ MIN_REPORT_BYTES = 600     # report.md 低于此视为未生成/明显缺内容
 # .progress.json 的 data.channels_done 以 {字母: {status, note}} 形式声明六通道执行态，
 # 本工具据此做「声明态 ⊕ 证据」双向交叉校验，替代旧版仅靠文件启发式的单向前向检查。
 # CHANNEL_ORDER/NAMES/FILE 由 channel_state 统一维护。
-# 内容通道 → 对应 gathered 文件（F 无文件，仅 note 记录）
+# 内容通道 → 对应 gathered 文件
 CHANNEL_FILE = cs.CHANNEL_FILE
 VALID_STATUS = ("done", "empty", "skip")  # 已执行有素材 / 已执行零命中 / 不适用或跳过
 
@@ -148,9 +147,9 @@ def check_report_channels(slug_dir, slug):
     若 .progress.json 含 data.channels_done（结构化声明），则做「声明态 ⊕ 证据」
     双向交叉校验：
       正向：声明的每个通道 → 须有对应证据（done 须有 gathered 文件≥200字节；
-            empty 须有文件或 note 含"无有效素材"；skip 须有 note；F done 须有 note）。
-      反向：存在的 gathered 文件 → 须被 channels_done 登记为 done/empty。
-      完整性：结构化模式下六通道（F/E/A/B/C/P）均须声明。
+            empty 须有文件或 note 含"无有效素材"；skip 须有 note）。
+       反向：存在的 gathered 文件 → 须被 channels_done 登记为 done/empty。
+       完整性：结构化模式下五通道（E/A/B/C/P）均须声明。
       必拉全文：当 P 通道含 arxiv 命中时（gathered_arxiv.md ≥200字节），须已落盘
             arxiv_html.md（全文 HTML）与 arxiv_text.md（文本化），校核以全文为准。
     若无结构化声明，则回退到旧版文件启发式（向后兼容，不破坏既有成品）。
@@ -163,7 +162,7 @@ def check_report_channels(slug_dir, slug):
     report_size = os.path.getsize(report_path) if os.path.exists(report_path) else 0
     blocked = []
 
-    # 1) 完整性：六通道均须声明（缺声明即视为未完成登记）。
+    # 1) 完整性：五通道均须声明（缺声明即视为未完成登记）。
     #    环境级未配置连接器的通道（ima E / 领域连接器 C）由初始化自动登记 skip，
     #    跨研究共享、无需逐篇手动检查；即便缺失也视为已满足（连接器未接入不阻塞）。
     env_unconf = set(cs.env_unconfigured_channels())
@@ -237,11 +236,6 @@ def check_report_channels(slug_dir, slug):
                 if not ok:
                     shown = fname or "/".join(multi_files)
                     blocked.append((ch, f"声明 done 但 {shown} 均缺失/过小（<{MIN_MATERIAL_BYTES}字节）"))
-            if not note and ch == "F":
-                blocked.append((ch, "F 通道声明 done 但缺 note（请说明查重结论）"))
-            if ch == "F" and note and not re.search(r"memo_search|flomo_search", note):
-                blocked.append((ch, "F 通道声明 done 但 note 未记录实际 flomo 查重工具调用"
-                                     "（须含 memo_search/flomo_search 证据）"))
         elif status == "empty":
             if fname or multi_files:
                 fp_exists = False
@@ -279,15 +273,7 @@ def check_report_channels(slug_dir, slug):
         if os.path.exists(arxiv_gathered) and os.path.getsize(arxiv_gathered) >= MIN_MATERIAL_BYTES:
             text = open(arxiv_gathered, encoding="utf-8", errors="ignore").read()
             if re.search(r"arxiv\.org/abs/[0-9]+\.[0-9]+", text, re.I) and "（无有效素材）" not in text:
-                cd_p = (cd.get("P") or {}) if isinstance(cd, dict) else {}
-                # F 复用分支不强制必拉全文（权威源为 flomo，还原后以 flomo 为准）
-                is_reuse = False
-                cd_f = (cd.get("F") or {}) if isinstance(cd, dict) else {}
-                if isinstance(cd_f, dict):
-                    note_f = (cd_f.get("note") or "")
-                    is_reuse = "复用" in note_f or "命中同题" in note_f
-                if not is_reuse:
-                    for fn in ("arxiv_html.md", "arxiv_text.md"):
+                for fn in ("arxiv_html.md", "arxiv_text.md"):
                         fp = os.path.join(slug_dir, fn)
                         if not os.path.exists(fp) or os.path.getsize(fp) < MIN_MATERIAL_BYTES:
                             blocked.append(("P", f"必拉全文：{fn} 缺失/过小（arXiv 主题须落盘全文 HTML 与文本化，以全文为准核验）——请运行 python tools/arxiv_fetch.py --slug {slug}"))
@@ -300,7 +286,7 @@ def check_report_channels(slug_dir, slug):
             print(f"[阻塞] 通道 {ch}：{msg}")
         print(f"[阻塞] {slug}: 以上 {len(blocked)} 项违反「落报告纪律/通道完成登记」，请修正 channels_done 与素材。")
         return 1
-    print(f"[通过] {slug}: channels_done 六通道声明完整且与证据一致，落报告纪律达标。")
+    print(f"[通过] {slug}: channels_done 五通道声明完整且与证据一致，落报告纪律达标。")
     return 0
 
 def parse_args(argv):

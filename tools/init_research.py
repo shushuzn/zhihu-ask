@@ -3,8 +3,7 @@
 研究初始化脚本（zhihu-ask 项目专用）
 
 一键创建新的研究目录：
-1. 在 research/<slug>/ 下生成 3 个文件（plan/report/process_notes），从模板复制并填入基础占位符
-   （含元信息行的领域与 slug——report_to_flomo.py 依赖该行解析 flomo 标签）。
+1. 在 research/<slug>/ 下生成 3 个文件（plan/report/process_notes），从模板复制并填入基础占位符。
 2. 落盘 .progress.json（stage=phase1_done, round=1, domain），供 check_progress.py 校验。
 3. 更新 plan.md 的问题索引表（追加一行，状态=进行中）。
 
@@ -125,9 +124,7 @@ def apply_replacements(content, question, domain, slug, today, is_plan=False, do
     if is_plan:
         replacements["{{进行中 / 已完成}}"] = "进行中"
 
-        # 元信息行占位符（模板第 3 行）必须实填：report_to_flomo.py 从此行正则解析
-        # 领域来决定 flomo 标签，残留 {{...}} 会导致标签兜底为 #{{...}} #综合。
-        # 这两个占位符在模板中各仅出现 1 次（均在元信息行），全局替换安全。
+        # 元信息行占位符（模板第 3 行）必须实填；残留 {{...}} 会导致解析兜底。
         replacements["{{...}}"] = domain
         replacements["{{topic-slug}}"] = slug
         if domain_type:

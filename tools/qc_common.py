@@ -114,7 +114,7 @@ def scan_body(filepath, note_mode=False):
     return content[:cutoff], content
 
 def check_note_forbidden_fields(body):
-    """检测笔记非规定字段（来源/概念等，flomo 笔记模板禁止）。
+    """检测笔记非规定字段（来源/概念等，笔记模板禁止）。
 
     判定：行首出现「**来源**：」「来源:」「**概念**：」「概念:」等字段形式
     （含全角/半角冒号、加粗变体）即报"非规定字段"。

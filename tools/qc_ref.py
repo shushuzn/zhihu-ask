@@ -88,7 +88,7 @@ def check_unsourced_numbers(body, full=None):
     return issues
 
 def check_citation_correspondence(full, note_mode=False):
-    """检测参考文献条目与正文 [n] 引注一一对应（flomo 上传质检，笔记模式强制）。
+    """检测参考文献条目与正文 [n] 引注一一对应（笔记模式强制）。
 
     顺序编码制规则（不能少、不能多、须一一对应）：
     1. 参考文献区每条 [n] 须在正文出现 [n] 引注（文献未被引用即报错）；
@@ -120,22 +120,19 @@ def check_citation_correspondence(full, note_mode=False):
     return issues
 
 def check_internal_refs(body):
-    """检测内部工具标识泄漏（成品禁"flomo/内部笔记/信号笔记"等来源标识）。
+    """检测内部工具标识泄漏（成品禁内部检索过程痕迹词等来源标识）。
 
-    匹配：flomo / 内部笔记 / 信号笔记 / gathered_ / verify_*.py 出现在正文或参考文献；
-    以及六通道检索过程痕迹词：智慧芽 / 企查查 / 通达信 /
+    匹配：内部笔记 / 信号笔记 / gathered_ / verify_*.py 出现在正文或参考文献；
+    以及通道检索过程痕迹词：智慧芽 / 企查查 / 通达信 /
     产业无对应 / 无适用主体 / 无约定主题布局——C 通道"无命中"是内部研究记录，
     落 process_notes 与进度文件，禁止写进正文（对读者无信息量）。
-    说明：成品报告引用须为公开来源；内部素材（flomo 笔记/检索记录/验证脚本）不入成品，
+    说明：成品报告引用须为公开来源；内部素材（检索记录/验证脚本）不入成品，
     改为引用其对应的公开出处或删除（验证脚本只留存研究目录，不写入正文）。
-    禁止在参考文献中使用 flomo 笔记地址（v.flomoapp.com）作为来源。
     """
     issues = []
-    internal_words = ["flomo", "内部笔记", "信号笔记", "gathered_",
+    internal_words = ["内部笔记", "信号笔记", "gathered_",
                       "智慧芽", "企查查", "通达信", "产业无对应", "无适用主体", "无约定主题布局"]
     internal_re = re.compile(r"verify_[\w-]+\.py", re.I)
-    # flomo 笔记地址禁止作为参考文献来源
-    flomo_url_re = re.compile(r"https?://v\.flomoapp\.com/")
     for i, line in enumerate(body.splitlines(), 1):
         for w in internal_words:
             if w.lower() in line.lower():
@@ -146,9 +143,6 @@ def check_internal_refs(body):
             if m:
                 issues.append((i, "内部标识", m.group(0), line.strip()[:60]))
                 continue
-        # 单独检测 flomo URL（即使不含 "flomo" 关键词也拦截域名）
-        if flomo_url_re.search(line):
-            issues.append((i, "非公开来源", "flomo 笔记地址不可作参考文献", line.strip()[:60]))
     return issues
 
 def check_grade_paren(body):
